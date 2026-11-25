@@ -1,0 +1,51 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "齿轮传动选型 - 输入接口",
+  "type": "object",
+  "required": ["power_kw", "input_speed_rpm", "output_speed_rpm", "service_factor"],
+  "properties": {
+    "power_kw": {
+      "type": "number",
+      "description": "传递功率 (kW)",
+      "minimum": 0.1,
+      "maximum": 500
+    },
+    "input_speed_rpm": {
+      "type": "number",
+      "description": "输入转速 (rpm)",
+      "minimum": 10,
+      "maximum": 10000
+    },
+    "output_speed_rpm": {
+      "type": "number",
+      "description": "输出转速 (rpm)",
+      "minimum": 1,
+      "maximum": 5000
+    },
+    "service_factor": {
+      "type": "number",
+      "description": "使用系数 (冲击/过载补偿)",
+      "minimum": 1.0,
+      "maximum": 3.0,
+      "default": 1.5
+    },
+    "gear_type_preference": {
+      "type": "string",
+      "enum": ["spur", "helical", "planetary", "worm", "auto"],
+      "description": "齿轮类型偏好",
+      "default": "auto"
+    },
+    "center_distance_mm": {
+      "type": "number",
+      "description": "建议中心距 (mm), 可选约束",
+      "minimum": 10
+    },
+    "noise_requirement": {
+      "type": "string",
+      "enum": ["low", "medium", "high"],
+      "description": "噪声要求",
+      "default": "medium"
+    }
+  },
+  "additionalProperties": false
+}

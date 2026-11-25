@@ -1,0 +1,69 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "齿轮传动选型 - 输出接口",
+  "type": "object",
+  "required": ["gear_type", "module_mm", "teeth_pinion", "teeth_gear", "material", "efficiency"],
+  "properties": {
+    "gear_type": {
+      "type": "string",
+      "enum": ["spur", "helical", "planetary", "worm"],
+      "description": "选定的齿轮类型"
+    },
+    "module_mm": {
+      "type": "number",
+      "description": "模数 (mm)"
+    },
+    "teeth_pinion": {
+      "type": "integer",
+      "description": "小齿轮齿数"
+    },
+    "teeth_gear": {
+      "type": "integer",
+      "description": "大齿轮齿数"
+    },
+    "helix_angle_deg": {
+      "type": "number",
+      "description": "螺旋角 (度), 斜齿轮专用"
+    },
+    "pressure_angle_deg": {
+      "type": "number",
+      "description": "压力角 (度)",
+      "default": 20
+    },
+    "material": {
+      "type": "string",
+      "description": "材料牌号"
+    },
+    "hardness_hb": {
+      "type": "integer",
+      "description": "齿面硬度 (HBW)"
+    },
+    "efficiency": {
+      "type": "number",
+      "description": "传动效率 (0-1)",
+      "minimum": 0.5,
+      "maximum": 0.99
+    },
+    "weight_kg": {
+      "type": "number",
+      "description": "齿轮副估算重量 (kg)"
+    },
+    "lifetime_hours": {
+      "type": "number",
+      "description": "估算寿命 (小时)"
+    },
+    "center_distance_mm": {
+      "type": "number",
+      "description": "实际中心距 (mm)"
+    },
+    "calculation_meta": {
+      "type": "object",
+      "properties": {
+        "version": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "standard": { "type": "string" }
+      }
+    }
+  },
+  "additionalProperties": false
+}

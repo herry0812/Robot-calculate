@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "成本评估 - 输入接口",
+  "type": "object",
+  "properties": {
+    "modules": {
+      "type": "object",
+      "description": "各设计模块输出的零件清单",
+      "additionalProperties": true
+    },
+    "production_volume": {
+      "type": "integer",
+      "description": "预期年产量",
+      "default": 100
+    },
+    "material_cost_rate": {
+      "type": "number",
+      "description": "材料成本系数 (实际/理论)",
+      "default": 1.2
+    },
+    "machining_hourly_rate_cny": {
+      "type": "number",
+      "description": "机加工小时费率 (元/小时)",
+      "default": 150
+    },
+    "include_assembly": {
+      "type": "boolean",
+      "default": true
+    },
+    "include_overhead": {
+      "type": "boolean",
+      "description": "是否包含管理/运营成本 (约 20%)",
+      "default": true
+    }
+  },
+  "additionalProperties": false
+}

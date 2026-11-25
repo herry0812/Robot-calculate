@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "凸轮设计计算 - 输入接口",
+  "type": "object",
+  "required": ["motion_type", "stroke_mm", "cam_speed_rpm"],
+  "properties": {
+    "motion_type": {
+      "type": "string",
+      "enum": ["disks", "linear", "globoidal"],
+      "description": "凸轮类型: 盘形/移动/球面"
+    },
+    "stroke_mm": {
+      "type": "number",
+      "description": "从动件行程 (mm)",
+      "minimum": 1,
+      "maximum": 500
+    },
+    "cam_speed_rpm": {
+      "type": "number",
+      "description": "凸轮转速 (rpm)",
+      "minimum": 1,
+      "maximum": 3000
+    },
+    "motion_law": {
+      "type": "string",
+      "enum": ["uniform", "modified_sine", "modified_trapezoid", "cycloidal"],
+      "description": "运动规律",
+      "default": "modified_sine"
+    },
+    "pressure_angle_limit_deg": {
+      "type": "number",
+      "description": "许用压力角 (度)",
+      "default": 30
+    },
+    "roller_diameter_mm": {
+      "type": "number",
+      "description": "滚轮直径 (mm)"
+    },
+    "shaft_diameter_mm": {
+      "type": "number",
+      "description": "凸轮轴直径 (mm)"
+    },
+    "return_spring": {
+      "type": "boolean",
+      "description": "是否使用复位弹簧",
+      "default": true
+    }
+  },
+  "additionalProperties": false
+}
