@@ -199,6 +199,12 @@ input.derived { background: var(--bg); color: var(--text-dim); }
 .alert .level { font-weight: 700; flex-shrink: 0; }
 .alert .body { flex: 1; }
 .alert .suggestion { display: block; margin-top: 4px; padding-top: 4px; border-top: 1px dashed rgba(0,0,0,0.1); font-size: 0.92em; font-weight: 500; }
+.alert .impact { display: block; margin-top: 4px; font-size: 0.92em; opacity: 0.88; }
+input.input-bad, select.input-bad, textarea.input-bad {
+  border-color: var(--warn) !important; background: #fff5f5 !important;
+  box-shadow: 0 0 0 2px rgba(217,72,15,0.12) !important;
+}
+.seg-card.seg-bad { border-color: #ffa8a8; background: #fff5f5; }
 
 /* ========== 可视化区 ========== */
 .right-col { display: flex; flex-direction: column; gap: 14px; }
@@ -622,14 +628,44 @@ Object.assign(I18N.zh, {
   layerHint: "两层同轴径向嵌套，共用同一轴向区间。第 2 层外径自动取第 1 层沟槽底部直径。下方曲线/受力显示当前层。",
   layerHint2: "第 2 层外径已锁定为第 1 层槽底直径 {d} mm（不可改）。下方曲线/受力显示第 2 层。",
   baseDiaDerivedNote: "= 第 1 层沟槽底部直径（自动锁定）",
-  alertCompoundRaised: "第 2 层工作面在第 {ranges} 低于第 1 层工作面，已自动抬高 {n} mm（初始高度 {a} → {b} mm）。",
-  sugCompoundRaised: "若想减小整体高度，可减小第 2 层升程或让第 2 层运动曲线的低谷与第 1 层峰值错开；也可直接改小第 2 层「初始高度」但必须保持在不违规区间内。",
   infoCompoundOk: "复合凸轮：第 2 层工作面全程高于第 1 层，第 2 层外径 = {d} mm，满足加工条件。",
-  sugCompoundOk: "如需调整两层相对高度，可在「第 2 层」页修改初始高度；系统会自动校核并保证不重叠。",
+  sugCompoundOk: "如需调整两层相对高度，可在「第 2 层」页修改初始高度；系统会逐角度校核，不满足时给出所需的最小高度。",
   alertCompoundNoFit: "第 2 层沟槽轴向占用 {z} mm，需要其凸轮宽度 ≥ {need} mm，当前仅 {w} mm。",
   sugCompoundNoFit: "把第 2 层的「凸轮宽度」增大到 {need} mm 以上，或减小第 2 层的升程／初始高度。",
   alertLayer2Deep: "第 2 层沟槽深度 {d} mm 已超过其外圆半径 {r} mm。",
   sugLayer2Deep: "减小第 2 层「随动器宽度」，或增大第 1 层「基圆直径」以放大第 2 层外径。",
+  alertLayer2DeepImpact: "第 2 层沟槽会切穿轴线，内芯不再是完整实体，STEP 导出已被阻止。",
+  impactPrefix: "影响：",
+  alertHeightViolation: "第 2 层工作面在 {ranges} 处低于第 1 层工作面的最高处（最多低 {n} mm）。",
+  alertHeightViolationImpact: "两层实体在轴向发生重叠，按此参数无法加工，STEP 导出已被阻止。",
+  alertHeightViolationSug: "把第 2 层「初始高度」从 {a} mm 提高到至少 {b} mm，即可全周高于第 1 层，且整体高度最小。",
+  alertCompoundNoFitImpact: "第 2 层沟槽无法完整落在其凸轮宽度内，实体模型无效，STEP 导出已被阻止。",
+  alertGrooveShift: "「初始高度」{ih} mm 使沟槽超出凸轮端面，模型需把沟槽沿轴向平移 {shift} mm 才能放下。",
+  alertGrooveShiftImpact: "沟槽实际高度会偏离你设定的初始高度，随动器相位与模型不一致。",
+  alertGrooveShiftSug: "把「初始高度」调整到 {min}~{max} mm 之间，或把「凸轮宽度」增大到至少 {need} mm。",
+  inputStale: "当前输入存在问题，下方图表与 3D 仍显示上一次有效结果（本次输入未参与计算）。",
+  alertOtherLayerBad: "另一层（{layer}）的参数无效，层间高度校核无法进行。",
+  alertOtherLayerBadSug: "切换到{layer}，按红色提示修正标红参数后再回到当前层。",
+  inputEmpty: "「{f}」未填写或格式无效。",
+  inputNaN: "「{f}」不是有效数字（当前输入“{v}”）。",
+  inputRange: "「{f}」超出允许范围：当前 {v}{unit}，允许 {min}~{max}{unit}。",
+  inputInt: "「{f}」必须是整数：当前 {v}。",
+  inputIssueImpact: "该参数无法参与计算，曲线、受力、3D 与 STEP 都不会按本次输入更新。",
+  inputEmptySug: "请填入一个有效数值。",
+  inputRangeSug: "请改为 {min}~{max}{unit} 之间的数值。",
+  inputIntSug: "请改为 {min}~{max} 之间的整数。",
+  alertSegAngle: "第 {i} 段「转角」无效（{v}），必须大于 0。",
+  alertSegAngleSug: "把该段转角改为大于 0 的数值，并保证所有分段转角合计 360°。",
+  alertSegLift: "第 {i} 段「升程」不是有效数字（{v}）。",
+  alertSegLiftSug: "填入该段结束时的轴向位移（mm）；回程段可小于上一段的位移。",
+  alertSegSpeed: "第 {i} 段「转速」无效（{v}），必须大于 0。",
+  alertSegSpeedSug: "改为大于 0 的转速，或勾选「跟随」使用全局转速。",
+  alertSegMass: "第 {i} 段「负载质量」无效（{v}），不能为负。",
+  alertSegMassSug: "改为 ≥ 0 的质量，或勾选「跟随」使用全局负载质量。",
+  alertRollerAngles: "随动器「相对角度」含无效内容：“{v}”。",
+  alertRollerAnglesSug: "只填数字并用逗号分隔，例如 120, 240。",
+  alertTransValue: "第 {i} 段「过渡长度/比例」无效（{v}），必须大于 0。",
+  alertTransValueSug: "填入大于 0 的过渡长度（mm）或过渡比例（%）。",
   alertTransShort: "第 {seg} 段梯形过渡长度 {l} mm 小于最小允许值 {d} mm（由随动器直径决定），当前 {cur}%，建议不小于 {r}%。",
   sugTransShort: "将过渡比例增大到 {r}% 以上，或增大该段转角/基圆直径，或减小随动器直径。",
   alertTransImpossible: "第 {seg} 段转角过小或随动器直径过大：最小过渡长度已超过该段弧长的 49%，无法形成有效梯形过渡（弧长 {arc} mm，随动器直径 {d} mm）。",
@@ -695,14 +731,44 @@ Object.assign(I18N.en, {
   layerHint: "Two coaxial layers nested radially in the same axial span. Layer 2 OD is taken from layer 1's groove floor diameter. Charts below show the current layer.",
   layerHint2: "Layer 2 OD is locked to layer 1's groove floor diameter ({d} mm). Charts below show layer 2.",
   baseDiaDerivedNote: "= layer 1 groove floor diameter (locked)",
-  alertCompoundRaised: "Layer 2 working surface is below layer 1 between {ranges}; layer 2 was raised automatically by {n} mm (initial height {a} → {b} mm).",
-  sugCompoundRaised: "To reduce total height, lower layer 2's lift or shift its low points away from layer 1's peaks; you may also set layer 2's initial height manually as long as it stays clear.",
   infoCompoundOk: "Compound cam: layer 2 stays above layer 1 over the full cycle; layer 2 OD = {d} mm, machinable.",
-  sugCompoundOk: "Adjust the relative height on the Layer 2 page; the tool re-checks and keeps them from overlapping.",
+  sugCompoundOk: "Adjust the relative height on the Layer 2 page; the tool checks every angle and reports the minimum required height.",
   alertCompoundNoFit: "Layer 2 groove spans {z} mm axially; its cam width must be at least {need} mm (currently {w} mm).",
   sugCompoundNoFit: "Increase layer 2's cam width to at least {need} mm, or reduce its lift / initial height.",
   alertLayer2Deep: "Layer 2 groove depth {d} mm exceeds its outer radius {r} mm.",
   sugLayer2Deep: "Reduce layer 2's follower width, or increase layer 1's base diameter to enlarge layer 2's OD.",
+  alertLayer2DeepImpact: "Layer 2's groove would cut through the axis, so the core is not a valid solid and STEP export is blocked.",
+  impactPrefix: "Impact: ",
+  alertHeightViolation: "Layer 2 working surface is below layer 1's highest working surface between {ranges} (by up to {n} mm).",
+  alertHeightViolationImpact: "The two solids overlap axially, so this cannot be machined as-is; STEP export is blocked.",
+  alertHeightViolationSug: "Raise layer 2's initial height from {a} mm to at least {b} mm; this keeps layer 2 above layer 1 everywhere with the smallest total height.",
+  alertCompoundNoFitImpact: "Layer 2's groove does not fit inside its cam width, so the solid is invalid and STEP export is blocked.",
+  alertGrooveShift: "Initial height {ih} mm pushes the groove past the cam face; the model would shift the groove axially by {shift} mm to fit.",
+  alertGrooveShiftImpact: "The groove would sit at a different height than you set, so the follower phase no longer matches the model.",
+  alertGrooveShiftSug: "Set the initial height within {min}~{max} mm, or raise the cam width to at least {need} mm.",
+  inputStale: "Some inputs are invalid; the charts and 3D still show the last valid result (these inputs were not used).",
+  alertOtherLayerBad: "The other layer ({layer}) has invalid parameters, so the inter-layer height check cannot run.",
+  alertOtherLayerBadSug: "Switch to {layer}, fix the fields marked in red, then return to this layer.",
+  inputEmpty: "\"{f}\" is empty or not a valid number.",
+  inputNaN: "\"{f}\" is not a valid number (current input \"{v}\").",
+  inputRange: "\"{f}\" is out of range: {v}{unit} (allowed {min}~{max}{unit}).",
+  inputInt: "\"{f}\" must be an integer: {v}.",
+  inputIssueImpact: "This value cannot be used, so curves, forces, 3D and STEP will not update for this input.",
+  inputEmptySug: "Enter a valid number.",
+  inputRangeSug: "Use a value between {min} and {max}{unit}.",
+  inputIntSug: "Use an integer between {min} and {max}.",
+  alertSegAngle: "Segment {i}: angle is invalid ({v}); it must be greater than 0.",
+  alertSegAngleSug: "Set the angle above 0 and keep the total of all segments at 360°.",
+  alertSegLift: "Segment {i}: lift is not a valid number ({v}).",
+  alertSegLiftSug: "Enter the axial displacement (mm) at the end of this segment; a return segment may be lower than the previous one.",
+  alertSegSpeed: "Segment {i}: speed is invalid ({v}); it must be greater than 0.",
+  alertSegSpeedSug: "Use a speed above 0, or check Follow to inherit the global speed.",
+  alertSegMass: "Segment {i}: load mass is invalid ({v}); it cannot be negative.",
+  alertSegMassSug: "Use a mass ≥ 0, or check Follow to inherit the global load mass.",
+  alertRollerAngles: "Follower relative angles contain invalid content: \"{v}\".",
+  alertRollerAnglesSug: "Enter numbers only, separated by commas, e.g. 120, 240.",
+  alertTransValue: "Segment {i}: blend length/ratio is invalid ({v}); it must be greater than 0.",
+  alertTransValueSug: "Enter a blend length (mm) or ratio (%) greater than 0.",
   alertTransShort: "Segment {seg}: trapezoid blend length {l} mm is below the minimum {d} mm (set by follower diameter); current {cur}%, recommended ≥ {r}%.",
   sugTransShort: "Increase the blend ratio to at least {r}%, or enlarge the segment angle / base diameter, or reduce the follower diameter.",
   alertTransImpossible: "Segment {seg}: the minimum blend length exceeds 49% of the segment arc, so a valid trapezoid cannot be formed (arc {arc} mm, follower dia {d} mm).",
@@ -768,14 +834,44 @@ Object.assign(I18N.ja, {
   layerHint: "2段は同軸・半径方向に入れ子状、同じ軸方向範囲を共有します。第2段の外径は第1段の溝底径から自動決定されます。下のグラフは現在の段を表示します。",
   layerHint2: "第2段の外径は第1段の溝底径 {d} mm に固定されています。下のグラフは第2段を表示します。",
   baseDiaDerivedNote: "= 第1段の溝底径（自動固定）",
-  alertCompoundRaised: "第2段の作用面が {ranges} で第1段より低いため、{n} mm 自動的に上げました（初期高さ {a} → {b} mm）。",
-  sugCompoundRaised: "全高を小さくしたい場合は、第2段のリフトを小さくするか、第2段の谷と第1段の山をずらしてください。手動で初期高さを下げることも可能です（重ならない範囲で）。",
   infoCompoundOk: "複合カム：第2段の作用面は全周で第1段より高く、第2段外径 = {d} mm、加工可能です。",
-  sugCompoundOk: "段間の高さは「第2段」ページで調整できます。重なりは自動で検査されます。",
+  sugCompoundOk: "段間の高さは「第2段」ページで調整できます。装置は全角度を検査し、必要な最小高さを提示します。",
   alertCompoundNoFit: "第2段の溝は軸方向 {z} mm を占め、カム幅は {need} mm 以上が必要です（現在 {w} mm）。",
   sugCompoundNoFit: "第2段の「カム幅」を {need} mm 以上に増やすか、リフト／初期高さを小さくしてください。",
   alertLayer2Deep: "第2段の溝深さ {d} mm が外半径 {r} mm を超えています。",
   sugLayer2Deep: "第2段のフォロワ幅を小さくするか、第1段の基準円直径を大きくして第2段外径を確保してください。",
+  alertLayer2DeepImpact: "第2段の溝が軸心を貫通し、内芯が完全なソリッドにならないため、STEP 出力はブロックされています。",
+  impactPrefix: "影響：",
+  alertHeightViolation: "第2段の作用面が {ranges} で第1段の最高作用面より低くなっています（最大 {n} mm 低い）。",
+  alertHeightViolationImpact: "2つのソリッドが軸方向で重なり、このままでは加工できません。STEP 出力はブロックされています。",
+  alertHeightViolationSug: "第2段の「初期高さ」を {a} mm から {b} mm 以上に上げてください。全周で第1段より高く、かつ全高が最小になります。",
+  alertCompoundNoFitImpact: "第2段の溝がカム幅に収まらないため、ソリッドが無効で STEP 出力はブロックされています。",
+  alertGrooveShift: "「初期高さ」{ih} mm では溝がカム端面を超えるため、モデルは溝を軸方向に {shift} mm ずらして収めます。",
+  alertGrooveShiftImpact: "溝の実際の高さが設定値とずれ、フォロワの位相とモデルが一致しません。",
+  alertGrooveShiftSug: "「初期高さ」を {min}~{max} mm に調整するか、「カム幅」を {need} mm 以上に増やしてください。",
+  inputStale: "入力に問題があるため、下のグラフと 3D は前回の有効な結果を表示しています（今回の入力は未使用）。",
+  alertOtherLayerBad: "もう一方の段（{layer}）のパラメータが無効なため、段間の高さ検査を実行できません。",
+  alertOtherLayerBadSug: "{layer} に切り替え、赤く示された項目を修正してからこの段に戻ってください。",
+  inputEmpty: "「{f}」が未入力または書式が不正です。",
+  inputNaN: "「{f}」が有効な数値ではありません（現在の入力「{v}」）。",
+  inputRange: "「{f}」が許容範囲外です：現在 {v}{unit}、許容 {min}~{max}{unit}。",
+  inputInt: "「{f}」は整数である必要があります：現在 {v}。",
+  inputIssueImpact: "この値は計算に使用できないため、曲線・力・3D・STEP は今回の入力で更新されません。",
+  inputEmptySug: "有効な数値を入力してください。",
+  inputRangeSug: "{min}~{max}{unit} の範囲の値にしてください。",
+  inputIntSug: "{min}~{max} の整数にしてください。",
+  alertSegAngle: "第 {i} 区間の「角度」が無効です（{v}）。0 より大きい必要があります。",
+  alertSegAngleSug: "角度を 0 より大きくし、全区間の合計が 360° になるようにしてください。",
+  alertSegLift: "第 {i} 区間の「リフト」が有効な数値ではありません（{v}）。",
+  alertSegLiftSug: "この区間終点の軸方向変位（mm）を入力してください。復帰区間は前区間より小さくても構いません。",
+  alertSegSpeed: "第 {i} 区間の「回転数」が無効です（{v}）。0 より大きい必要があります。",
+  alertSegSpeedSug: "0 より大きい回転数にするか、「追従」をオンにして全体の回転数を使用してください。",
+  alertSegMass: "第 {i} 区間の「負荷質量」が無効です（{v}）。負の値は不可です。",
+  alertSegMassSug: "0 以上の質量にするか、「追従」をオンにしてください。",
+  alertRollerAngles: "フォロワの「相対角度」に無効な内容があります：「{v}」。",
+  alertRollerAnglesSug: "数値のみをカンマ区切りで入力してください（例：120, 240）。",
+  alertTransValue: "第 {i} 区間の「遷移長さ/比率」が無効です（{v}）。0 より大きい必要があります。",
+  alertTransValueSug: "0 より大きい遷移長さ（mm）または遷移比率（%）を入力してください。",
   alertTransShort: "第 {seg} 区間：台形の遷移長さ {l} mm が最小値 {d} mm（フォロワ径で決定）未満です。現在 {cur}%、{r}% 以上を推奨。",
   sugTransShort: "遷移比率を {r}% 以上に増やすか、区間角度/基円径を大きくするか、フォロワ径を小さくしてください。",
   alertTransImpossible: "第 {seg} 区間：最小遷移長さが区間弧長の 49% を超え、有効な台形遷移を形成できません（弧長 {arc} mm、フォロワ径 {d} mm）。",
@@ -1059,7 +1155,9 @@ const App = {
     activeLayer: 0,             // 当前编辑/显示的层
     layerStore: [null, null],   // 每层缓存 { params, segments }
     ptsByLayer: [null, null],   // 每层点列
-    compoundInfo: null          // 复合校核结果（自动抬高量/违规区间）
+    compoundInfo: null,         // 复合校核结果（层间高度/嵌套可行性）
+    inputIssues: [],            // 当前输入自检结果（定位/影响/建议）
+    hasFatalInput: false        // 存在致命输入问题时不再重算
   },
 
   /* -------- 初始化 -------- */
@@ -1223,7 +1321,7 @@ const App = {
   getParamFields() {
     const n = (id) => parseFloat(document.getElementById(id).value);
     const s = (id) => document.getElementById(id).value;
-    const rollerCount = Math.max(1, parseInt(s('p_rollerCount')) || 1);
+    const rollerCount = parseInt(s('p_rollerCount'), 10);
     let rollerAngles = [];
     const raw = s('p_rollerAngles').trim();
     const parsed = raw ? raw.split(/[,;\s]+/).map(v => parseFloat(v)).filter(v => !isNaN(v)) : [];
@@ -1240,20 +1338,20 @@ const App = {
       rollerDia: n('p_rollerDia'),
       rollerWidth: n('p_rollerWidth'),
       initialHt: n('p_initialHt'),
-      resolution: Math.max(36, n('p_resolution') || 144),
+      resolution: n('p_resolution'),
       followerType: s('p_followerType'),
       handedness: s('p_handedness'),
-      offset: n('p_offset') || 0,
+      offset: n('p_offset'),
       motionDir: s('p_motionDir'),
-      tiltAngle: n('p_tiltAngle') || 0,
-      swingLen: n('p_swingLen') || 100,
-      fulcrumDist: n('p_fulcrumDist') || 80,
-      swingInitAngle: n('p_swingInitAngle') || 30,
+      tiltAngle: n('p_tiltAngle'),
+      swingLen: n('p_swingLen'),
+      fulcrumDist: n('p_fulcrumDist'),
+      swingInitAngle: n('p_swingInitAngle'),
       loadMass: n('p_loadMass'),
-      camSpeed: n('p_camSpeed') || 60,
-      springForce: n('p_springForce') || 0,
-      efficiency: (n('p_efficiency') || 95) / 100,
-      pressAngleLimit: n('p_pressAngleLimit') || 30,
+      camSpeed: n('p_camSpeed'),
+      springForce: n('p_springForce'),
+      efficiency: n('p_efficiency') / 100,
+      pressAngleLimit: n('p_pressAngleLimit'),
       rollerCount,
       rollerAngles
     };
@@ -1421,7 +1519,13 @@ const App = {
   setTransValue(i, val) {
     const seg = this.state.segments[i];
     const v = parseFloat(val);
-    if (!isFinite(v) || v <= 0) return;
+    if (!isFinite(v) || v <= 0) {
+      // 不静默改回旧值：保留用户输入并报错，由校验面板说明问题
+      seg._transBad = String(val);
+      this.scheduleCompute();
+      return;
+    }
+    seg._transBad = null;
     if (seg.transitionMode === 'length') {
       seg.transitionLength = v;
     } else {
@@ -1469,7 +1573,8 @@ const App = {
         // 刷新分段卡片中的过渡最小值/换算/警示（正在编辑分段输入框时跳过，避免打断输入）
         const ae = document.activeElement;
         const editingSeg = ae && ae.closest && ae.closest('#segList');
-        if (!editingSeg) this.renderSegTable(true);
+        // 输入有致命问题时保持表格原样，避免把用户刚输入的内容冲掉
+        if (!this.state.hasFatalInput && !editingSeg) this.renderSegTable(true);
       } catch (e) { console.error(e); }
     }, 300);
   },
@@ -1509,7 +1614,10 @@ const App = {
         const phi_in_seg = tau * phimax;
         const phi_abs = pts.length > 0 ? pts[pts.length - 1].phi + dphi : 0;
         // 用 MotionLaws 计算相对增量
-        const rel = MotionLaws.compute(seg.law, tau, Math.abs(hSeg), phimax, { transitionRatio: this.getSegTr(seg, Rb) });
+        // 梯形三次过渡公式仅在 e=2tr ≤ 0.5 时成立，tr 过大时位移会发散，这里做安全钳制
+        // （过渡长度不足仍由 validateInputs/过渡校核给出提示）
+        const trLaw = Math.min(this.getSegTr(seg, Rb), 0.25);
+        const rel = MotionLaws.compute(seg.law, tau, Math.abs(hSeg), phimax, { transitionRatio: trLaw });
         // 位移: s0 ± 量
         let ds = rel.s;
         if (hSeg < 0) ds = -rel.s;
@@ -1628,6 +1736,16 @@ const App = {
       }
     }
 
+    // 输入自检：有问题时明确报出位置/影响/建议，绝不静默改回旧值
+    const issues = this.validateInputs();
+    this.state.inputIssues = issues;
+    this.state.hasFatalInput = issues.some(x => x.level === 'E');
+    this.markBadInputs(issues);
+    if (this.state.hasFatalInput) {
+      this.renderInputIssues(issues);
+      return;
+    }
+
     const pts = this.buildPoints(p, segs);
     this.state.points = pts;
     this.state.dataVersion++;
@@ -1703,7 +1821,7 @@ const App = {
     set('p_swingLen', p.swingLen); set('p_fulcrumDist', p.fulcrumDist);
     set('p_swingInitAngle', p.swingInitAngle);
     set('p_loadMass', p.loadMass); set('p_springForce', p.springForce);
-    set('p_efficiency', Math.round((p.efficiency || 0.95) * 100));
+    set('p_efficiency', isFinite(p.efficiency) ? Math.round(p.efficiency * 100) : '');
     set('p_pressAngleLimit', p.pressAngleLimit);
     set('p_rollerCount', p.rollerCount);
     set('p_rollerAngles', (p.rollerAngles || []).join(', '));
@@ -1769,7 +1887,7 @@ const App = {
     return a.s + (b.s - a.s) * Math.max(0, Math.min(1, t));
   },
 
-  /* 复合校核：第2层工作面必须全程高于第1层；不满足则自动抬高第2层 */
+  /* 复合校核：第2层工作面必须全程高于第1层；不满足时只报告，不擅自改值 */
   compoundPrecheck() {
     const S = this.state.layerStore;
     const other = 1 - this.state.activeLayer;
@@ -1797,33 +1915,166 @@ const App = {
     }
     if (prevBad) ranges.push([startD, 360]);
 
-    let raised = 0;
-    if (need > 0) {
-      raised = +(need + 0.1).toFixed(2);
-      p2.initialHt = +(p2.initialHt + raised).toFixed(2);
-      const el = document.getElementById('p_initialHt');
-      if (this.state.activeLayer === 1 && el) el.value = p2.initialHt;
-    }
+    const hViolation = need > 1e-6;
+    const hNeed = hViolation ? +(p2.initialHt + need + 0.1).toFixed(2) : p2.initialHt;
     const g1 = this.grooveGeomFor(p1, P0);
     const g2 = this.grooveGeomFor(p2, P1);
-    // 抬高后第2层沟槽能否装进它自己的凸轮宽度
+    // 第2层沟槽能否装进它自己的凸轮宽度（按当前初始高度，不擅自改动）
     const sMin2 = Math.min.apply(null, P1.map(q => q.s));
     const sMax2 = Math.max.apply(null, P1.map(q => q.s));
     const zB = p2.initialHt + sMin2 - hw2;
     const zT = p2.initialHt + sMax2 + hw2;
     const fit2 = (zB >= 0.05) && (zT <= p2.camWidth - 0.05);
     this.state.compoundInfo = {
-      raised, ranges,
+      hViolation, need, hNeed, ranges,
       d2: this.derivedBaseDia2(),
       h1: p1.initialHt, h2: p2.initialHt,
       overflow1: g1.overflow, overflow2: g2.overflow,
+      shift1: g1.shift, shift2: g2.shift,
       fit2,
       fitInfo: {
         z: (zT - zB).toFixed(1),
         w: Number(p2.camWidth).toFixed(1),
-        need: Math.max(zT + 0.05, zT - zB + 0.1).toFixed(1)
+        need: (Math.max(zT, zT - zB) + 0.2).toFixed(1)
       }
     };
+  },
+
+  /* -------- 输入自检：定位 / 影响 / 建议（不静默改值） -------- */
+  fieldLabel(id) {
+    const el = document.getElementById(id);
+    const row = el && el.closest ? el.closest('.form-row') : null;
+    const lab = row ? row.querySelector('label') : null;
+    if (!lab) return id;
+    const span = lab.querySelector('[data-i18n]');
+    return (span ? span.textContent : lab.textContent).replace(/\s+/g, ' ').trim();
+  },
+
+  fmtNum(v) {
+    return (typeof v === 'number' && isFinite(v)) ? String(+v.toFixed(4)) : String(v);
+  },
+
+  numSpecs() {
+    return [
+      { id: 'p_baseDia', min: 1, unit: 'mm' },
+      { id: 'p_camWidth', min: 1, unit: 'mm' },
+      { id: 'p_rollerDia', min: 0.1, unit: 'mm' },
+      { id: 'p_rollerWidth', min: 0.1, unit: 'mm' },
+      { id: 'p_initialHt', min: 0, unit: 'mm' },
+      { id: 'p_resolution', min: 36, max: 36000, integer: true },
+      { id: 'p_rollerCount', min: 1, max: 8, integer: true },
+      { id: 'p_offset', min: -1e6, max: 1e6, unit: 'mm' },
+      { id: 'p_tiltAngle', min: -90, max: 90, unit: '°' },
+      { id: 'p_swingLen', min: 1, unit: 'mm' },
+      { id: 'p_fulcrumDist', min: 1, unit: 'mm' },
+      { id: 'p_swingInitAngle', min: -360, max: 360, unit: '°' },
+      { id: 'p_camSpeed', min: 0.1, unit: 'rpm' },
+      { id: 'p_loadMass', min: 0, unit: 'kg' },
+      { id: 'p_springForce', min: 0, unit: 'N' },
+      { id: 'p_efficiency', min: 10, max: 100, unit: '%' },
+      { id: 'p_pressAngleLimit', min: 5, max: 90, unit: '°' }
+    ];
+  },
+
+  validateInputs() {
+    const out = [];
+    const impact = this.t('inputIssueImpact');
+    const add = (level, id, text, sug, segIndex) => out.push({ level, id, text, impact, suggestion: sug, segIndex });
+
+    for (const spec of this.numSpecs()) {
+      const el = document.getElementById(spec.id);
+      if (!el) continue;
+      if (el.closest && el.closest('.hidden')) continue; // 隐藏的参数组不参与
+      const f = this.fieldLabel(spec.id);
+      const raw = String(el.value == null ? '' : el.value).trim();
+      const v = raw === '' ? NaN : Number(raw);
+      if (raw === '' || !isFinite(v)) {
+        add('E', spec.id,
+          raw === '' ? this.t('inputEmpty', { f }) : this.t('inputNaN', { f, v: raw }),
+          this.t('inputEmptySug'));
+        continue;
+      }
+      const min = spec.min != null ? spec.min : -Infinity;
+      const max = spec.max != null ? spec.max : Infinity;
+      const minTxt = min === -Infinity ? '−∞' : min;
+      const maxTxt = max === Infinity ? '∞' : max;
+      if (v < min || v > max) {
+        add('E', spec.id,
+          this.t('inputRange', { f, v: this.fmtNum(v), unit: spec.unit || '', min: minTxt, max: maxTxt }),
+          this.t('inputRangeSug', { min: minTxt, max: maxTxt, unit: spec.unit || '' }));
+        continue;
+      }
+      if (spec.integer && !Number.isInteger(v)) {
+        add('E', spec.id, this.t('inputInt', { f, v: this.fmtNum(v) }),
+          this.t('inputIntSug', { min: minTxt, max: maxTxt }));
+      }
+    }
+
+    // 复合模式：另一层缓存的参数也必须有效，否则层间校核无法进行
+    if (this.state.camType === 'compound') {
+      const other = 1 - this.state.activeLayer;
+      const O = this.state.layerStore[other];
+      if (O && O.params) {
+        const q = O.params;
+        const keys = ['baseDia', 'camWidth', 'rollerDia', 'rollerWidth', 'initialHt', 'camSpeed', 'loadMass', 'pressAngleLimit'];
+        const badParams = keys.some(k => !(typeof q[k] === 'number' && isFinite(q[k])));
+        const badSegs = (O.segments || []).some(sg =>
+          !(typeof sg.angle === 'number' && isFinite(sg.angle) && sg.angle > 0) ||
+          !(typeof sg.lift === 'number' && isFinite(sg.lift)));
+        if (badParams || badSegs) {
+          const lname = this.t(other === 0 ? 'layer1' : 'layer2');
+          add('E', null, this.t('alertOtherLayerBad', { layer: lname }),
+            this.t('alertOtherLayerBadSug', { layer: lname }));
+        }
+      }
+    }
+
+    // 随动器相对角度：只允许数字
+    const ra = document.getElementById('p_rollerAngles');
+    if (ra && String(ra.value).trim()) {
+      const toks = String(ra.value).trim().split(/[,;\s]+/).filter(Boolean);
+      const bad = toks.find(x => !isFinite(parseFloat(x)));
+      if (bad) add('E', 'p_rollerAngles', this.t('alertRollerAngles', { v: bad }), this.t('alertRollerAnglesSug'));
+    }
+
+    // 分段参数
+    (this.state.segments || []).forEach((seg, i) => {
+      const n = i + 1;
+      const val = (x) => (typeof x === 'number' && isFinite(x)) ? this.fmtNum(x) : '—';
+      if (!(typeof seg.angle === 'number' && isFinite(seg.angle) && seg.angle > 0))
+        add('E', null, this.t('alertSegAngle', { i: n, v: val(seg.angle) }), this.t('alertSegAngleSug'), i);
+      if (!(typeof seg.lift === 'number' && isFinite(seg.lift)))
+        add('E', null, this.t('alertSegLift', { i: n, v: val(seg.lift) }), this.t('alertSegLiftSug'), i);
+      if (seg.speed !== null && seg.speed !== undefined && !(isFinite(seg.speed) && seg.speed > 0))
+        add('E', null, this.t('alertSegSpeed', { i: n, v: val(seg.speed) }), this.t('alertSegSpeedSug'), i);
+      if (seg.mass !== null && seg.mass !== undefined && !(isFinite(seg.mass) && seg.mass >= 0))
+        add('E', null, this.t('alertSegMass', { i: n, v: val(seg.mass) }), this.t('alertSegMassSug'), i);
+      if (seg._transBad !== undefined && seg._transBad !== null && String(seg._transBad) !== '')
+        add('E', null, this.t('alertTransValue', { i: n, v: seg._transBad }), this.t('alertTransValueSug'), i);
+    });
+
+    return out;
+  },
+
+  markBadInputs(issues) {
+    document.querySelectorAll('.left-col .input-bad').forEach(el => el.classList.remove('input-bad'));
+    document.querySelectorAll('#segList .seg-bad').forEach(el => el.classList.remove('seg-bad'));
+    issues.forEach(x => {
+      if (x.id) {
+        const el = document.getElementById(x.id);
+        if (el) el.classList.add('input-bad');
+      }
+      if (x.segIndex != null) {
+        const card = document.querySelector(`#segList .seg-card[data-idx="${x.segIndex}"]`);
+        if (card) card.classList.add('seg-bad');
+      }
+    });
+  },
+
+  renderInputIssues(issues) {
+    const list = [{ level: 'I', text: this.t('inputStale') }].concat(issues);
+    this.state.alerts = list;
+    this.renderAlerts(list);
   },
 
   /* -------- 校验 -------- */
@@ -1959,9 +2210,26 @@ const App = {
       });
     }
 
+    // 沟槽轴向越界：模型会被迫平移沟槽，导致实际高度与设定不符
+    const pushShift = (gg, prefix) => {
+      if (!gg || gg.overflow || Math.abs(gg.shift) < 1e-6) return;
+      const lo = Math.max(0, gg.zMin), hi = gg.zMax;
+      const wNeed = (gg.z0req + gg.sMax + gg.halfW + 0.05).toFixed(1);
+      alerts.push({
+        level: 'E',
+        text: (prefix ? prefix + ' — ' : '') + this.t('alertGrooveShift', {
+          ih: this.fmtNum(gg.z0req), shift: Math.abs(gg.shift).toFixed(2),
+          min: lo.toFixed(2), max: hi.toFixed(2), need: wNeed
+        }),
+        impact: this.t('alertGrooveShiftImpact'),
+        suggestion: this.t('alertGrooveShiftSug', { min: lo.toFixed(2), max: hi.toFixed(2), need: wNeed })
+      });
+    };
+
     // 复合凸轮：层间高度关系
     if (compoundInfo) {
       const S = this.state.layerStore;
+      const p1 = S[0] && S[0].params;
       const p2 = S[1] && S[1].params;
       const ov = compoundInfo.overflow1 || compoundInfo.overflow2;
       if (ov) {
@@ -1971,10 +2239,24 @@ const App = {
           suggestion: this.t('sugGrooveOverflow', ov)
         });
       }
+      if (compoundInfo.hViolation) {
+        const rs = compoundInfo.ranges.slice(0, 4)
+          .map(r => `${r[0].toFixed(1)}°~${r[1].toFixed(1)}°`).join('、')
+          + (compoundInfo.ranges.length > 4 ? '…' : '');
+        alerts.push({
+          level: 'E',
+          text: this.t('alertHeightViolation', { ranges: rs || '—', n: compoundInfo.need.toFixed(2) }),
+          impact: this.t('alertHeightViolationImpact'),
+          suggestion: this.t('alertHeightViolationSug', {
+            a: compoundInfo.h2.toFixed(2), b: compoundInfo.hNeed.toFixed(2)
+          })
+        });
+      }
       if (compoundInfo.fit2 === false) {
         alerts.push({
           level: 'E',
           text: this.t('alertCompoundNoFit', compoundInfo.fitInfo),
+          impact: this.t('alertCompoundNoFitImpact'),
           suggestion: this.t('sugCompoundNoFit', compoundInfo.fitInfo)
         });
       }
@@ -1985,30 +2267,26 @@ const App = {
           alerts.push({
             level: 'E',
             text: this.t('alertLayer2Deep', { r: R2.toFixed(2), d: d2.toFixed(2) }),
+            impact: this.t('alertLayer2DeepImpact'),
             suggestion: this.t('sugLayer2Deep')
           });
         }
       }
-      if (compoundInfo.raised > 0) {
-        const ranges = compoundInfo.ranges
-          .map(r => `${r[0].toFixed(1)}°~${r[1].toFixed(1)}°`).join('、');
-        alerts.push({
-          level: 'W',
-          text: this.t('alertCompoundRaised', {
-            n: compoundInfo.raised.toFixed(2),
-            ranges: ranges || '—',
-            a: compoundInfo.h1.toFixed(2),
-            b: compoundInfo.h2.toFixed(2)
-          }),
-          suggestion: this.t('sugCompoundRaised')
-        });
-      } else if (compoundInfo.fit2 !== false) {
+      const gg1 = p1 ? this.grooveGeomFor(p1, this.state.ptsByLayer[0]) : null;
+      const gg2 = p2 ? this.grooveGeomFor(p2, this.state.ptsByLayer[1]) : null;
+      if (gg1) pushShift(gg1, this.t('layer1'));
+      if (gg2) pushShift(gg2, this.t('layer2'));
+
+      const shiftBad = [gg1, gg2].some(g => g && !g.overflow && Math.abs(g.shift) > 1e-6);
+      if (!compoundInfo.hViolation && compoundInfo.fit2 !== false && !shiftBad) {
         alerts.push({
           level: 'I',
           text: this.t('infoCompoundOk', { d: compoundInfo.d2.toFixed(2) }),
           suggestion: this.t('sugCompoundOk')
         });
       }
+    } else {
+      pushShift(this.grooveGeomFor(p, pts), '');
     }
 
     this.state.alerts = alerts;
@@ -2024,7 +2302,9 @@ const App = {
     box.innerHTML = alerts.slice(0, 20).map(a => {
       const levelCls = a.level === 'E' ? 'alert-e' : a.level === 'W' ? 'alert-w' : 'alert-i';
       const levelLabel = a.level === 'E' ? 'E' : a.level === 'W' ? '!' : 'i';
-      return `<div class="alert ${levelCls}"><span class="level">${levelLabel}</span><span class="body"><b>${a.text}</b><span class="suggestion">💡 ${a.suggestion}</span></span></div>`;
+      const impact = a.impact ? `<span class="impact">${this.t('impactPrefix')}${a.impact}</span>` : '';
+      const sug = a.suggestion ? `<span class="suggestion">💡 ${a.suggestion}</span>` : '';
+      return `<div class="alert ${levelCls}"><span class="level">${levelLabel}</span><span class="body"><b>${a.text}</b>${impact}${sug}</span></div>`;
     }).join('');
     if (alerts.length > 20) box.innerHTML += `<div class="alert alert-i"><span class="level">i</span><span class="body">${this.t('moreAlerts', { n: alerts.length - 20 })}</span></div>`;
   },
@@ -2880,7 +3160,8 @@ const App = {
     const sMin = pts.length ? Math.min.apply(null, pts.map(q => q.s)) : 0;
     const sMax = pts.length ? Math.max.apply(null, pts.map(q => q.s)) : 0;
     const need = 2 * halfW + (sMax - sMin) + 0.1;
-    let z0 = p.initialHt;                     // 沟槽中心 = 随动器起始高度
+    const z0req = p.initialHt;                // 沟槽中心 = 随动器起始高度（用户设定）
+    let z0 = z0req;
     let overflow = null;
     if (need > zHigh) {
       overflow = {
@@ -2891,7 +3172,9 @@ const App = {
       if (z0 + sMin - halfW < 0.05) z0 += 0.05 - (z0 + sMin - halfW);
       if (z0 + sMax + halfW > zHigh - 0.05) z0 -= (z0 + sMax + halfW) - (zHigh - 0.05);
     }
-    return { R, halfW, depth, rIn, zLow, zHigh, z0, sMin, sMax, overflow };
+    const zMin = 0.05 - sMin + halfW;         // 可容纳沟槽的初始高度下限
+    const zMax = zHigh - 0.05 - sMax - halfW; // 上限
+    return { R, halfW, depth, rIn, zLow, zHigh, z0, z0req, shift: z0 - z0req, zMin, zMax, need, sMin, sMax, overflow };
   },
 
   camGrooveGeom() {
@@ -2922,6 +3205,12 @@ const App = {
   exportSTEP() {
     const pts = this.state.points;
     if (!pts || pts.length === 0) { alert(this.t('needCompute')); return; }
+    if (this.state.hasFatalInput) {
+      const first = (this.state.inputIssues || []).find(x => x.level === 'E');
+      alert((first ? first.text + '\n' + (first.impact || '') + '\n' : '') +
+        (first && first.suggestion ? first.suggestion : this.t('inputStale')));
+      return;
+    }
 
     /* ---- 实体定义（mm）----
        单层: 圆柱毛坯 − 沟槽（一条通道）
@@ -2947,6 +3236,13 @@ const App = {
         alert(this.t('alertCompoundNoFit', info.fitInfo) + '\n' + this.t('sugCompoundNoFit', info.fitInfo));
         return;
       }
+      if (info && info.hViolation) {
+        alert(this.t('alertHeightViolation', {
+          ranges: info.ranges.map(r => `${r[0].toFixed(1)}°~${r[1].toFixed(1)}°`).join('、'),
+          n: info.need.toFixed(2)
+        }) + '\n' + this.t('alertHeightViolationSug', { a: info.h2.toFixed(2), b: info.hNeed.toFixed(2) }));
+        return;
+      }
       const g1 = this.grooveGeomFor(L1.params, this.state.ptsByLayer[0]);
       const g2 = this.grooveGeomFor(L2.params, this.state.ptsByLayer[1]);
       if (g1.overflow) {
@@ -2955,6 +3251,22 @@ const App = {
       }
       if (g2.overflow) {
         alert(this.t('alertGrooveOverflow', g2.overflow) + '\n' + this.t('sugGrooveOverflow', g2.overflow));
+        return;
+      }
+      if (g2.R - g2.depth <= 1) {
+        alert(this.t('alertLayer2Deep', { r: g2.R.toFixed(2), d: g2.depth.toFixed(2) }) + '\n' + this.t('sugLayer2Deep'));
+        return;
+      }
+      const shiftBody = Math.abs(g1.shift) >= Math.abs(g2.shift) ? g1 : g2;
+      if (Math.abs(shiftBody.shift) > 1e-6) {
+        const lo = Math.max(0, shiftBody.zMin), hi = shiftBody.zMax;
+        const wNeed = (shiftBody.z0req + shiftBody.sMax + shiftBody.halfW + 0.05).toFixed(1);
+        alert(this.t('alertGrooveShift', {
+          ih: this.fmtNum(shiftBody.z0req), shift: Math.abs(shiftBody.shift).toFixed(2),
+          min: lo.toFixed(2), max: hi.toFixed(2), need: wNeed
+        }) + '\n' + this.t('alertGrooveShiftSug', {
+          min: lo.toFixed(2), max: hi.toFixed(2), need: wNeed
+        }));
         return;
       }
       const floorGap = 0.1; // 外套环槽底与内孔之间的余量（保证环仍是一整块）
@@ -2974,6 +3286,17 @@ const App = {
       const geom = this.camGrooveGeom();
       if (geom.overflow) {
         alert(this.t('alertGrooveOverflow', geom.overflow) + '\n' + this.t('sugGrooveOverflow', geom.overflow));
+        return;
+      }
+      if (Math.abs(geom.shift) > 1e-6) {
+        const lo = Math.max(0, geom.zMin), hi = geom.zMax;
+        const wNeed = (geom.z0req + geom.sMax + geom.halfW + 0.05).toFixed(1);
+        alert(this.t('alertGrooveShift', {
+          ih: this.fmtNum(geom.z0req), shift: Math.abs(geom.shift).toFixed(2),
+          min: lo.toFixed(2), max: hi.toFixed(2), need: wNeed
+        }) + '\n' + this.t('alertGrooveShiftSug', {
+          min: lo.toFixed(2), max: hi.toFixed(2), need: wNeed
+        }));
         return;
       }
       bodies.push({
