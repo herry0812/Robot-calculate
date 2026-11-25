@@ -2404,59 +2404,127 @@ const App = {
     const p = this.state.params;
     if (!pts || pts.length === 0) { alert(this.t('needCompute')); return; }
 
-    // 用离散点生成 STEP 文件（圆柱轮廓工作表面）
-    // 简化方案: 输出点云 + 基本几何实体
+    /* ---- 生成"槽实体"扫掠网格（mm）----
+       截面: 轴向宽 Wg = 随动器直径 + 间隙, 径向深 Hd = 随动器宽度 + 间隙
+       扫掠路径: (R·cosφ, R·sinφ, z0 + s(φ))，沿整周闭合
+       输出: AP214 面片实体 (MANIFOLD_SOLID_BREP + CLOSED_SHELL, POLY_LOOP 平面片)
+       用途: 在 CAD 中与凸轮毛坯做布尔减，得到沟槽 */
+    const R = p.baseDia / 2;
+    const clearW = 0.2, clearD = 1.0, overTop = 1.0;
+    const halfW = (p.rollerDia + clearW) / 2;
+    const depth = p.rollerWidth + clearD;
+    const rIn = R - depth, rOut = R + overTop;
+    const sMin = Math.min.apply(null, pts.map(q => q.s));
+    const sMax = Math.max.apply(null, pts.map(q => q.s));
+    const z0 = (p.camWidth - (sMax - sMin)) / 2 - sMin;
+    const N = 720; // 每 0.5° 一段
+    const sAt = (deg) => {
+      const d = ((deg % 360) + 360) % 360;
+      const i = Math.min(pts.length - 2, Math.floor(d / 360 * (pts.length - 1)));
+      const a = pts[i], b = pts[i + 1] || a;
+      const t = (d - a.phi) / ((b.phi - a.phi) || 1);
+      return a.s + (b.s - a.s) * Math.max(0, Math.min(1, t));
+    };
+    const V = [];   // [i][k] = [x,y,z]
+    const idx = []; // [i][k] = STEP 点编号
+    for (let i = 0; i < N; i++) {
+      const ph = i * 2 * Math.PI / N, z = z0 + sAt(i * 360 / N);
+      const cx = Math.cos(ph), sy = Math.sin(ph);
+      V.push([
+        [rOut * cx, rOut * sy, z - halfW],
+        [rOut * cx, rOut * sy, z + halfW],
+        [rIn * cx, rIn * sy, z + halfW],
+        [rIn * cx, rIn * sy, z - halfW]
+      ]);
+    }
+
     const lines = [];
     const push = (s = '') => lines.push(s);
+    let id = 0;
+    const nid = () => ++id;
 
     push('ISO-10303-21;');
     push('HEADER;');
-    push('FILE_DESCRIPTION(("Cylindrical Cam Design"), "2;1");');
-    push(`FILE_NAME("cam-design-${Date.now()}.step", "${new Date().toISOString()}", ("Author"), ("Organization"), "Tool", "Schema", "");`);
-    push('FILE_SCHEMA(("AUTOMOTIVE_DESIGN"));');
+    push("FILE_DESCRIPTION(('Cylindrical cam groove swept solid'),'2;1');");
+    push(`FILE_NAME('cam-groove-${new Date().toISOString().slice(0, 10)}.step','${new Date().toISOString()}',('TraeCam'),(''),'facets','','');`);
+    push("FILE_SCHEMA(('AUTOMOTIVE_DESIGN'));");
     push('ENDSEC;');
     push('DATA;');
 
-    let id = 1;
-    const newId = () => ++id;
+    const ctx = nid();
+    const a1 = nid(), a2 = nid(), a3 = nid();
+    const pr = nid(), pcf = nid(), pdf = nid(), pdc = nid(), pd = nid(), pds = nid(), sdr = nid();
+    const rep = nid();
+    push(`#${a1}=APPLICATION_CONTEXT('automotive design');`);
+    push(`#${a2}=APPLICATION_PROTOCOL_DEFINITION('international standard','automotive_design',2000,#${a1});`);
+    push(`#${a3}=PRODUCT_CONTEXT('',#${a1},'mechanical');`);
+    push(`#${pr}=PRODUCT('CamGroove','Cam Groove','',(#${a3}));`);
+    push(`#${pcf}=PRODUCT_DEFINITION_FORMATION('','',#${pr});`);
+    push(`#${pdc}=PRODUCT_DEFINITION_CONTEXT('part definition',#${a1},'design');`);
+    push(`#${pd}=PRODUCT_DEFINITION('design','',#${pcf},#${pdc});`);
+    push(`#${pdf}=PRODUCT_DEFINITION_SHAPE('','',#${pd});`);
+    push(`#${sdr}=SHAPE_DEFINITION_REPRESENTATION(#${pdf},#${rep});`);
 
-    // 定义产品
-    push(`#${newId()}=PRODUCT('CylindricalCam','Cylindrical Cam',#${newId()},#${newId()});`);
-    push(`#${newId()}=PRODUCT_CONTEXT('Mechanical', '', #${newId()}, 'mechanical');`);
-    push(`#${newId()}=PRODUCT_DEFINITION_CONTEXT('Part definition', #${newId()});`);
-    push(`#${newId()}=PRODUCT_DEFINITION(#${newId()}, #${newId()}, #${newId()}, #${newId()});`);
+    const u1 = nid(), u2 = nid(), u3 = nid(), unc = nid();
+    push(`#${u1}=(LENGTH_UNIT() NAMED_UNIT(*) SI_UNIT(.MILLI.,.METRE.));`);
+    push(`#${u2}=(NAMED_UNIT(*) PLANE_ANGLE_UNIT() SI_UNIT($,.RADIAN.));`);
+    push(`#${u3}=(NAMED_UNIT(*) SOLID_ANGLE_UNIT() SI_UNIT($,.STERADIAN.));`);
+    push(`#${unc}=UNCERTAINTY_MEASURE_WITH_UNIT(LENGTH_MEASURE(0.001),#${u1},'distance_accuracy_value','');`);
+    push(`#${ctx}=(GEOMETRIC_REPRESENTATION_CONTEXT(3) GLOBAL_UNCERTAINTY_ASSIGNED_CONTEXT((#${unc})) GLOBAL_UNIT_ASSIGNED_CONTEXT((#${u1},#${u2},#${u3})) REPRESENTATION_CONTEXT('',''));`);
 
-    // 点列表 (每个点)
-    const points3d = pts.map(pt => {
-      // 工作轮廓三维坐标
-      const Rb = p.baseDia / 2;
-      const dR = p.rollerDia / 2;
-      // 工作轮廓 = 理论轮廓 + 法线向外偏移 dR
-      // 理论轮廓 3D: (Rb·cosφ, Rb·sinφ, s)
-      // 法线: 在圆柱上，径向朝外 + 轴向偏移由轮廓曲率决定
-      // 简化: 把工作轮廓的 x/y 加上径向向外偏移
-      const phi_rad = pt.phi * Math.PI / 180;
-      const nx = Math.cos(phi_rad);
-      const ny = Math.sin(phi_rad);
-      // 叠加轮廓切向
-      const tx = -Math.sin(phi_rad);
-      const ty = Math.cos(phi_rad);
-      const t = pt.vRad / Math.sqrt(Rb * Rb + pt.vRad * pt.vRad);
-      // 法线方向 = 径向向外 - 切向分量（因为轮廓上升，法线有切向偏移）
-      const normalX = nx - t * tx;
-      const normalY = ny - t * ty;
-      const normalLen = Math.sqrt(normalX * normalX + normalY * normalY);
-      // 直接用近似: 工作轮廓 = 理论轮廓 + dR * (nx, ny, slope)
-      const wX = Rb * Math.cos(phi_rad) + dR * nx;
-      const wY = Rb * Math.sin(phi_rad) + dR * ny;
-      const wZ = pt.s;
-      return [wX / 1000, wY / 1000, wZ / 1000]; // mm -> m
-    });
+    // 顶点
+    const ptId = [];
+    for (let i = 0; i < N; i++) {
+      ptId.push([]);
+      for (let k = 0; k < 4; k++) {
+        const v = V[i][k];
+        const pid = nid();
+        push(`#${pid}=CARTESIAN_POINT('',(${v[0].toFixed(4)},${v[1].toFixed(4)},${v[2].toFixed(4)}));`);
+        ptId[i].push(pid);
+      }
+    }
 
-    // 写 CARTESIAN_POINT
-    points3d.forEach(p3 => {
-      push(`#${newId()}=CARTESIAN_POINT('', (${p3[0].toFixed(6)}, ${p3[1].toFixed(6)}, ${p3[2].toFixed(6)}));`);
-    });
+    // 面片：4 条环带（外顶 / 内底 / +z 槽壁 / -z 槽壁），闭合成环
+    const faces = [];
+    const addQuad = (a, b, c, d) => {
+      const A = V[a[0]][a[1]], B = V[b[0]][b[1]], C = V[c[0]][c[1]];
+      // 法向
+      const e1 = [B[0] - A[0], B[1] - A[1], B[2] - A[2]];
+      const e2 = [C[0] - B[0], C[1] - B[1], C[2] - B[2]];
+      let nx = e1[1] * e2[2] - e1[2] * e2[1];
+      let ny = e1[2] * e2[0] - e1[0] * e2[2];
+      let nz = e1[0] * e2[1] - e1[1] * e2[0];
+      const nl = Math.hypot(nx, ny, nz) || 1;
+      nx /= nl; ny /= nl; nz /= nl;
+      const loop = nid();
+      push(`#${loop}=POLY_LOOP('',(#${ptId[a[0]][a[1]]},#${ptId[b[0]][b[1]]},#${ptId[c[0]][c[1]]},#${ptId[d[0]][d[1]]}));`);
+      const bound = nid();
+      push(`#${bound}=FACE_OUTER_BOUND('',#${loop},.T.);`);
+      const org = nid(), ax = nid(), rf = nid(), pl = nid();
+      const rl = Math.hypot(e1[0], e1[1], e1[2]) || 1;
+      push(`#${org}=CARTESIAN_POINT('',(${A[0].toFixed(4)},${A[1].toFixed(4)},${A[2].toFixed(4)}));`);
+      push(`#${ax}=DIRECTION('',(${nx.toFixed(6)},${ny.toFixed(6)},${nz.toFixed(6)}));`);
+      push(`#${rf}=DIRECTION('',(${(e1[0] / rl).toFixed(6)},${(e1[1] / rl).toFixed(6)},${(e1[2] / rl).toFixed(6)}));`);
+      push(`#${pl}=AXIS2_PLACEMENT_3D('',#${org},#${ax},#${rf});`);
+      const surf = nid();
+      push(`#${surf}=PLANE('',#${pl});`);
+      const face = nid();
+      push(`#${face}=FACE_SURFACE('',(#${bound}),#${surf},.T.);`);
+      faces.push(face);
+    };
+    for (let i = 0; i < N; i++) {
+      const j = (i + 1) % N;
+      addQuad([i, 0], [j, 0], [j, 1], [i, 1]); // 外顶面（径向朝外）
+      addQuad([i, 2], [j, 2], [j, 3], [i, 3]); // 内底面
+      addQuad([i, 1], [j, 1], [j, 2], [i, 2]); // 槽壁 +z
+      addQuad([i, 3], [j, 3], [j, 0], [i, 0]); // 槽壁 -z
+    }
+
+    const shell = nid();
+    push(`#${shell}=CLOSED_SHELL('',(${faces.map(f => '#' + f).join(',')}));`);
+    const brep = nid();
+    push(`#${brep}=MANIFOLD_SOLID_BREP('CamGroove',#${shell});`);
+    push(`#${rep}=ADVANCED_BREP_SHAPE_REPRESENTATION('CamGroove',(#${brep}),#${ctx});`);
 
     push('ENDSEC;');
     push('END-ISO-10303-21;');
@@ -2466,7 +2534,7 @@ const App = {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `cam-design-${new Date().toISOString().slice(0, 10)}.step`;
+    a.download = `cam-groove-${new Date().toISOString().slice(0, 10)}.step`;
     a.click();
     URL.revokeObjectURL(url);
   },
