@@ -2206,15 +2206,71 @@ const App = {
       const X = Rb * Math.cos(th), Y = Rb * Math.sin(th);
       const z = liftAtWorld(worldDeg);
       const rollerCenter = project(X, Y, z);
-      // 随动器宽度（沿凸轮轴向）示意
-      const wHalf = Math.max((p.rollerWidth || 20) / 2, 1);
-      const rA = project(X, Y, z - wHalf), rB = project(X, Y, z + wHalf);
-      ctx.strokeStyle = '#d9480f'; ctx.lineWidth = 5; ctx.lineCap = 'butt';
-      ctx.beginPath(); ctx.moveTo(rA.x, rA.y); ctx.lineTo(rB.x, rB.y); ctx.stroke();
-      ctx.fillStyle = '#ff922b'; ctx.beginPath();
-      ctx.arc(rollerCenter.x, rollerCenter.y, 6, 0, Math.PI * 2); ctx.fill();
-      ctx.strokeStyle = '#d9480f'; ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.arc(rollerCenter.x, rollerCenter.y, 6, 0, Math.PI * 2); ctx.stroke();
+
+      // ---- 随动器：按实际尺寸画成圆柱实体（直径 rollerDia × 宽 rollerWidth，轴线沿径向）----
+      const rr = Math.max(1, (p.rollerDia || 20) / 2);      // 滚子半径（跨凸轮轴向）
+      const hl = Math.max(0.5, (p.rollerWidth || 20) / 2);   // 滚子半宽（沿径向）
+      const Rc = Math.max(rr * 0.2 + hl, Rb - 0.5 - hl);     // 滚子中心半径（落在槽深中部）
+      const ux = Math.cos(th), uy = Math.sin(th);            // 径向单位向量 = 滚子轴线
+      const vx = -uy, vy = ux;                               // 周向单位向量
+      const SEGR = 28;
+      const mkCap = (s) => {
+        const cc = [Rc * ux + s * hl * ux, Rc * uy + s * hl * uy, z];
+        const out = [];
+        for (let k = 0; k < SEGR; k++) {
+          const ps = 2 * Math.PI * k / SEGR;
+          out.push(project(
+            cc[0] + Math.cos(ps) * rr * vx,
+            cc[1] + Math.cos(ps) * rr * vy,
+            cc[2] + Math.sin(ps) * rr
+          ));
+        }
+        return out;
+      };
+      const capA = mkCap(-1), capB = mkCap(1);
+      // 投影轮廓（凸包）→ 半透明实体
+      const hpts = capA.concat(capB).sort((m, n) => m.x - n.x || m.y - n.y);
+      const crs = (o, a, b) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+      const lo = [], up = [];
+      for (const q of hpts) {
+        while (lo.length >= 2 && crs(lo[lo.length - 2], lo[lo.length - 1], q) <= 0) lo.pop();
+        lo.push(q);
+      }
+      for (let i = hpts.length - 1; i >= 0; i--) {
+        const q = hpts[i];
+        while (up.length >= 2 && crs(up[up.length - 2], up[up.length - 1], q) <= 0) up.pop();
+        up.push(q);
+      }
+      lo.pop(); up.pop();
+      const hull = lo.concat(up);
+      ctx.beginPath();
+      hull.forEach((q, i) => i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y));
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(255,146,43,0.42)'; ctx.fill();
+
+      // 两条端面圆边线
+      ctx.strokeStyle = '#d9480f'; ctx.lineWidth = 1.3;
+      [capA, capB].forEach(cap => {
+        ctx.beginPath();
+        cap.forEach((q, i) => i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y));
+        ctx.closePath(); ctx.stroke();
+      });
+      // 侧面轮廓母线（轮廓最外两点连线）
+      const pA = project(Rc * ux - hl * ux, Rc * uy - hl * uy, z);
+      const pB = project(Rc * ux + hl * ux, Rc * uy + hl * uy, z);
+      const axl = pB.x - pA.x, ayl = pB.y - pA.y;
+      const alen = Math.hypot(axl, ayl) || 1;
+      const nx2 = -ayl / alen, ny2 = axl / alen;
+      let iMax = 0, iMin = 0, dMax = -1e9, dMin = 1e9;
+      for (let k = 0; k < SEGR; k++) {
+        const d = (capA[k].x - pA.x) * nx2 + (capA[k].y - pA.y) * ny2;
+        if (d > dMax) { dMax = d; iMax = k; }
+        if (d < dMin) { dMin = d; iMin = k; }
+      }
+      ctx.beginPath();
+      ctx.moveTo(capA[iMax].x, capA[iMax].y); ctx.lineTo(capB[iMax].x, capB[iMax].y);
+      ctx.moveTo(capA[iMin].x, capA[iMin].y); ctx.lineTo(capB[iMin].x, capB[iMin].y);
+      ctx.stroke();
 
       ctx.strokeStyle = '#868e96'; ctx.lineWidth = 3; ctx.lineCap = 'round';
       if (p.followerType === 'swing') {
