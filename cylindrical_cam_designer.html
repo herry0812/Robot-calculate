@@ -2407,7 +2407,11 @@ const App = {
     /* ---- 生成"槽实体"扫掠网格（mm）----
        截面: 轴向宽 Wg = 随动器直径 + 间隙, 径向深 Hd = 随动器宽度 + 间隙
        扫掠路径: (R·cosφ, R·sinφ, z0 + s(φ))，沿整周闭合
-       输出: AP214 面片实体 (MANIFOLD_SOLID_BREP + CLOSED_SHELL, POLY_LOOP 平面片)
+       输出: AP214 实体 B-rep (MANIFOLD_SOLID_BREP → CLOSED_SHELL →
+             ADVANCED_FACE → FACE_OUTER_BOUND → EDGE_LOOP → ORIENTED_EDGE →
+             EDGE_CURVE(LINE) + VERTEX_POINT + CARTESIAN_POINT)
+       每个四边面片三角化，保证面严格共面；每条棱恰好被 2 个面反向引用，
+       构成闭合水密实体（导入 CAD 即为实体，不是曲面/曲线）
        用途: 在 CAD 中与凸轮毛坯做布尔减，得到沟槽 */
     const R = p.baseDia / 2;
     const clearW = 0.2, clearD = 1.0, overTop = 1.0;
@@ -2417,7 +2421,7 @@ const App = {
     const sMin = Math.min.apply(null, pts.map(q => q.s));
     const sMax = Math.max.apply(null, pts.map(q => q.s));
     const z0 = (p.camWidth - (sMax - sMin)) / 2 - sMin;
-    const N = 720; // 每 0.5° 一段
+    const N = 360; // 每 1° 一段
     const sAt = (deg) => {
       const d = ((deg % 360) + 360) % 360;
       const i = Math.min(pts.length - 2, Math.floor(d / 360 * (pts.length - 1)));
@@ -2425,18 +2429,22 @@ const App = {
       const t = (d - a.phi) / ((b.phi - a.phi) || 1);
       return a.s + (b.s - a.s) * Math.max(0, Math.min(1, t));
     };
-    const V = [];   // [i][k] = [x,y,z]
-    const idx = []; // [i][k] = STEP 点编号
+    // 顶点编号 gi(i,k) = i*4 + k，k: 0=外- 1=外+ 2=内+ 3=内-
+    const V = [];    // [i][k] = [x,y,z]
+    const vert = []; // 扁平顶点表
     for (let i = 0; i < N; i++) {
       const ph = i * 2 * Math.PI / N, z = z0 + sAt(i * 360 / N);
       const cx = Math.cos(ph), sy = Math.sin(ph);
-      V.push([
+      const row = [
         [rOut * cx, rOut * sy, z - halfW],
         [rOut * cx, rOut * sy, z + halfW],
         [rIn * cx, rIn * sy, z + halfW],
         [rIn * cx, rIn * sy, z - halfW]
-      ]);
+      ];
+      V.push(row);
+      for (let k = 0; k < 4; k++) vert.push(row[k]);
     }
+    const gi = (i, k) => i * 4 + k;
 
     const lines = [];
     const push = (s = '') => lines.push(s);
@@ -2446,7 +2454,7 @@ const App = {
     push('ISO-10303-21;');
     push('HEADER;');
     push("FILE_DESCRIPTION(('Cylindrical cam groove swept solid'),'2;1');");
-    push(`FILE_NAME('cam-groove-${new Date().toISOString().slice(0, 10)}.step','${new Date().toISOString()}',('TraeCam'),(''),'facets','','');`);
+    push(`FILE_NAME('cam-groove-${new Date().toISOString().slice(0, 10)}.step','${new Date().toISOString()}',('TraeCam'),(''),'solid','','');`);
     push("FILE_SCHEMA(('AUTOMOTIVE_DESIGN'));");
     push('ENDSEC;');
     push('DATA;');
@@ -2472,45 +2480,78 @@ const App = {
     push(`#${unc}=UNCERTAINTY_MEASURE_WITH_UNIT(LENGTH_MEASURE(0.001),#${u1},'distance_accuracy_value','');`);
     push(`#${ctx}=(GEOMETRIC_REPRESENTATION_CONTEXT(3) GLOBAL_UNCERTAINTY_ASSIGNED_CONTEXT((#${unc})) GLOBAL_UNIT_ASSIGNED_CONTEXT((#${u1},#${u2},#${u3})) REPRESENTATION_CONTEXT('',''));`);
 
-    // 顶点
-    const ptId = [];
-    for (let i = 0; i < N; i++) {
-      ptId.push([]);
-      for (let k = 0; k < 4; k++) {
-        const v = V[i][k];
-        const pid = nid();
-        push(`#${pid}=CARTESIAN_POINT('',(${v[0].toFixed(4)},${v[1].toFixed(4)},${v[2].toFixed(4)}));`);
-        ptId[i].push(pid);
-      }
+    // 顶点：CARTESIAN_POINT + VERTEX_POINT
+    const cpId = [], vpId = [];
+    for (let g = 0; g < vert.length; g++) {
+      const v = vert[g];
+      const cp = nid();
+      push(`#${cp}=CARTESIAN_POINT('',(${v[0].toFixed(4)},${v[1].toFixed(4)},${v[2].toFixed(4)}));`);
+      const vp = nid();
+      push(`#${vp}=VERTEX_POINT('',#${cp});`);
+      cpId.push(cp); vpId.push(vp);
     }
 
-    // 面片：4 条环带（外顶 / 内底 / +z 槽壁 / -z 槽壁），闭合成环
+    // 棱：按"无向顶点对"去重，每条棱生成一次 EDGE_CURVE（低编号→高编号）
+    const edgeCache = new Map();
+    const getEdge = (a, b) => {
+      const lo = a < b ? a : b, hi = a < b ? b : a;
+      const key = lo + '_' + hi;
+      let e = edgeCache.get(key);
+      if (!e) {
+        const P = vert[lo], Q = vert[hi];
+        const dx = Q[0] - P[0], dy = Q[1] - P[1], dz = Q[2] - P[2];
+        const len = Math.hypot(dx, dy, dz) || 1e-9;
+        const dir = nid();
+        push(`#${dir}=DIRECTION('',(${(dx / len).toFixed(9)},${(dy / len).toFixed(9)},${(dz / len).toFixed(9)}));`);
+        const vec = nid();
+        push(`#${vec}=VECTOR('',#${dir},${len.toFixed(6)});`);
+        const line = nid();
+        push(`#${line}=LINE('',#${cpId[lo]},#${vec});`);
+        const ec = nid();
+        push(`#${ec}=EDGE_CURVE('',#${vpId[lo]},#${vpId[hi]},#${line},.T.);`);
+        e = { id: ec, from: lo };
+        edgeCache.set(key, e);
+      }
+      return { id: e.id, same: a === e.from };
+    };
+
+    // 面：每个三角面 = EDGE_LOOP → FACE_OUTER_BOUND → ADVANCED_FACE(PLANE)
     const faces = [];
-    const addQuad = (a, b, c, d) => {
-      const A = V[a[0]][a[1]], B = V[b[0]][b[1]], C = V[c[0]][c[1]];
-      // 法向
-      const e1 = [B[0] - A[0], B[1] - A[1], B[2] - A[2]];
-      const e2 = [C[0] - B[0], C[1] - B[1], C[2] - B[2]];
-      let nx = e1[1] * e2[2] - e1[2] * e2[1];
-      let ny = e1[2] * e2[0] - e1[0] * e2[2];
-      let nz = e1[0] * e2[1] - e1[1] * e2[0];
-      const nl = Math.hypot(nx, ny, nz) || 1;
+    const addTri = (ga, gb, gc) => {
+      const A = vert[ga], B = vert[gb], C = vert[gc];
+      let nx = (B[1] - A[1]) * (C[2] - A[2]) - (B[2] - A[2]) * (C[1] - A[1]);
+      let ny = (B[2] - A[2]) * (C[0] - A[0]) - (B[0] - A[0]) * (C[2] - A[2]);
+      let nz = (B[0] - A[0]) * (C[1] - A[1]) - (B[1] - A[1]) * (C[0] - A[0]);
+      const nl = Math.hypot(nx, ny, nz);
+      if (nl < 1e-12) return; // 退化三角（零面积）跳过
       nx /= nl; ny /= nl; nz /= nl;
+      const mkOE = (u, w) => {
+        const ed = getEdge(u, w);
+        const oe = nid();
+        push(`#${oe}=ORIENTED_EDGE('',*,*,#${ed.id},${ed.same ? '.T.' : '.F.'});`);
+        return oe;
+      };
+      const oe1 = mkOE(ga, gb), oe2 = mkOE(gb, gc), oe3 = mkOE(gc, ga);
       const loop = nid();
-      push(`#${loop}=POLY_LOOP('',(#${ptId[a[0]][a[1]]},#${ptId[b[0]][b[1]]},#${ptId[c[0]][c[1]]},#${ptId[d[0]][d[1]]}));`);
+      push(`#${loop}=EDGE_LOOP('',(#${oe1},#${oe2},#${oe3}));`);
       const bound = nid();
       push(`#${bound}=FACE_OUTER_BOUND('',#${loop},.T.);`);
-      const org = nid(), ax = nid(), rf = nid(), pl = nid();
-      const rl = Math.hypot(e1[0], e1[1], e1[2]) || 1;
-      push(`#${org}=CARTESIAN_POINT('',(${A[0].toFixed(4)},${A[1].toFixed(4)},${A[2].toFixed(4)}));`);
-      push(`#${ax}=DIRECTION('',(${nx.toFixed(6)},${ny.toFixed(6)},${nz.toFixed(6)}));`);
-      push(`#${rf}=DIRECTION('',(${(e1[0] / rl).toFixed(6)},${(e1[1] / rl).toFixed(6)},${(e1[2] / rl).toFixed(6)}));`);
-      push(`#${pl}=AXIS2_PLACEMENT_3D('',#${org},#${ax},#${rf});`);
-      const surf = nid();
-      push(`#${surf}=PLANE('',#${pl});`);
+      const ax = nid(), rf = nid();
+      const rl = Math.hypot(B[0] - A[0], B[1] - A[1], B[2] - A[2]) || 1;
+      push(`#${ax}=DIRECTION('',(${nx.toFixed(9)},${ny.toFixed(9)},${nz.toFixed(9)}));`);
+      push(`#${rf}=DIRECTION('',(${((B[0] - A[0]) / rl).toFixed(9)},${((B[1] - A[1]) / rl).toFixed(9)},${((B[2] - A[2]) / rl).toFixed(9)}));`);
+      const pl = nid();
+      push(`#${pl}=AXIS2_PLACEMENT_3D('',#${cpId[ga]},#${ax},#${rf});`);
+      const plane = nid();
+      push(`#${plane}=PLANE('',#${pl});`);
       const face = nid();
-      push(`#${face}=FACE_SURFACE('',(#${bound}),#${surf},.T.);`);
+      push(`#${face}=ADVANCED_FACE('',(#${bound}),#${plane},.T.);`);
       faces.push(face);
+    };
+    // 四边环带面片按 (A,B,C)+(A,C,D) 三角化，保证严格共面
+    const addQuad = (a, b, c, d) => {
+      addTri(gi(a[0], a[1]), gi(b[0], b[1]), gi(c[0], c[1]));
+      addTri(gi(a[0], a[1]), gi(c[0], c[1]), gi(d[0], d[1]));
     };
     for (let i = 0; i < N; i++) {
       const j = (i + 1) % N;
