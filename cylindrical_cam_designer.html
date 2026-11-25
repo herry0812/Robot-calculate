@@ -305,7 +305,7 @@ hr.section { border: none; border-top: 1px solid var(--border); margin: 14px 0; 
           <div class="type-note" id="noteBaseDia" style="display:none" data-i18n="baseDiaDerivedNote"></div>
         </div>
         <div class="form-row">
-          <label><span data-i18n="camWidth">凸轮宽度</span><span class="unit">mm</span></label>
+          <label><span data-i18n="camWidth">凸轮高度</span><span class="unit">mm</span></label>
           <input type="number" id="p_camWidth" value="60" step="1" min="1">
         </div>
         <div class="form-row">
@@ -516,7 +516,7 @@ const I18N = {
     secBasic: "基础参数", secTrans: "直动从动件参数", secSwing: "摆动从动件参数",
     secSegments: "运动分段", secForce: "工况与受力", secMultiRoller: "多随动器参数",
     secAlerts: "校验与提示", secViz: "可视化", secTable: "逐点数据表",
-    baseDia: "基圆直径", camWidth: "凸轮宽度", rollerDia: "随动器直径",
+    baseDia: "基圆直径", camWidth: "凸轮高度", rollerDia: "随动器直径",
     rollerWidth: "随动器宽度", initialHt: "初始高度", divRes: "分度分辨率",
     followerType: "从动件类型", followerTrans: "直动", followerSwing: "摆动",
     handedness: "旋向", handRH: "右旋", handLH: "左旋",
@@ -546,7 +546,7 @@ const I18N = {
     secBasic: "Basic Parameters", secTrans: "Translating Follower", secSwing: "Oscillating Follower",
     secSegments: "Motion Segments", secForce: "Load & Force", secMultiRoller: "Multiple Followers",
     secAlerts: "Validation", secViz: "Visualization", secTable: "Point Data Table",
-    baseDia: "Base diameter", camWidth: "Cam width", rollerDia: "Follower diameter",
+    baseDia: "Base diameter", camWidth: "Cam height", rollerDia: "Follower diameter",
     rollerWidth: "Follower width", initialHt: "Initial height", divRes: "Divisions/rev",
     followerType: "Follower type", followerTrans: "Translating", followerSwing: "Oscillating",
     handedness: "Handedness", handRH: "Right-hand", handLH: "Left-hand",
@@ -576,7 +576,7 @@ const I18N = {
     secBasic: "基本パラメータ", secTrans: "直動従節", secSwing: "揺動従節",
     secSegments: "運動区間", secForce: "荷重・力", secMultiRoller: "複数フォロワ",
     secAlerts: "バリデーション", secViz: "可視化", secTable: "ポイントテーブル",
-    baseDia: "基礎円径", camWidth: "カム幅", rollerDia: "フォロワ径",
+    baseDia: "基礎円径", camWidth: "カム高さ", rollerDia: "フォロワ径",
     rollerWidth: "フォロワ幅", initialHt: "初期高さ", divRes: "分割/回転",
     followerType: "従節種類", followerTrans: "直動", followerSwing: "揺動",
     handedness: "ねじれ", handRH: "右ねじ", handLH: "左ねじ",
@@ -618,8 +618,8 @@ Object.assign(I18N.zh, {
   legS: "位置", legV: "速度", legA: "加速度", legJ: "跃度", legAlpha: "压力角", legF: "受力",
   legFaxial: "沿运动方向", legN: "法向正压力",
   view3dHint: "拖动旋转视角 · 双击复位",
-  alertGrooveOverflow: "沟槽轴向范围超出凸轮宽度：至少需要 {need} mm（随动器直径 {rd} mm + 升程 {lift} mm），当前凸轮宽度仅 {w} mm。",
-  sugGrooveOverflow: "将「凸轮宽度」增大到 {need} mm 以上，或减小升程/初始高度，或减小随动器直径。",
+  alertGrooveOverflow: "沟槽轴向范围超出凸轮高度：至少需要 {need} mm（随动器直径 {rd} mm + 升程 {lift} mm），当前凸轮高度仅 {w} mm。",
+  sugGrooveOverflow: "将「凸轮高度」增大到 {need} mm 以上，或减小升程/初始高度，或减小随动器直径。",
   secCamType: "凸轮类型",
   camSingle: "单层圆柱凸轮",
   camCompound: "复合圆柱凸轮（两层）",
@@ -630,8 +630,8 @@ Object.assign(I18N.zh, {
   baseDiaDerivedNote: "= 第 1 层沟槽底部直径（自动锁定）",
   infoCompoundOk: "复合凸轮：第 2 层工作面全程高于第 1 层，第 2 层外径 = {d} mm，满足加工条件。",
   sugCompoundOk: "如需调整两层相对高度，可在「第 2 层」页修改初始高度；系统会逐角度校核，不满足时给出所需的最小高度。",
-  alertCompoundNoFit: "第 2 层沟槽轴向占用 {z} mm，需要其凸轮宽度 ≥ {need} mm，当前仅 {w} mm。",
-  sugCompoundNoFit: "把第 2 层的「凸轮宽度」增大到 {need} mm 以上，或减小第 2 层的升程／初始高度。",
+  alertCompoundNoFit: "第 2 层沟槽轴向占用 {z} mm，需要其凸轮高度 ≥ {need} mm，当前仅 {w} mm。",
+  sugCompoundNoFit: "把第 2 层的「凸轮高度」增大到 {need} mm 以上，或减小第 2 层的升程／初始高度。",
   alertLayer2Deep: "第 2 层沟槽深度 {d} mm 已超过其外圆半径 {r} mm。",
   sugLayer2Deep: "减小第 2 层「随动器宽度」，或增大第 1 层「基圆直径」以放大第 2 层外径。",
   alertLayer2DeepImpact: "第 2 层沟槽会切穿轴线，内芯不再是完整实体，STEP 导出已被阻止。",
@@ -639,10 +639,10 @@ Object.assign(I18N.zh, {
   alertHeightViolation: "第 2 层工作面在 {ranges} 处低于第 1 层工作面的最高处（最多低 {n} mm）。",
   alertHeightViolationImpact: "两层实体在轴向发生重叠，按此参数无法加工，STEP 导出已被阻止。",
   alertHeightViolationSug: "把第 2 层「初始高度」从 {a} mm 提高到至少 {b} mm，即可全周高于第 1 层，且整体高度最小。",
-  alertCompoundNoFitImpact: "第 2 层沟槽无法完整落在其凸轮宽度内，实体模型无效，STEP 导出已被阻止。",
+  alertCompoundNoFitImpact: "第 2 层沟槽无法完整落在其凸轮高度内，实体模型无效，STEP 导出已被阻止。",
   alertGrooveShift: "「初始高度」{ih} mm 使沟槽超出凸轮端面，模型需把沟槽沿轴向平移 {shift} mm 才能放下。",
   alertGrooveShiftImpact: "沟槽实际高度会偏离你设定的初始高度，随动器相位与模型不一致。",
-  alertGrooveShiftSug: "把「初始高度」调整到 {min}~{max} mm 之间，或把「凸轮宽度」增大到至少 {need} mm。",
+  alertGrooveShiftSug: "把「初始高度」调整到 {min}~{max} mm 之间，或把「凸轮高度」增大到至少 {need} mm。",
   inputStale: "当前输入存在问题，下方图表与 3D 仍显示上一次有效结果（本次输入未参与计算）。",
   alertOtherLayerBad: "另一层（{layer}）的参数无效，层间高度校核无法进行。",
   alertOtherLayerBadSug: "切换到{layer}，按红色提示修正标红参数后再回到当前层。",
@@ -721,8 +721,8 @@ Object.assign(I18N.en, {
   legS: "Position", legV: "Velocity", legA: "Acceleration", legJ: "Jerk", legAlpha: "Pressure angle", legF: "Force",
   legFaxial: "Axial (motion)", legN: "Normal force",
   view3dHint: "Drag to rotate · double-click to reset",
-  alertGrooveOverflow: "Groove axial span exceeds cam width: at least {need} mm is required (follower dia {rd} mm + lift {lift} mm), but cam width is only {w} mm.",
-  sugGrooveOverflow: "Increase cam width to at least {need} mm, or reduce the lift/initial height, or reduce the follower diameter.",
+  alertGrooveOverflow: "Groove axial span exceeds cam height: at least {need} mm is required (follower dia {rd} mm + lift {lift} mm), but cam height is only {w} mm.",
+  sugGrooveOverflow: "Increase cam height to at least {need} mm, or reduce the lift/initial height, or reduce the follower diameter.",
   secCamType: "Cam type",
   camSingle: "Single cylindrical cam",
   camCompound: "Compound cylindrical cam (2 layers)",
@@ -733,8 +733,8 @@ Object.assign(I18N.en, {
   baseDiaDerivedNote: "= layer 1 groove floor diameter (locked)",
   infoCompoundOk: "Compound cam: layer 2 stays above layer 1 over the full cycle; layer 2 OD = {d} mm, machinable.",
   sugCompoundOk: "Adjust the relative height on the Layer 2 page; the tool checks every angle and reports the minimum required height.",
-  alertCompoundNoFit: "Layer 2 groove spans {z} mm axially; its cam width must be at least {need} mm (currently {w} mm).",
-  sugCompoundNoFit: "Increase layer 2's cam width to at least {need} mm, or reduce its lift / initial height.",
+  alertCompoundNoFit: "Layer 2 groove spans {z} mm axially; its cam height must be at least {need} mm (currently {w} mm).",
+  sugCompoundNoFit: "Increase layer 2's cam height to at least {need} mm, or reduce its lift / initial height.",
   alertLayer2Deep: "Layer 2 groove depth {d} mm exceeds its outer radius {r} mm.",
   sugLayer2Deep: "Reduce layer 2's follower width, or increase layer 1's base diameter to enlarge layer 2's OD.",
   alertLayer2DeepImpact: "Layer 2's groove would cut through the axis, so the core is not a valid solid and STEP export is blocked.",
@@ -742,10 +742,10 @@ Object.assign(I18N.en, {
   alertHeightViolation: "Layer 2 working surface is below layer 1's highest working surface between {ranges} (by up to {n} mm).",
   alertHeightViolationImpact: "The two solids overlap axially, so this cannot be machined as-is; STEP export is blocked.",
   alertHeightViolationSug: "Raise layer 2's initial height from {a} mm to at least {b} mm; this keeps layer 2 above layer 1 everywhere with the smallest total height.",
-  alertCompoundNoFitImpact: "Layer 2's groove does not fit inside its cam width, so the solid is invalid and STEP export is blocked.",
+  alertCompoundNoFitImpact: "Layer 2's groove does not fit inside its cam height, so the solid is invalid and STEP export is blocked.",
   alertGrooveShift: "Initial height {ih} mm pushes the groove past the cam face; the model would shift the groove axially by {shift} mm to fit.",
   alertGrooveShiftImpact: "The groove would sit at a different height than you set, so the follower phase no longer matches the model.",
-  alertGrooveShiftSug: "Set the initial height within {min}~{max} mm, or raise the cam width to at least {need} mm.",
+  alertGrooveShiftSug: "Set the initial height within {min}~{max} mm, or raise the cam height to at least {need} mm.",
   inputStale: "Some inputs are invalid; the charts and 3D still show the last valid result (these inputs were not used).",
   alertOtherLayerBad: "The other layer ({layer}) has invalid parameters, so the inter-layer height check cannot run.",
   alertOtherLayerBadSug: "Switch to {layer}, fix the fields marked in red, then return to this layer.",
@@ -824,8 +824,8 @@ Object.assign(I18N.ja, {
   legS: "位置", legV: "速度", legA: "加速度", legJ: "躍度", legAlpha: "圧力角", legF: "荷重",
   legFaxial: "運動方向", legN: "法線方向の荷重",
   view3dHint: "ドラッグで回転・ダブルクリックでリセット",
-  alertGrooveOverflow: "溝の軸方向範囲がカム幅を超えています：最低 {need} mm 必要（フォロワ径 {rd} mm ＋ リフト {lift} mm）ですが、カム幅は {w} mm です。",
-  sugGrooveOverflow: "カム幅を {need} mm 以上に増やすか、リフト／初期高さを小さくするか、フォロワ径を小さくしてください。",
+  alertGrooveOverflow: "溝の軸方向範囲がカム高さを超えています：最低 {need} mm 必要（フォロワ径 {rd} mm ＋ リフト {lift} mm）ですが、カム高さは {w} mm です。",
+  sugGrooveOverflow: "カム高さを {need} mm 以上に増やすか、リフト／初期高さを小さくするか、フォロワ径を小さくしてください。",
   secCamType: "カム形式",
   camSingle: "単段円筒カム",
   camCompound: "複合円筒カム（2段）",
@@ -836,8 +836,8 @@ Object.assign(I18N.ja, {
   baseDiaDerivedNote: "= 第1段の溝底径（自動固定）",
   infoCompoundOk: "複合カム：第2段の作用面は全周で第1段より高く、第2段外径 = {d} mm、加工可能です。",
   sugCompoundOk: "段間の高さは「第2段」ページで調整できます。装置は全角度を検査し、必要な最小高さを提示します。",
-  alertCompoundNoFit: "第2段の溝は軸方向 {z} mm を占め、カム幅は {need} mm 以上が必要です（現在 {w} mm）。",
-  sugCompoundNoFit: "第2段の「カム幅」を {need} mm 以上に増やすか、リフト／初期高さを小さくしてください。",
+  alertCompoundNoFit: "第2段の溝は軸方向 {z} mm を占め、カム高さは {need} mm 以上が必要です（現在 {w} mm）。",
+  sugCompoundNoFit: "第2段の「カム高さ」を {need} mm 以上に増やすか、リフト／初期高さを小さくしてください。",
   alertLayer2Deep: "第2段の溝深さ {d} mm が外半径 {r} mm を超えています。",
   sugLayer2Deep: "第2段のフォロワ幅を小さくするか、第1段の基準円直径を大きくして第2段外径を確保してください。",
   alertLayer2DeepImpact: "第2段の溝が軸心を貫通し、内芯が完全なソリッドにならないため、STEP 出力はブロックされています。",
@@ -845,10 +845,10 @@ Object.assign(I18N.ja, {
   alertHeightViolation: "第2段の作用面が {ranges} で第1段の最高作用面より低くなっています（最大 {n} mm 低い）。",
   alertHeightViolationImpact: "2つのソリッドが軸方向で重なり、このままでは加工できません。STEP 出力はブロックされています。",
   alertHeightViolationSug: "第2段の「初期高さ」を {a} mm から {b} mm 以上に上げてください。全周で第1段より高く、かつ全高が最小になります。",
-  alertCompoundNoFitImpact: "第2段の溝がカム幅に収まらないため、ソリッドが無効で STEP 出力はブロックされています。",
+  alertCompoundNoFitImpact: "第2段の溝がカム高さに収まらないため、ソリッドが無効で STEP 出力はブロックされています。",
   alertGrooveShift: "「初期高さ」{ih} mm では溝がカム端面を超えるため、モデルは溝を軸方向に {shift} mm ずらして収めます。",
   alertGrooveShiftImpact: "溝の実際の高さが設定値とずれ、フォロワの位相とモデルが一致しません。",
-  alertGrooveShiftSug: "「初期高さ」を {min}~{max} mm に調整するか、「カム幅」を {need} mm 以上に増やしてください。",
+  alertGrooveShiftSug: "「初期高さ」を {min}~{max} mm に調整するか、「カム高さ」を {need} mm 以上に増やしてください。",
   inputStale: "入力に問題があるため、下のグラフと 3D は前回の有効な結果を表示しています（今回の入力は未使用）。",
   alertOtherLayerBad: "もう一方の段（{layer}）のパラメータが無効なため、段間の高さ検査を実行できません。",
   alertOtherLayerBadSug: "{layer} に切り替え、赤く示された項目を修正してからこの段に戻ってください。",
@@ -1919,7 +1919,7 @@ const App = {
     const hNeed = hViolation ? +(p2.initialHt + need + 0.1).toFixed(2) : p2.initialHt;
     const g1 = this.grooveGeomFor(p1, P0);
     const g2 = this.grooveGeomFor(p2, P1);
-    // 第2层沟槽能否装进它自己的凸轮宽度（按当前初始高度，不擅自改动）
+    // 第2层沟槽能否装进它自己的凸轮高度（按当前初始高度，不擅自改动）
     const sMin2 = Math.min.apply(null, P1.map(q => q.s));
     const sMax2 = Math.max.apply(null, P1.map(q => q.s));
     const zB = p2.initialHt + sMin2 - hw2;
@@ -2780,15 +2780,32 @@ const App = {
     ctx.beginPath(); ctx.moveTo(axisFwd.x, axisFwd.y); ctx.lineTo(axisBack.x, axisBack.y); ctx.stroke();
     ctx.setLineDash([]);
 
-    // ---- 各层沟槽轮廓（与导出实体一致）：4 条边界曲线 ----
-    // 凸轮外圆：单层 1 个，复合 2 个（外套环 + 内芯）
-    const drawnR = [];
-    vls.forEach((vl, li) => {
-      const r = vl.gg.R;
-      if (drawnR.some(x => Math.abs(x - r) < 1e-6)) return;
-      drawnR.push(r);
-      drawCylinder(r, li === 0 ? '#b8c0ff' : 'rgba(112,72,232,0.5)');
-    });
+    // ---- 凸轮实体外框 ----
+    // 单层：1 个圆柱；复合：外套环（带内孔与端面放射线）+ 内芯圆柱
+    if (vls.length === 2) {
+      const g1 = vls[0].gg, g2 = vls[1].gg;
+      const z1b = vls[0].p.camWidth, z2b = vls[1].p.camWidth;
+      drawCylinder(g2.R, 'rgba(112,72,232,0.85)', 0, z2b, 1.3);       // 内芯外圆（第2层）
+      drawCylinder(g1.R, '#4158d0', 0, z1b, 1.4);                     // 外套环外圆（第1层）
+      const Rbore = Math.min(g1.R - 0.5, g2.R + 0.1);                 // 环内孔（与 STEP 一致）
+      drawCylinder(Rbore, '#0b7285', 0, z1b, 1.1);
+      // 端面放射线：只横跨环体，避免看成实心圆盘
+      const ribs = 12;
+      ctx.strokeStyle = 'rgba(65,88,208,0.45)'; ctx.lineWidth = 1;
+      [0, z1b].forEach(z => {
+        for (let k = 0; k < ribs; k++) {
+          const th = 2 * Math.PI * k / ribs;
+          const a0 = rotate(Rbore * Math.cos(th), Rbore * Math.sin(th));
+          const b0 = rotate(g1.R * Math.cos(th), g1.R * Math.sin(th));
+          const pa = project(a0.X, a0.Y, z), pb = project(b0.X, b0.Y, z);
+          ctx.beginPath(); ctx.moveTo(pa.x, pa.y); ctx.lineTo(pb.x, pb.y); ctx.stroke();
+        }
+      });
+    } else {
+      vls.forEach((vl, li) => {
+        drawCylinder(vl.gg.R, li === 0 ? '#b8c0ff' : 'rgba(112,72,232,0.5)', 0, vl.p.camWidth);
+      });
+    }
     const LCOL = ['#d9480f', '#7048e8'], LCOLIN = ['#0b7285', '#4c6ef5'];
     vls.forEach((vl, li) => {
       const g = vl.gg;
@@ -3019,7 +3036,7 @@ const App = {
 
     // 基圆直径（竖向）
     dimV(cx - w / 2 - 28, cy - h / 2, cy + h / 2, `${this.t('baseDia')} ${p.baseDia} mm`);
-    // 凸轮宽度（横向）
+    // 凸轮高度（横向）
     dimH(cy + h / 2 + 34, cx - w / 2, cx + w / 2, `${this.t('camWidth')} ${p.camWidth} mm`);
 
     // 随动器（宽度沿凸轮轴向，高度为直径）
