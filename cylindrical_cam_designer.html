@@ -1483,24 +1483,24 @@ const App = {
         const g = 9.81;
         const segMass = (seg.mass === null || seg.mass === undefined) ? p.loadMass : seg.mass;
         const massTotal = segMass;
-        const forceGravity = massTotal * g;             // N, 始终向下
-        const forceSpring = p.springForce;              // N, 复位方向（对抗升程）
-        const forceInertia = massTotal * a_dyn / 1000;  // N, 方向随加速度
-        // 竖直上升: 凸轮正压力需克服重力+弹簧+惯性(a>0 向上加速时额外加)
-        // 竖直下降: 重力助力，凸轮只需提供重力 - 弹簧 + 惯性
-        // 简化: 取绝对值总和作为最保守值（后续细化）
-        let F_total;
+        const forceGravity = massTotal * g;             // N, 沿 +s 方向的重力分量（始终阻碍升程）
+        const forceSpring = p.springForce;              // N, 复位弹簧，方向恒为 -s
+        const forceInertia = massTotal * a_dyn / 1000;  // N, 有符号，随加速度方向变化
+        // 沿 +s 方向平衡：F_cam = 重力分量 + 弹簧 + m·a
+        // 升程段重力/弹簧阻碍（+），回程段重力/弹簧助力、加速度项可能为负（凸轮需反向拉住随动器）
+        let F_cam;
         if (p.motionDir === 'vertical') {
-          F_total = forceGravity + forceSpring + Math.abs(forceInertia);
+          F_cam = forceGravity + forceSpring + forceInertia;
         } else if (p.motionDir === 'horizontal') {
-          F_total = forceSpring + Math.abs(forceInertia);
+          F_cam = forceSpring + forceInertia;
         } else {
-          F_total = forceGravity * Math.sin((p.tiltAngle || 0) * Math.PI / 180) + forceSpring + Math.abs(forceInertia);
+          F_cam = forceGravity * Math.sin((p.tiltAngle || 0) * Math.PI / 180) + forceSpring + forceInertia;
         }
-        const N_normal = F_total / Math.cos(alphaRad);  // 正压力
-        const forceAxial = F_total;                     // 沿运动方向的力（轴向）
+        // 曲线统一显示幅值（F/N 无负值），方向信息由扭矩符号体现
+        const forceAxial = Math.abs(F_cam);             // 沿运动方向的力（= N·cosα）
+        const N_normal = forceAxial / Math.cos(alphaRad); // 法向正压力 = F / cosα
 
-        // 输入扭矩 T = Rb * N_normal * sin(α) / η
+        // 输入扭矩 T = Rb · N · sinα / η = F · ds/dφ / η
         const T_input = Rb / 1000 * N_normal * Math.sin(alphaRad) / Math.max(p.efficiency, 0.01);
 
         pts.push({
