@@ -585,6 +585,8 @@ Object.assign(I18N.zh, {
   legS: "位置", legV: "速度", legA: "加速度", legJ: "跃度", legAlpha: "压力角", legF: "受力",
   legFaxial: "沿运动方向", legN: "法向正压力",
   view3dHint: "拖动旋转视角 · 双击复位",
+  alertGrooveOverflow: "沟槽轴向范围超出凸轮宽度：至少需要 {need} mm（随动器直径 {rd} mm + 升程 {lift} mm），当前凸轮宽度仅 {w} mm。",
+  sugGrooveOverflow: "将「凸轮宽度」增大到 {need} mm 以上，或减小升程/初始高度，或减小随动器直径。",
   alertTransShort: "第 {seg} 段梯形过渡长度 {l} mm 小于最小允许值 {d} mm（由随动器直径决定），当前 {cur}%，建议不小于 {r}%。",
   sugTransShort: "将过渡比例增大到 {r}% 以上，或增大该段转角/基圆直径，或减小随动器直径。",
   alertTransImpossible: "第 {seg} 段转角过小或随动器直径过大：最小过渡长度已超过该段弧长的 49%，无法形成有效梯形过渡（弧长 {arc} mm，随动器直径 {d} mm）。",
@@ -640,6 +642,8 @@ Object.assign(I18N.en, {
   legS: "Position", legV: "Velocity", legA: "Acceleration", legJ: "Jerk", legAlpha: "Pressure angle", legF: "Force",
   legFaxial: "Axial (motion)", legN: "Normal force",
   view3dHint: "Drag to rotate · double-click to reset",
+  alertGrooveOverflow: "Groove axial span exceeds cam width: at least {need} mm is required (follower dia {rd} mm + lift {lift} mm), but cam width is only {w} mm.",
+  sugGrooveOverflow: "Increase cam width to at least {need} mm, or reduce the lift/initial height, or reduce the follower diameter.",
   alertTransShort: "Segment {seg}: trapezoid blend length {l} mm is below the minimum {d} mm (set by follower diameter); current {cur}%, recommended ≥ {r}%.",
   sugTransShort: "Increase the blend ratio to at least {r}%, or enlarge the segment angle / base diameter, or reduce the follower diameter.",
   alertTransImpossible: "Segment {seg}: the minimum blend length exceeds 49% of the segment arc, so a valid trapezoid cannot be formed (arc {arc} mm, follower dia {d} mm).",
@@ -695,6 +699,8 @@ Object.assign(I18N.ja, {
   legS: "位置", legV: "速度", legA: "加速度", legJ: "躍度", legAlpha: "圧力角", legF: "荷重",
   legFaxial: "運動方向", legN: "法線方向の荷重",
   view3dHint: "ドラッグで回転・ダブルクリックでリセット",
+  alertGrooveOverflow: "溝の軸方向範囲がカム幅を超えています：最低 {need} mm 必要（フォロワ径 {rd} mm ＋ リフト {lift} mm）ですが、カム幅は {w} mm です。",
+  sugGrooveOverflow: "カム幅を {need} mm 以上に増やすか、リフト／初期高さを小さくするか、フォロワ径を小さくしてください。",
   alertTransShort: "第 {seg} 区間：台形の遷移長さ {l} mm が最小値 {d} mm（フォロワ径で決定）未満です。現在 {cur}%、{r}% 以上を推奨。",
   sugTransShort: "遷移比率を {r}% 以上に増やすか、区間角度/基円径を大きくするか、フォロワ径を小さくしてください。",
   alertTransImpossible: "第 {seg} 区間：最小遷移長さが区間弧長の 49% を超え、有効な台形遷移を形成できません（弧長 {arc} mm、フォロワ径 {d} mm）。",
@@ -2148,15 +2154,37 @@ const App = {
     ctx.beginPath(); ctx.moveTo(axisFwd.x, axisFwd.y); ctx.lineTo(axisBack.x, axisBack.y); ctx.stroke();
     ctx.setLineDash([]);
 
-    drawCylinder(Rb, '#b8c0ff'); // 基圆
-    drawCylinder(Rb + p.initialHt + 20, 'rgba(129,140,248,0.5)'); // 毛坯外
+    drawCylinder(Rb, '#b8c0ff'); // 凸轮外圆（基圆半径 = 毛坯半径）
+
+    // 与导出实体一致的沟槽轮廓：4 条边界曲线
+    //   外圆面上的槽口两条（r = R）+ 槽底两条（r = rIn）
+    const gg = this.camGrooveGeom();
+    if (!gg.overflow) {
+      const grooveCurves = [
+        { r: gg.R, dz: -gg.halfW, color: '#d9480f', w: 1.8 },  // 槽口下沿
+        { r: gg.R, dz: gg.halfW, color: '#d9480f', w: 1.8 },   // 槽口上沿
+        { r: gg.rIn, dz: -gg.halfW, color: '#0b7285', w: 1.2 },// 槽底下沿
+        { r: gg.rIn, dz: gg.halfW, color: '#0b7285', w: 1.2 }  // 槽底上沿
+      ];
+      grooveCurves.forEach(c => {
+        ctx.strokeStyle = c.color; ctx.lineWidth = c.w;
+        ctx.beginPath();
+        pts.forEach((pt, i) => {
+          const ph = pt.phi * Math.PI / 180;
+          const { X, Y } = rotate(c.r * Math.cos(ph), c.r * Math.sin(ph));
+          const pr = project(X, Y, gg.z0 + pt.s + c.dz);
+          if (i === 0) ctx.moveTo(pr.x, pr.y); else ctx.lineTo(pr.x, pr.y);
+        });
+        ctx.stroke();
+      });
+    }
 
     // 随动器中心轨迹（理论轮廓）
     ctx.strokeStyle = '#4158d0'; ctx.lineWidth = 2;
     ctx.beginPath();
     pts.forEach((pt, i) => {
       const { X, Y } = rotate(pt.x3d_th, pt.y3d_th);
-      const pr = project(X, Y, pt.z3d_th + p.initialHt);
+      const pr = project(X, Y, gg.z0 + pt.z3d_th);
       if (i === 0) ctx.moveTo(pr.x, pr.y); else ctx.lineTo(pr.x, pr.y);
     });
     ctx.stroke();
@@ -2168,7 +2196,7 @@ const App = {
       const phi = ((worldDeg - this.state.anim.phase) % 360 + 360) % 360;
       const idx = Math.round(phi / 360 * (NP - 1));
       const pt = pts[Math.min(Math.max(idx, 0), NP - 1)];
-      return pt ? pt.z3d_th + p.initialHt : p.initialHt;
+      return pt ? pt.z3d_th + gg.z0 : gg.z0;
     };
     for (let r = 0; r < nRollers; r++) {
       const worldDeg = (p.rollerAngles[r] != null && p.rollerAngles[r] !== '')
@@ -2192,7 +2220,7 @@ const App = {
       if (p.followerType === 'swing') {
         // 摆动从动件：固定支点 + 摆臂，只有摆角随升程变化
         const pivotR = Rb + (p.swingLen || 100);
-        const pivot = project(pivotR * Math.cos(th), pivotR * Math.sin(th), p.initialHt);
+        const pivot = project(pivotR * Math.cos(th), pivotR * Math.sin(th), gg.z0);
         ctx.beginPath(); ctx.moveTo(pivot.x, pivot.y); ctx.lineTo(rollerCenter.x, rollerCenter.y); ctx.stroke();
         ctx.fillStyle = '#495057'; ctx.beginPath(); ctx.arc(pivot.x, pivot.y, 4, 0, Math.PI * 2); ctx.fill();
       } else {
@@ -2398,29 +2426,53 @@ const App = {
     URL.revokeObjectURL(url);
   },
 
+  /* -------- 凸轮沟槽几何（STEP 导出与 3D 预览共用） -------- */
+  camGrooveGeom() {
+    const pts = this.state.points || [];
+    const p = this.state.params;
+    const R = p.baseDia / 2;
+    const halfW = (p.rollerDia + 0.2) / 2;   // 沟槽轴向半宽（随动器直径 + 0.2 间隙）
+    const depth = p.rollerWidth + 1.0;        // 沟槽径向深度（随动器宽度 + 1.0 间隙）
+    const rIn = Math.max(1, R - depth);       // 槽底半径
+    const zLow = 0, zHigh = p.camWidth;
+    const sMin = pts.length ? Math.min.apply(null, pts.map(q => q.s)) : 0;
+    const sMax = pts.length ? Math.max.apply(null, pts.map(q => q.s)) : 0;
+    const need = 2 * halfW + (sMax - sMin) + 0.1;
+    let z0 = p.initialHt;                     // 沟槽中心 = 随动器起始高度
+    let overflow = null;
+    if (need > zHigh) {
+      overflow = {
+        need: need.toFixed(1), w: zHigh.toFixed(1),
+        rd: p.rollerDia.toFixed(1), lift: (sMax - sMin).toFixed(1)
+      };
+    } else {
+      if (z0 + sMin - halfW < 0.05) z0 += 0.05 - (z0 + sMin - halfW);
+      if (z0 + sMax + halfW > zHigh - 0.05) z0 -= (z0 + sMax + halfW) - (zHigh - 0.05);
+    }
+    return { R, halfW, depth, rIn, zLow, zHigh, z0, sMin, sMax, overflow };
+  },
+
   /* -------- STEP AP214 导出 -------- */
   exportSTEP() {
     const pts = this.state.points;
     const p = this.state.params;
     if (!pts || pts.length === 0) { alert(this.t('needCompute')); return; }
 
-    /* ---- 生成"槽实体"扫掠网格（mm）----
-       截面: 轴向宽 Wg = 随动器直径 + 间隙, 径向深 Hd = 随动器宽度 + 间隙
-       扫掠路径: (R·cosφ, R·sinφ, z0 + s(φ))，沿整周闭合
+    /* ---- 生成带沟槽的凸轮实体（圆柱毛坯 − 沟槽）（mm）----
+       毛坯: 半径 R = 基圆直径/2，轴向 0..凸轮宽度
+       沟槽: 轴向宽 Wg = 随动器直径 + 间隙，径向深 Hd = 随动器宽度 + 间隙，
+             沿 (R·cosφ, R·sinφ, z0 + s(φ)) 整周扫掠，从外圆面向内切入
        输出: AP214 实体 B-rep (MANIFOLD_SOLID_BREP → CLOSED_SHELL →
              ADVANCED_FACE → FACE_OUTER_BOUND → EDGE_LOOP → ORIENTED_EDGE →
              EDGE_CURVE(LINE) + VERTEX_POINT + CARTESIAN_POINT)
-       每个四边面片三角化，保证面严格共面；每条棱恰好被 2 个面反向引用，
-       构成闭合水密实体（导入 CAD 即为实体，不是曲面/曲线）
-       用途: 在 CAD 中与凸轮毛坯做布尔减，得到沟槽 */
-    const R = p.baseDia / 2;
-    const clearW = 0.2, clearD = 1.0, overTop = 1.0;
-    const halfW = (p.rollerDia + clearW) / 2;
-    const depth = p.rollerWidth + clearD;
-    const rIn = R - depth, rOut = R + overTop;
-    const sMin = Math.min.apply(null, pts.map(q => q.s));
-    const sMax = Math.max.apply(null, pts.map(q => q.s));
-    const z0 = (p.camWidth - (sMax - sMin)) / 2 - sMin;
+       导出的就是成品凸轮（带沟槽的实体），不是沟槽空腔 */
+    const geom = this.camGrooveGeom();
+    if (geom.overflow) {
+      alert(this.t('alertGrooveOverflow', geom.overflow) + '\n' + this.t('sugGrooveOverflow', geom.overflow));
+      return;
+    }
+    const R = geom.R, halfW = geom.halfW, rIn = geom.rIn;
+    const zLow = geom.zLow, zHigh = geom.zHigh, z0 = geom.z0;
     const N = 360; // 每 1° 一段
     const sAt = (deg) => {
       const d = ((deg % 360) + 360) % 360;
@@ -2429,22 +2481,28 @@ const App = {
       const t = (d - a.phi) / ((b.phi - a.phi) || 1);
       return a.s + (b.s - a.s) * Math.max(0, Math.min(1, t));
     };
-    // 顶点编号 gi(i,k) = i*4 + k，k: 0=外- 1=外+ 2=内+ 3=内-
+    // 每个角度站位 6 个截面点：0 外圆下 1 槽口下 2 槽底下 3 槽底上 4 槽口上 5 外圆上
     const V = [];    // [i][k] = [x,y,z]
-    const vert = []; // 扁平顶点表
+    const vert = []; // 扁平顶点表：gi(i,k)=i*6+k，轴线两点追加在末尾
     for (let i = 0; i < N; i++) {
-      const ph = i * 2 * Math.PI / N, z = z0 + sAt(i * 360 / N);
+      const ph = i * 2 * Math.PI / N;
+      const zc = z0 + sAt(i * 360 / N);
+      const z1 = zc - halfW, z2 = zc + halfW;
       const cx = Math.cos(ph), sy = Math.sin(ph);
       const row = [
-        [rOut * cx, rOut * sy, z - halfW],
-        [rOut * cx, rOut * sy, z + halfW],
-        [rIn * cx, rIn * sy, z + halfW],
-        [rIn * cx, rIn * sy, z - halfW]
+        [R * cx, R * sy, zLow],
+        [R * cx, R * sy, z1],
+        [rIn * cx, rIn * sy, z1],
+        [rIn * cx, rIn * sy, z2],
+        [R * cx, R * sy, z2],
+        [R * cx, R * sy, zHigh]
       ];
       V.push(row);
-      for (let k = 0; k < 4; k++) vert.push(row[k]);
+      for (let k = 0; k < 6; k++) vert.push(row[k]);
     }
-    const gi = (i, k) => i * 4 + k;
+    const A0 = vert.length; vert.push([0, 0, zLow]);
+    const A1 = vert.length; vert.push([0, 0, zHigh]);
+    const gi = (i, k) => i * 6 + k;
 
     const lines = [];
     const push = (s = '') => lines.push(s);
@@ -2453,8 +2511,8 @@ const App = {
 
     push('ISO-10303-21;');
     push('HEADER;');
-    push("FILE_DESCRIPTION(('Cylindrical cam groove swept solid'),'2;1');");
-    push(`FILE_NAME('cam-groove-${new Date().toISOString().slice(0, 10)}.step','${new Date().toISOString()}',('TraeCam'),(''),'solid','','');`);
+    push("FILE_DESCRIPTION(('Cylindrical cam solid with groove'),'2;1');");
+    push(`FILE_NAME('cam-solid-${new Date().toISOString().slice(0, 10)}.step','${new Date().toISOString()}',('TraeCam'),(''),'solid','','');`);
     push("FILE_SCHEMA(('AUTOMOTIVE_DESIGN'));");
     push('ENDSEC;');
     push('DATA;');
@@ -2555,10 +2613,13 @@ const App = {
     };
     for (let i = 0; i < N; i++) {
       const j = (i + 1) % N;
-      addQuad([i, 0], [j, 0], [j, 1], [i, 1]); // 外顶面（径向朝外）
-      addQuad([i, 2], [j, 2], [j, 3], [i, 3]); // 内底面
-      addQuad([i, 1], [j, 1], [j, 2], [i, 2]); // 槽壁 +z
-      addQuad([i, 3], [j, 3], [j, 0], [i, 0]); // 槽壁 -z
+      addTri(A0, gi(j, 0), gi(i, 0));          // 前端面（-z）
+      addTri(A1, gi(i, 5), gi(j, 5));          // 后端面（+z）
+      addQuad([i, 0], [j, 0], [j, 1], [i, 1]); // 外圆面（沟槽下方）
+      addQuad([i, 1], [j, 1], [j, 2], [i, 2]); // 沟槽下侧壁
+      addQuad([i, 2], [j, 2], [j, 3], [i, 3]); // 沟槽底面
+      addQuad([i, 3], [j, 3], [j, 4], [i, 4]); // 沟槽上侧壁
+      addQuad([i, 4], [j, 4], [j, 5], [i, 5]); // 外圆面（沟槽上方）
     }
 
     const shell = nid();
@@ -2575,7 +2636,7 @@ const App = {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `cam-groove-${new Date().toISOString().slice(0, 10)}.step`;
+    a.download = `cam-solid-${new Date().toISOString().slice(0, 10)}.step`;
     a.click();
     URL.revokeObjectURL(url);
   },
