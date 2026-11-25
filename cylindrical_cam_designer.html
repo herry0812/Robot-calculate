@@ -418,7 +418,7 @@ hr.section { border: none; border-top: 1px solid var(--border); margin: 14px 0; 
       </div>
 
       <div id="viz-curves" class="viz-pane">
-        <div class="canvas-wrap"><canvas id="cvCurves" width="900" height="660"></canvas></div>
+        <div class="canvas-wrap"><canvas id="cvCurves" width="900" height="1260"></canvas></div>
       </div>
 
       <div id="viz-flatten" class="viz-pane hidden">
@@ -1651,9 +1651,9 @@ const App = {
       { key: 'v', label: 'v', name: this.t('legV'), unit: 'mm/°', v: '--line-v' },
       { key: 'a', label: 'a', name: this.t('legA'), unit: 'mm/°²', v: '--line-a' },
       { key: 'j', label: 'j', name: this.t('legJ'), unit: 'mm/°³', v: '--line-j' },
-      { key: 'alphaDeg', label: 'α', name: this.t('legAlpha'), unit: '°', v: '--line-alpha' },
-      { key: 'forceAxial', label: 'F', name: this.t('legFaxial'), unit: 'N', v: '--line-force', weight: 2 },
-      { key: 'forceN', label: 'N', name: this.t('legN'), unit: 'N', v: '--line-norm', weight: 2 }
+      { key: 'alphaDeg', label: 'α', name: this.t('legAlpha'), unit: '°', v: '--line-alpha', nonNeg: true },
+      { key: 'forceAxial', label: 'F', name: this.t('legFaxial'), unit: 'N', v: '--line-force', weight: 2, nonNeg: true },
+      { key: 'forceN', label: 'N', name: this.t('legN'), unit: 'N', v: '--line-norm', weight: 2, nonNeg: true }
     ];
     const totalWeight = rows.reduce((a, r) => a + (r.weight || 1), 0);
     const unitH = plotH / totalWeight;
@@ -1669,12 +1669,15 @@ const App = {
       const rowH = unitH * (row.weight || 1);
       const y0 = rowY;
       rowY += rowH;
-      const y1 = y0 + rowH - 6;
+      const y1 = y0 + rowH - 3;
 
       const vals = pts.map(p => p[row.key]);
       const vMax = Math.max(...vals.map(Math.abs), 0.01);
-      // 曲线占满本行高度的 70%
-      const yToPx = (v) => y0 + rowH / 2 - (v / vMax) * (rowH * 0.35);
+      // 对称量（s/v/a/j）：曲线占满行高，零线居中；非负量（α/F/N）：零线在底部，不显示负值区
+      const yToPx = row.nonNeg
+        ? (v) => y0 + rowH - 2 - (Math.abs(v) / vMax) * (rowH - 4)
+        : (v) => y0 + rowH / 2 - (v / vMax) * (rowH / 2 - 2);
+      const zeroY = row.nonNeg ? y0 + rowH - 2 : y0 + rowH / 2;
 
       // 网格
       ctx.strokeStyle = gridC; ctx.lineWidth = 1;
@@ -1684,7 +1687,7 @@ const App = {
       }
       // 零点轴
       ctx.beginPath(); ctx.strokeStyle = borderC;
-      ctx.moveTo(pad.l, y0 + rowH / 2); ctx.lineTo(pad.l + plotW, y0 + rowH / 2); ctx.stroke();
+      ctx.moveTo(pad.l, zeroY); ctx.lineTo(pad.l + plotW, zeroY); ctx.stroke();
 
       // 曲线
       ctx.strokeStyle = this.cssVar(row.v); ctx.lineWidth = 2;
@@ -1705,7 +1708,7 @@ const App = {
       ctx.font = '12px sans-serif'; ctx.fillStyle = dimC;
       ctx.fillText(row.name, lx + lw + 6, y0 + 17);
       ctx.font = '11px sans-serif'; ctx.fillStyle = mutedC;
-      ctx.fillText(row.unit + '  ±' + vMax.toFixed(2), lx, y0 + 34);
+      ctx.fillText(row.unit + '  ' + (row.nonNeg ? '0~' : '±') + vMax.toFixed(2), lx, y0 + 34);
     });
 
     // 底部轴标签 + 刻度
