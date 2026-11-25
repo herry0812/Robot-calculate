@@ -1673,8 +1673,8 @@ const App = {
       { key: 'a', label: 'a', name: this.t('legA'), unit: 'mm/°²', v: '--line-a' },
       { key: 'j', label: 'j', name: this.t('legJ'), unit: 'mm/°³', v: '--line-j' },
       { key: 'alphaDeg', label: 'α', name: this.t('legAlpha'), unit: '°', v: '--line-alpha', nonNeg: true },
-      { key: 'forceAxial', label: 'F', name: this.t('legFaxial'), unit: 'N', v: '--line-force', weight: 2, nonNeg: true, fold: true },
-      { key: 'forceN', label: 'N', name: this.t('legN'), unit: 'N', v: '--line-norm', weight: 2, nonNeg: true, fold: true }
+      { key: 'forceAxial', label: 'F', name: this.t('legFaxial'), unit: 'N', v: '--line-force', nonNeg: true, fold: true },
+      { key: 'forceN', label: 'N', name: this.t('legN'), unit: 'N', v: '--line-norm', nonNeg: true, fold: true }
     ];
     const totalWeight = rows.reduce((a, r) => a + (r.weight || 1), 0);
     const unitH = plotH / totalWeight;
@@ -1710,6 +1710,7 @@ const App = {
         zeroY = y0 + rowH / 2;
       }
       row.yToPx = yToPx; row.vMin = vMin; row.vMax = vMax;
+      row.rowY0 = y0; row.rowH = rowH;
 
       // 网格
       ctx.strokeStyle = gridC; ctx.lineWidth = 1;
@@ -1783,34 +1784,61 @@ const App = {
       if (d < bd) { bd = d; best = p; }
     }
     const x = geo.pad.l + (best.phi / geo.maxPhi) * geo.plotW;
+    const right = geo.pad.l + geo.plotW;
+    const rr = (c, bx, by, bw, bh, rad) => {
+      c.beginPath();
+      c.moveTo(bx + rad, by);
+      c.arcTo(bx + bw, by, bx + bw, by + bh, rad);
+      c.arcTo(bx + bw, by + bh, bx, by + bh, rad);
+      c.arcTo(bx, by + bh, bx, by, rad);
+      c.arcTo(bx, by, bx + bw, by, rad);
+      c.closePath();
+    };
     ctx.save();
-    ctx.strokeStyle = '#e8590c'; ctx.lineWidth = 1.4; ctx.setLineDash([5, 4]);
+    // 竖直游标
+    ctx.strokeStyle = 'rgba(232,89,12,0.85)'; ctx.lineWidth = 1.4; ctx.setLineDash([5, 4]);
     ctx.beginPath(); ctx.moveTo(x, geo.pad.t); ctx.lineTo(x, geo.pad.t + geo.plotH); ctx.stroke();
     ctx.setLineDash([]);
+
+    // 各曲线取值圆点
     rows.forEach(r => {
       if (!r.yToPx) return;
       ctx.beginPath(); ctx.fillStyle = this.cssVar(r.v);
-      ctx.arc(x, r.yToPx(best[r.key]), 3.4, 0, Math.PI * 2); ctx.fill();
+      ctx.arc(x, r.yToPx(best[r.key]), 3.6, 0, Math.PI * 2); ctx.fill();
     });
-    // 读数框
+
+    // 角度标签：跟随鼠标水平位置
     const head = best.phi.toFixed(1) + '°';
-    const lines = rows.map(r => r.label + '  ' + this.fmtProbe(best[r.key]) + ' ' + r.unit);
-    ctx.font = '12px sans-serif';
-    let bw = ctx.measureText(head).width;
-    lines.forEach(s => { bw = Math.max(bw, ctx.measureText(s).width); });
-    const boxW = bw + 22, boxH = 26 + lines.length * 17;
-    let bx = x + 14;
-    if (bx + boxW > geo.pad.l + geo.plotW) bx = x - boxW - 14;
-    if (bx < 4) bx = 4;
-    const by = geo.pad.t + 8;
-    ctx.fillStyle = 'rgba(255,255,255,0.97)';
-    ctx.strokeStyle = '#c9ccd1'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.rect(bx, by, boxW, boxH); ctx.fill(); ctx.stroke();
-    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-    ctx.font = '600 12px sans-serif'; ctx.fillStyle = '#1f2328';
-    ctx.fillText(head, bx + 11, by + 8);
-    ctx.font = '12px sans-serif'; ctx.fillStyle = '#5c6370';
-    lines.forEach((s, i) => ctx.fillText(s, bx + 11, by + 28 + i * 17));
+    ctx.font = '600 12px sans-serif';
+    const hw = ctx.measureText(head).width + 16;
+    let hx = x + 9; if (hx + hw > right) hx = x - hw - 9;
+    if (hx < 4) hx = 4;
+    const hy = geo.pad.t + 2;
+    ctx.fillStyle = 'rgba(31,35,40,0.86)';
+    rr(ctx, hx, hy, hw, 20, 4); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText(head, hx + 8, hy + 10);
+
+    // 每行数值：显示在本行内，颜色与曲线一致，水平跟随鼠标
+    rows.forEach(r => {
+      if (!r.yToPx) return;
+      const col = this.cssVar(r.v);
+      const txt = r.label + ' ' + this.fmtProbe(best[r.key]) + ' ' + r.unit;
+      ctx.font = '600 12px sans-serif';
+      const tw = ctx.measureText(txt).width + 18;
+      let tx = x + 10; if (tx + tw > right) tx = x - tw - 10;
+      if (tx < 4) tx = 4;
+      const yv = r.yToPx(best[r.key]);
+      const top = r.rowY0 + 2, bot = r.rowY0 + r.rowH - 24;
+      const ty = Math.max(top, Math.min(bot, yv - 10));
+      ctx.fillStyle = 'rgba(255,255,255,0.96)';
+      ctx.strokeStyle = 'rgba(0,0,0,0.12)'; ctx.lineWidth = 1;
+      rr(ctx, tx, ty, tw, 20, 4); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = col;
+      ctx.fillRect(tx + 1, ty + 3, 3, 14);
+      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.fillText(txt, tx + 10, ty + 10);
+    });
     ctx.restore();
   },
 
