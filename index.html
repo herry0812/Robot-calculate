@@ -80,6 +80,7 @@ aside{position:sticky;top:48px;max-height:calc(100vh - 58px);overflow:auto;paddi
 .fld input:disabled{background:#eef1f5;color:var(--ink3);cursor:not-allowed}
 .fld input.bad{border-color:var(--bad);background:var(--badbg)}
 .fld .u{font-size:10px;color:var(--ink3);font-family:var(--mono);text-align:left}
+.fld .ferr{grid-column:1/4;font-size:10px;color:var(--bad);font-family:var(--mono);line-height:1.45;padding:0 0 3px 2px}
 .fld select{grid-column:1/3;width:100%;padding:3px 4px;background:#fbfcfe;border:1px solid var(--line);border-radius:3px;font-size:11.5px}
 .fld select:focus{outline:none;border-color:var(--acc)}
 .sw{position:relative;display:inline-block;width:34px;height:18px;grid-column:2;justify-self:end}
@@ -106,6 +107,17 @@ aside{position:sticky;top:48px;max-height:calc(100vh - 58px);overflow:auto;paddi
 .pill.bad{background:var(--badbg);border-color:#f2c2bc;color:var(--bad)}
 
 .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:7px;margin-bottom:9px}
+.iv-panel{grid-column:1/-1;background:var(--badbg);border:1px solid #f2c2bc;border-left:3px solid var(--bad);
+  border-radius:var(--r);padding:9px 11px}
+.iv-panel .iv-t{font-weight:600;color:var(--bad);margin-bottom:5px;font-size:12.5px;display:flex;align-items:center;gap:6px}
+.iv-item{border-top:1px dashed #f0cfcb;padding:5px 0}
+.iv-item:first-of-type{border-top:none}
+.iv-h{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.iv-h b{font-size:12px}
+.iv-v{font-family:var(--mono);color:var(--bad);background:#fff;border:1px solid #f2c2bc;border-radius:3px;
+  padding:0 5px;font-size:11px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.iv-l{font-size:11px;color:var(--ink2);margin-top:2px;line-height:1.55}
+.iv-l b{color:var(--ink);font-weight:600}
 .card{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--ink3);border-radius:var(--r);
   padding:6px 8px 7px;min-height:66px;position:relative}
 .card.ok{border-left-color:var(--ok)}
@@ -167,18 +179,18 @@ table.dt td.res{font-weight:600}
   padding:4px 9px;border-bottom:1px solid #f0f3f7}
 .chk:last-child{border-bottom:none}
 .chk .dot{width:8px;height:8px;border-radius:50%;margin-top:4px}
-.chk.ok .dot{background:var(--ok)}
+.chk.pass .dot{background:var(--ok)}
 .chk.warn .dot{background:var(--warn)}
-.chk.bad .dot{background:var(--bad)}
+.chk.fail .dot{background:var(--bad)}
 .chk .nm{font-weight:600;font-size:11.5px}
 .chk .rs{font-size:11px;color:var(--ink2)}
 .chk .rs b{font-family:var(--mono);font-weight:600;color:var(--ink)}
 .chk .ad{font-size:10.5px;color:var(--warn);grid-column:3/5;margin-top:-2px}
-.chk.bad .ad{color:var(--bad)}
+.chk.fail .ad{color:var(--bad)}
 .chk .st{font-size:10px;padding:0 6px;border-radius:8px;font-family:var(--mono);white-space:nowrap}
-.chk.ok .st{background:var(--okbg);color:var(--ok)}
+.chk.pass .st{background:var(--okbg);color:var(--ok)}
 .chk.warn .st{background:var(--warnbg);color:var(--warn)}
-.chk.bad .st{background:var(--badbg);color:var(--bad)}
+.chk.fail .st{background:var(--badbg);color:var(--bad)}
 
 /* ---------- charts ---------- */
 .charts{display:grid;grid-template-columns:1fr 1fr;gap:9px;padding:9px}
@@ -838,6 +850,23 @@ const T = {
   'k.ecc.r':['最大 <b>{v}</b> vs 平均 <b>{l}</b>（系数 {p}）','Max <b>{v}</b> vs mean <b>{l}</b> (factor {p})','最大 <b>{v}</b> vs 平均 <b>{l}</b>'],
   'k.ecc.a':['控制箱体偏载，或提高轮压余量与轮宽。','Limit off-centre loading or add wheel-width margin.','偏載を抑制、面圧余裕を確保。'],
 
+  'k.motor.c':['电机长时间过载、发热降额，加速无力或丢步，严重时驱动器过流保护停机。','Motor overloads and derates, loses acceleration or steps; the drive may trip on over-current.','モータが過負荷・発熱し、加速不足や脱調、最悪は過電流停止になります。'],
+  'k.adhesion.c':['启动/制动时轮子打滑，定位漂移、里程误差；坡道或油污地面可能溜车。','Wheels slip on start/brake, causing position drift; may slide on ramps or oily floors.','発進・制動時に滑り、位置ずれや距離誤差。坂・油面では滑走のおそれ。'],
+  'k.wheel.c':['塑料搁板局部压陷、开裂或长期蠕变，行走颠簸跑偏，严重时压穿搁板。','The plastic deck dents, cracks or creeps; the robot judders and drifts, and may punch through.','樹脂棚が沈み・割れ・クリープし、走行が乱れ、最悪は突き抜けます。'],
+  'k.post.c':['塑料支柱压溃或蠕变失稳，库位下沉、货架倾斜，可能连带相邻库位塌陷。','Plastic posts crush or creep, the slot sags and the rack tilts; adjacent slots may collapse.','樹脂支柱が圧壊・クリープし、棚が沈み・傾き、隣接棚も崩れるおそれ。'],
+  'k.defl.c':['主梁下垂超限，承载面倾斜、定位偏差，反复变形导致疲劳开裂。','Beam sag exceeds the limit: deck tilts, positioning drifts, and fatigue cracks may develop.','主桁が過大にたわみ、デッキ傾斜・位置ずれ・疲労亀裂につながります。'],
+  'k.stab.c':['急加速/急停时整机倾翻或翘起，货物滑落，属安全风险。','The robot may tip or lift during hard accel/stop; cargo can slide off — a safety risk.','急加速・急停止で転倒・浮き上がり、荷崩れの危険があります。'],
+  'k.liftstroke.c':['顶升不到位，货架顶不起或换向时轮组刮蹭轨道，产生异响与磨损。','Insufficient stroke: the rack is not lifted or wheels scrape the rail during shifting.','ストローク不足で棚を持ち上げられず、切替時に車輪がレールを擦ります。'],
+  'k.camangle.c':['压力角过大，推力损失、磨损加剧，严重时自锁卡滞无法举升。','Excessive pressure angle loses thrust and increases wear; the cam may self-lock.','圧力角過大で推力損失・摩耗増、最悪はセルフロックで昇降不能。'],
+  'k.camtorque.c':['凸轮驱动电机堵转/过热，举升缓慢或举不动，长期过载缩短寿命。','The cam motor stalls or overheats; lifting is slow or fails and life is shortened.','カム用モータが過負荷・発熱し、昇降が遅い／不能になります。'],
+  'k.battcap.c':['电池容量不足，续航短、充电频繁，低温或老化后中途断电。','Under-sized battery: short endurance, frequent charging, and shutdown when cold or aged.','容量不足で航続短・充電頻発、低温や経年で途中停止。'],
+  'k.endurance.c':['一个班次内电量耗尽，机器人停机等待充电，影响出入库节拍。','Battery runs out within a shift; the robot stops to charge and throughput drops.','勤務時間内に電池切れし、充電待ちで搬送能力が低下します。'],
+  'k.strength.c':['主梁弯曲应力超限，产生塑性变形甚至断裂，承载面永久下沉。','Beam stress exceeds yield: plastic deformation or fracture and permanent deck sag.','主桁が降伏し、塑性変形・破断・デッキの永久沈みが起こります。'],
+  'k.brake.c':['制动距离过长，定位超差、撞击货架或货物，存在安全风险。','Long braking distance: overshoot, collision with rack or cargo — a safety risk.','制動距離が長く、位置超過・ラック衝突の危険があります。'],
+  'k.swgap.c':['换向时非承载轮未完全离地，轮子与轨道刮擦、打滑，磨损与噪音增大。','Idle wheels do not fully lift during shifting: scraping, slip, wear and noise.','切替時に非接地輪が浮かず、擦れ・滑り・摩耗・騒音が増えます。'],
+  'k.gap.c':['机器人或货物与货架干涉碰撞，取放货失败、损坏货物与货架。','Interference with the rack: pick/place fails and cargo or rack is damaged.','ラックと干渉し、荷役失敗・荷崩れ・棚破損につながります。'],
+  'k.ecc.c':['偏载使单侧轮压超限，塑料搁板局部压坏，同时降低抗倾覆能力。','Off-centre load overloads one side, damages the plastic deck and lowers tip resistance.','偏載で片側面圧が過大になり、棚破損と転倒余裕低下を招きます。'],
+
   'sw.title':['四状态切换表','Cam four-state table','カム4状態表'],
   'sw.angle':['凸轮角度','Cam angle','カム角度'],
   'sw.state':['举升状态','Lift state','昇降状態'],
@@ -855,6 +884,27 @@ const T = {
     'Each cam unit = 1 X wheel + 1 Y wheel + 1 barrel cam. Four positions (0°/90°/180°/270°) combine lift / no-lift with X / Y travel: lifted, the top plate carries the rack; not lifted, the robot can slide under it.',
     '各カムユニット＝X 輪 1＋Y 輪 1＋円筒カム 1。0°/90°/180°/270° の 4 位置で「昇降／非昇降」と「X／Y 走行」を同時に切替。'],
 
+  'err.empty':['输入为空','Empty input','入力が空です'],
+  'err.nan':['不是有效数字','Not a valid number','数値ではありません'],
+  'err.low':['低于允许下限','Below the allowed minimum','下限未満'],
+  'err.high':['高于允许上限','Above the allowed maximum','上限超過'],
+  'err.range':['允许范围 {min}–{max} {u}','Allowed range {min}–{max} {u}','許容範囲 {min}–{max} {u}'],
+  'err.title':['参数无效，结果已暂停（{n} 项）','Invalid input — calculation paused ({n})','入力エラー — 計算停止（{n}）'],
+  'err.pill':['参数无效，结果暂停','Invalid input — paused','入力エラー — 停止'],
+  'err.affect':['影响：','Impact:','影響：'],
+  'err.advice':['建议：','Fix:','改善：'],
+  'err.fix':['按电机/减速机/凸轮/轮子样本或实测值，填入允许范围内的数值；修正后结果自动恢复。',
+    'Enter a value within the allowed range from datasheets or measurements; results resume automatically.',
+    'カタログ値・実測値を許容範囲内で入力してください。修正後、自動で再計算します。'],
+  'imp.basic':['总质量 M 与载重相关，直接影响行走功率、轮压、制动与稳定校核。','Mass M drives travel power, wheel load, braking and stability checks.','質量 M は走行出力・面圧・制動・安定に影響します。'],
+  'imp.geo':['外形与轮系尺寸参与轮压接触面积、稳定支距与尺寸链校核。','Geometry feeds contact area, stability base and tolerance chain.','外形・車輪系は面圧・支距・寸法連鎖に影響します。'],
+  'imp.drvx':['X 向速度/加速度/传动链，直接影响 X 向功率、扭矩、附着与制动。','X speed/accel/transmission drives X power, torque, traction and braking.','X 方向の速度・加速度・伝達系は X の出力・トルク・付着・制動に影響します。'],
+  'imp.drvy':['Y 向速度/加速度/传动链，直接影响 Y 向功率、扭矩、附着与制动。','Y speed/accel/transmission drives Y power, torque, traction and braking.','Y 方向の速度・加速度・伝達系は Y の出力・トルク・付着・制動に影響します。'],
+  'imp.lift':['顶升力、凸轮转矩、压力角与状态切换时间都会失真，可能导致凸轮选型错误。','Affects lift force, cam torque, pressure angle and state-change time.','昇降力・カムトルク・圧力角・切替時間に影響します。'],
+  'imp.batt':['能耗与续航计算失真，可能低估电池容量或充电次数。','Distorts energy and endurance; may under-size the battery.','消費電力・航続の計算がずれます。'],
+  'imp.cond':['轮压许用、塑料货架承载与尺寸链校核失真，可能误判通过。','Affects wheel-pressure limits, plastic-rack load and clearance checks.','面圧許容・樹脂ラック荷重・寸法余裕の判定に影響します。'],
+  'imp.adv':['许用值与安全系数失真，可能导致校核误判为通过。','Allowables and safety factors change; checks may pass wrongly.','許容値・安全率が変わり、誤判定のおそれがあります。'],
+
   'msg.saved':['方案已保存','Scheme saved','方案を保存しました'],
   'msg.deleted':['方案已删除','Scheme deleted','方案を削除しました'],
   'msg.copied':['已复制为新方案','Copied to a new scheme','複製しました'],
@@ -865,7 +915,7 @@ const T = {
   'msg.badfile':['文件解析失败或字段不合法','Invalid file or schema','ファイル不正'],
   'msg.noname':['请输入方案名称','Please enter a scheme name','方案名を入力してください'],
   'msg.leave':['有未保存的参数修改，确定离开？','Unsaved changes. Leave anyway?','未保存の変更があります。移動しますか？'],
-  'msg.invalid':['{n} 项参数越界已标红（沿用上次有效值计算）','{n} field(s) out of range (using last valid value)','{n} 項目が範囲外（前回値を沿用）'],
+  'msg.invalid':['{n} 项参数无效，结果已暂停；请按提示修正','{n} invalid input(s) — calculation paused','{n} 項目が無効 — 計算停止'],
   'msg.dup':['同名方案已存在。确定 = 覆盖，取消 = 另存为副本。','A scheme with this name exists. OK = overwrite, Cancel = save a copy.','同名方案があります。OK=上書き、キャンセル=複製保存。'],
   'msg.selectone':['请先选择方案','Select a scheme first','方案を選択してください'],
   'msg.loaded':['已载入方案','Scheme loaded','方案を読み込みました'],
@@ -1319,7 +1369,7 @@ const Calc = (function(){
 /* ------------------------------------------------------------------ 状态 */
 const S = {
   params:{}, lang:0, dirty:false, curId:null, res:null,
-  uPow:'auto', uForce:'auto', bad:new Set(), timer:0, draftTimer:0
+  uPow:'auto', uForce:'auto', bad:new Map(), timer:0, draftTimer:0
 };
 const ONOFF = [['开','ON','ON'],['关','OFF','OFF']];
 const SEL_LABEL = {};
@@ -1436,25 +1486,47 @@ function fieldRow(f){
 
   const inp = document.createElement('input');
   inp.type='number'; inp.step = f.step; inp.min = f.min; inp.max = f.max;
-  inp.value = S.params[f.k];
   inp.id = 'in_'+f.k;
+  const err = document.createElement('div');
+  err.className='ferr'; err.hidden=true;
+  const prev = S.bad.get(f.k);
+  if(prev){ inp.classList.add('bad'); inp.value = prev.raw; showFieldErr(err, f, prev.reason); }
+  else inp.value = S.params[f.k];
   inp.addEventListener('input', ()=>{
     const raw = inp.value.trim();
     const v = Number(raw);
-    if(raw==='' || !isFinite(v) || v<f.min || v>f.max){
-      inp.classList.add('bad'); S.bad.add(f.k);
+    let reason = '';
+    if(raw==='') reason='empty';
+    else if(!isFinite(v)) reason='nan';
+    else if(v<f.min) reason='low';
+    else if(v>f.max) reason='high';
+    if(reason){
+      inp.classList.add('bad');
+      S.bad.set(f.k, { k:f.k, raw, reason });
+      showFieldErr(err, f, reason);
     }else{
       inp.classList.remove('bad'); S.bad.delete(f.k);
-      S.params[f.k] = v; markDirty(); schedule();
+      err.hidden = true;
+      S.params[f.k] = v; markDirty();
     }
     updateBadPill();
+    schedule();
   });
   inp.addEventListener('blur', ()=>{
     if(!inp.classList.contains('bad')) inp.value = S.params[f.k];
   });
   wrap.appendChild(inp);
   const u = document.createElement('span'); u.className='u'; u.textContent = f.u||''; wrap.appendChild(u);
+  wrap.appendChild(err);
   return wrap;
+}
+
+/** 在参数行内显示具体错误原因与允许范围（不替换用户输入） */
+function showFieldErr(el, f, reason){
+  el.textContent = t('err.'+reason) + ' · ' + t('err.range', {
+    min: grpNum(f.min,0), max: grpNum(f.max,0), u: f.u||''
+  });
+  el.hidden = false;
 }
 
 function shortKey(k){
@@ -1584,7 +1656,9 @@ function renderChecks(R){
       '<span class="nm">'+esc(t('k.'+c.id+'.n'))+'</span>'+
       '<span class="rs">'+reason+'</span>'+
       '<span class="st">'+esc(t('st.'+c.status))+'</span>'+
-      (c.status!=='pass'?'<span class="ad">↳ '+esc(t('k.'+c.id+'.a'))+'</span>':'');
+      (c.status!=='pass'
+        ? '<span class="ad">↳ '+esc(t('err.affect'))+' '+esc(t('k.'+c.id+'.c'))+'<br>↳ '+esc(t('err.advice'))+' '+esc(t('k.'+c.id+'.a'))+'</span>'
+        : '');
     box.appendChild(div);
   });
   $('checkTag').textContent = t('sum.tpl',{p:R.status.pass,w:R.status.warn,f:R.status.fail});
@@ -1622,6 +1696,10 @@ function updateBadPill(){
 /* ------------------------------------------------------------------ 图表 */
 const Charts = {
   inst:{},
+  clear(){
+    Object.keys(this.inst).forEach(id=>{ try{ this.inst[id].destroy(); }catch(e){} delete this.inst[id]; });
+    document.querySelectorAll('.cb .fb').forEach(f=>f.hidden=false);
+  },
   draw(R){
     if(!window.Chart){
       document.querySelectorAll('.cb .fb').forEach(f=>f.hidden=false);
@@ -1702,6 +1780,7 @@ const Charts = {
 
 /* ------------------------------------------------------------------ 计算调度 */
 function compute(){
+  if(S.bad.size){ renderInvalid(); return; }
   const t0 = performance.now();
   S.res = Calc.run(S.params);
   renderCards(S.res);
@@ -1718,6 +1797,30 @@ function schedule(){
   clearTimeout(S.timer);
   S.timer = setTimeout(()=>{ compute(); persistDraft(); }, 250);
 }
+
+/**
+ * 参数无效：暂停计算，不沿用任何历史值。
+ * 逐项说明「错在哪 / 允许范围 / 影响哪些计算 / 怎么改」。
+ */
+function renderInvalid(){
+  S.res = null;
+  const box = $('cards');
+  const items = [...S.bad.values()].map(info=>{
+    const f = FIELD_MAP[info.k];
+    const side = info.k.startsWith('x_')?' (X)':info.k.startsWith('y_')?' (Y)':'';
+    return '<div class="iv-item"><div class="iv-h"><b>'+esc(t('f.'+shortKey(info.k))+side)+'</b>'+
+      '<span class="iv-v">'+esc(info.raw||'—')+'</span></div>'+
+      '<div class="iv-l">'+esc(t('err.'+info.reason))+' · '+esc(t('err.range',{min:grpNum(f.min,0),max:grpNum(f.max,0),u:f.u||''}))+'</div>'+
+      '<div class="iv-l"><b>'+esc(t('err.affect'))+'</b>'+esc(t('imp.'+f.g))+'</div>'+
+      '<div class="iv-l"><b>'+esc(t('err.advice'))+'</b>'+esc(t('err.fix'))+'</div></div>';
+  }).join('');
+  box.innerHTML = '<div class="iv-panel"><div class="iv-t">⚠ '+esc(t('err.title',{n:S.bad.size}))+'</div>'+items+'</div>';
+  $('states').innerHTML=''; $('detailTbl').innerHTML=''; $('checks').innerHTML='';
+  $('detailTag').textContent=''; $('checkTag').textContent=''; $('stateTag').textContent='';
+  const sum = $('statusSum'); sum.className='pill bad'; sum.textContent = t('err.pill');
+  $('calcTime').textContent=''; $('chartTag').textContent='!';
+  Charts.clear();
+}
 function persistDraft(){
   clearTimeout(S.draftTimer);
   S.draftTimer = setTimeout(()=>{
@@ -1729,6 +1832,12 @@ function persistDraft(){
 function buildPrint(R){
   const name = $('schemeName').value || '—';
   const dt = new Date().toLocaleString();
+  if(!R){
+    $('printRoot').innerHTML = '<div class="pr-hd"><div class="pr-t">'+esc(t('app.title'))+'</div>'+
+      '<div class="pr-m">'+esc(name)+' · '+esc(dt)+'</div></div>'+
+      '<h2 style="color:#b33326">'+esc(t('err.pill'))+'</h2><p>'+esc(t('err.title',{n:S.bad.size}))+'</p>';
+    return;
+  }
   const pv = (v,u)=>{ const x=fmtVal(v,u); return esc(x.v)+(x.u?' '+esc(x.u):''); };
   let h = '<div class="pr-hd"><div class="pr-t">'+esc(t('app.title'))+'</div>'+
     '<div class="pr-m">'+esc(name)+' · '+esc(dt)+'</div></div>';
@@ -1783,7 +1892,7 @@ function buildPrint(R){
     if(c.ref!==undefined) reason = reason.replace('{ref}', smart(c.ref));
     h += '<tr class="st-'+c.status+'"><td class="pn">'+esc(t('k.'+c.id+'.n'))+'</td>'+
       '<td class="ps">'+esc(t('st.'+c.status))+'</td>'+
-      '<td>'+reason+(c.status!=='pass'?'<br><i>'+esc(t('k.'+c.id+'.a'))+'</i>':'')+'</td></tr>';
+      '<td>'+reason+(c.status!=='pass'?'<br><i>'+esc(t('err.affect'))+' '+esc(t('k.'+c.id+'.c'))+'<br>'+esc(t('err.advice'))+' '+esc(t('k.'+c.id+'.a'))+'</i>':'')+'</td></tr>';
   });
   h += '</tbody></table>';
 
@@ -1828,6 +1937,7 @@ function schemeObj(){
     updatedAt:new Date().toISOString(), params:JSON.parse(JSON.stringify(S.params)), summary:summaryOf(R) };
 }
 function saveScheme(forceNew){
+  if(!S.res){ toast(t('err.pill')); return; }
   let name = ($('schemeName').value||'').trim();
   if(!name){ toast(t('msg.noname')); return; }
   const list = Store.list();
@@ -1855,12 +1965,14 @@ function saveScheme(forceNew){
   toast(t('msg.saved'));
 }
 function exportCsv(){
+  if(!S.res){ toast(t('err.pill')); return; }
   const R = S.res; const rows = [];
   rows.push(['#', 'group','item','symbol','formula','substitution','value','unit']);
   R.detail.forEach((d,i)=>rows.push([i+1, d.g, t('d.'+d.id), d.sym, d.formula, d.subst, d.val.toFixed(4), d.u]));
   rows.push([]);
-  rows.push(['#','check','status','value','limit','margin %']);
-  R.checks.forEach((c,i)=>rows.push([i+1, t('k.'+c.id+'.n'), c.status, c.v.toFixed(3), c.l.toFixed(3), c.pct.toFixed(1)]));
+  rows.push(['#','check','status','value','limit','margin %','impact','advice']);
+  R.checks.forEach((c,i)=>rows.push([i+1, t('k.'+c.id+'.n'), c.status, c.v.toFixed(3), c.l.toFixed(3), c.pct.toFixed(1),
+    c.status!=='pass'?t('k.'+c.id+'.c'):'', c.status!=='pass'?t('k.'+c.id+'.a'):'']));
   const csv = '\uFEFF'+rows.map(r=>r.map(x=>{
     const s = String(x===undefined?'':x);
     return /[",\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s;
@@ -1933,6 +2045,7 @@ function drawerOp(ev){
   const list = Store.list(); const i = list.findIndex(s=>s.id===id); if(i<0) return;
   const op = btn.dataset.op;
   if(op==='load'){
+    S.bad.clear();
     S.params = Object.assign(DEFAULTS(), list[i].params||{});
     S.curId = id; $('schemeName').value = list[i].name;
     S.dirty = false; $('dirty').hidden = true;
@@ -1989,6 +2102,7 @@ function bindEvents(){
     rd.readAsText(f);
   });
   $('btnExport').addEventListener('click', ()=>{
+    if(!S.res){ toast(t('err.pill')); return; }
     const o = schemeObj();
     download((o.name||'scheme')+'.json', JSON.stringify({schema:'fourshuttle',version:CONFIG.version,schemes:[o]}, null, 2));
     toast(t('msg.exported'));
@@ -1998,7 +2112,7 @@ function bindEvents(){
     toast(t('msg.exported'));
   });
   $('btnCsv').addEventListener('click', exportCsv);
-  $('btnPrint').addEventListener('click', ()=>{ buildPrint(S.res); setTimeout(()=>window.print(), 80); });
+  $('btnPrint').addEventListener('click', ()=>{ if(!S.res){ toast(t('err.pill')); return; } buildPrint(S.res); setTimeout(()=>window.print(), 80); });
   $('btnReset').addEventListener('click', ()=>{
     if(!confirm(t('btn.reset')+' ?')) return;
     S.params = DEFAULTS(); S.curId = null; S.bad.clear();
