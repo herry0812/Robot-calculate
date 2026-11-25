@@ -1649,6 +1649,23 @@ const App = {
     return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   },
 
+  // 将颜色转为指定透明度（用于行背景浅色）
+  withAlpha(color, a) {
+    const c = (color || '').trim();
+    if (c.charAt(0) === '#') {
+      let h = c.slice(1);
+      if (h.length === 3) h = h.split('').map(x => x + x).join('');
+      const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+      if (isFinite(r) && isFinite(g) && isFinite(b)) return `rgba(${r},${g},${b},${a})`;
+    }
+    const m = c.match(/rgba?\(([^)]+)\)/);
+    if (m) {
+      const s = m[1].split(',').map(x => x.trim());
+      return `rgba(${s[0]},${s[1]},${s[2]},${a})`;
+    }
+    return `rgba(140,150,170,${a})`;
+  },
+
   drawCurves() {
     const cv = document.getElementById('cvCurves');
     const ctx = cv.getContext('2d');
@@ -1697,6 +1714,13 @@ const App = {
       rowY += rowH;
       const y1 = y0 + rowH - 3;
 
+      // 行浅色背景（按曲线颜色着色，区分各参数行）
+      ctx.fillStyle = this.withAlpha(this.cssVar(row.v), 0.07);
+      ctx.fillRect(0, y0, W, rowH);
+      // 行分隔线
+      ctx.beginPath(); ctx.strokeStyle = borderC; ctx.lineWidth = 1;
+      ctx.moveTo(0, y0); ctx.lineTo(W, y0); ctx.stroke();
+
       const vals = pts.map(p => p[row.key]);
       const vRealMax = Math.max(...vals);
       const vMax = Math.max(...vals.map(Math.abs), 0.01);
@@ -1740,17 +1764,19 @@ const App = {
       });
       ctx.stroke();
 
-      // 左侧图例：符号 + 名称 / 最小值 / 最大值
+      // 左侧图例：垂直居中于本行
       const lx = 10;
-      ctx.textAlign = 'left';
+      const cy = y0 + rowH / 2;
+      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
       ctx.font = '600 13px sans-serif'; ctx.fillStyle = this.cssVar(row.v);
-      ctx.fillText(row.label, lx, y0 + 17);
+      ctx.fillText(row.label, lx, cy - 18);
       const lw = ctx.measureText(row.label).width;
       ctx.font = '12px sans-serif'; ctx.fillStyle = dimC;
-      ctx.fillText(row.name, lx + lw + 6, y0 + 17);
+      ctx.fillText(row.name, lx + lw + 6, cy - 18);
       ctx.font = '11px sans-serif'; ctx.fillStyle = mutedC;
-      ctx.fillText(this.t('cvFoldMin') + ' ' + this.fmtProbe(vMin) + ' ' + row.unit, lx, y0 + 36);
-      ctx.fillText(this.t('cvFoldMax') + ' ' + this.fmtProbe(vRealMax) + ' ' + row.unit, lx, y0 + 54);
+      ctx.fillText(this.t('cvFoldMin') + ' ' + this.fmtProbe(vMin) + ' ' + row.unit, lx, cy);
+      ctx.fillText(this.t('cvFoldMax') + ' ' + this.fmtProbe(vRealMax) + ' ' + row.unit, lx, cy + 18);
+      ctx.textBaseline = 'alphabetic';
     });
 
     // 底部轴标签 + 刻度
