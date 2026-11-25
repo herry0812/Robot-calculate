@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>四向穿梭车整机设计计算工具 | Four-Way Shuttle Design Calculator</title>
+<title>OKS机器人设计计算 | OKS Robot Design Calculator</title>
 <style>
 :root{
   --bg:#e9edf3; --panel:#ffffff; --panel2:#f5f7fa; --ink:#1b2430; --ink2:#5b6676; --ink3:#8b95a5;
@@ -121,6 +121,21 @@ aside{position:sticky;top:48px;max-height:calc(100vh - 58px);overflow:auto;paddi
   background:var(--panel2);color:var(--ink3);border:1px solid var(--line2);font-family:var(--mono)}
 .card.bad .cv{color:var(--bad)}
 .card.warn .cv{color:var(--warn)}
+
+/* ---------- cam four-state table ---------- */
+.states{padding:8px 9px;overflow:auto}
+.states table{width:100%;border-collapse:collapse;font-size:11px}
+.states th{background:#eef2f7;color:var(--ink2);font-weight:600;text-align:left;padding:4px 7px;
+  border-bottom:1px solid var(--line);font-size:10.5px;white-space:nowrap}
+.states td{padding:4px 7px;border-bottom:1px solid #f0f3f7}
+.states tr:last-child td{border-bottom:none}
+.states tr:hover{background:#f9fbfe}
+.states td.ang{font-family:var(--mono);color:var(--acc);font-weight:600;white-space:nowrap}
+.states td.gap{font-family:var(--mono);color:var(--ink2);white-space:nowrap}
+.states .chip{font-size:10px;padding:0 6px;border-radius:8px;font-family:var(--mono);white-space:nowrap}
+.states .chip.on{background:var(--acc2);color:var(--acc);border:1px solid var(--acc3)}
+.states .chip.off{background:var(--panel2);color:var(--ink3);border:1px solid var(--line2)}
+.states .sw-note{margin-top:7px;font-size:10.5px;color:var(--ink3);line-height:1.65}
 
 .blk{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);margin-bottom:9px;overflow:hidden}
 .blk>h3{margin:0;padding:6px 9px;background:var(--panel2);border-bottom:1px solid var(--line2);
@@ -241,7 +256,7 @@ table.dt td.res{font-weight:600}
 <body>
 
 <header class="topbar no-print">
-  <div class="tt"><span class="logo">▣</span><span class="t1" data-i18n="app.title">四向穿梭车整机设计计算</span><span class="t2">v1.0</span></div>
+  <div class="tt"><span class="logo">▣</span><span class="t1" data-i18n="app.title">OKS机器人设计计算</span><span class="t2">v2.0</span></div>
   <div class="scheme">
     <input id="schemeName" class="name" value="未命名方案" maxlength="40" spellcheck="false">
     <span id="dirty" class="dirty" hidden data-i18n="app.dirty">未保存</span>
@@ -281,6 +296,10 @@ table.dt td.res{font-weight:600}
       <span id="calcTime" class="lb"></span>
     </div>
     <div id="cards" class="cards"></div>
+    <section class="blk" id="blkStates">
+      <h3 data-act="toggle"><span class="car">▾</span><span data-i18n="sw.title">四状态切换表</span><span class="tag" id="stateTag"></span></h3>
+      <div class="body"><div class="states" id="states"></div></div>
+    </section>
     <section class="blk" id="blkDetail">
       <h3 data-act="toggle"><span class="car">▾</span><span data-i18n="out.detail">计算明细表</span><span class="tag" id="detailTag"></span></h3>
       <div class="body"><div class="tblwrap"><table class="dt" id="detailTbl"></table></div></div>
@@ -334,8 +353,12 @@ table.dt td.res{font-weight:600}
  * 材料库单位：E[Pa] 用于赫兹接触；结构计算单独用 beamMats 的 E[MPa]。
  */
 const CONFIG = {
-  version: '1.0.0',
+  version: '2.0.0',
   g: 9.81,
+  /** OKS 固定 8 轮：X 向 4 轮 + Y 向 4 轮；每向 4 轮，4 个凸轮组（每角 1 组） */
+  wheelsPerDir: 4,
+  wheelsTotal: 8,
+  camGroups: 4,
   /** 轮材质库：e 弹性模量[Pa]、nu 泊松比、f 滚动阻力系数、pAllow 许用轮压[MPa] */
   materials: {
     pu:     { key:'pu',     e:30e6,  nu:0.49, f:0.020, pAllow:5,   t:0 },
@@ -343,13 +366,13 @@ const CONFIG = {
     steel:  { key:'steel',  e:206e9, nu:0.30, f:0.005, pAllow:600, t:0 },
     rubber: { key:'rubber', e:10e6,  nu:0.49, f:0.030, pAllow:2,   t:0 }
   },
-  /** 标准液压缸内径序列 mm（GB/T 2348 常用档） */
-  bores: [20,25,32,40,50,63,80,100,125,160,200],
   /** 常用减速比标准档 */
   ratios: [5,6.3,8,10,12.5,16,20,25,31.5,40,50,63,80,100],
-  /** 主梁材质：屈服强度[MPa] / 弹性模量[MPa] */
-  beamMats: { Q235:{sy:235,e:206000}, Q345:{sy:345,e:206000}, Q355:{sy:355,e:206000} },
-  liftTypes: ['hydraulic','cam','screw','rod'],
+  /** 主梁材质：屈服强度[MPa] / 弹性模量[MPa]；6061-T6 用于超轻铝合金车架 */
+  beamMats: {
+    Q235:{sy:235,e:206000}, Q345:{sy:345,e:206000}, Q355:{sy:355,e:206000},
+    '6061':{sy:240,e:69000}
+  },
   /** 判定阈值：余量比例低于该值时，通过项降级为"警告" */
   warnMargin: 0.10
 };
@@ -374,68 +397,74 @@ const GROUPS = [
  * 字段定义：[key, group, unit, default, min, max, step, type, options]
  * type: num | sel | bool
  * 标签与提示文案走 I18N 的 f.* / t.* 键，避免与计算逻辑耦合。
+ *
+ * OKS 机型口径：
+ *  - 额定载重 ≤ 50 kg，整车自重 < 50 kg（超轻型）
+ *  - 潜伏式顶升，无货叉，承载面即车体顶面（H_deck = H）
+ *  - 8 轮：X 向 4 轮 + Y 向 4 轮；每角「1 X 轮 + 1 Y 轮 + 1 圆柱凸轮」= 凸轮组，共 4 组
+ *  - 同一凸轮完成「顶升 + 换向」，四种状态：未举升 X / 未举升 Y / 举升 X / 举升 Y
+ *  - 货架为纤维增强塑料（立柱与搁板），每库位 4 根支柱、1 个箱子
  */
 const FIELDS = [
   // ① 基本与载荷
-  ['m_load','basic','kg',1000,100,3000,10],
-  ['m_pallet','basic','kg',30,0,500,5],
-  ['m_self','basic','kg',350,150,1500,10],
-  ['h_cg','basic','mm',600,100,2500,10],
-  ['e_off','basic','mm',50,0,200,5],
+  ['m_load','basic','kg',50,10,200,5],
+  ['m_pallet','basic','kg',5,0,100,1],
+  ['m_self','basic','kg',45,20,50,1],
+  ['h_cg','basic','mm',250,50,900,10],
+  ['e_off','basic','mm',20,0,100,5],
   // ② 外形与轮系
-  ['L','geo','mm',1200,800,2500,10],
-  ['W','geo','mm',1100,700,1600,10],
-  ['H','geo','mm',280,150,800,5],
-  ['l_fork','geo','mm',1150,600,2400,10],
-  ['w_fork','geo','mm',1050,600,1500,10],
-  ['t_fork','geo','mm',60,20,200,5],
-  ['D','geo','mm',125,80,250,5],
-  ['b','geo','mm',50,25,120,5],
+  ['L','geo','mm',700,300,1500,10],
+  ['W','geo','mm',600,300,1200,10],
+  ['H','geo','mm',120,60,400,5],
+  ['D','geo','mm',60,30,150,5],
+  ['b','geo','mm',25,10,80,1],
   ['wheel_mat','geo','',  'pu',0,0,0,'sel',['pu','pa','steel','rubber']],
-  ['n_w','geo','',4,4,8,2,'sel',[4,6,8]],
-  ['B','geo','mm',900,500,1500,10],
-  ['A','geo','mm',950,500,2000,10],
-  ['dh','geo','mm',8,0,30,1],
+  ['bx','geo','mm',500,200,1200,10],
+  ['by','geo','mm',420,200,1200,10],
+  ['dh','geo','mm',4,1,20,1],
   // ③ 行走驱动 X 向
-  ['x_v','drvx','m/s',1.5,0.1,3,0.05],
+  ['x_v','drvx','m/s',1.0,0.1,3,0.05],
   ['x_a','drvx','m/s²',0.5,0.05,2,0.05],
-  ['x_ab','drvx','m/s²',0.8,0.1,3,0.05],
+  ['x_ab','drvx','m/s²',0.7,0.1,3,0.05],
   ['x_alpha','drvx','°',0,0,5,0.5],
   ['x_f','drvx','',0.02,0.005,0.1,0.005],
   ['x_eta','drvx','',0.9,0.5,0.98,0.01],
   ['x_iauto','drvx','',true,0,0,0,'bool'],
-  ['x_i','drvx','',13.09,3,100,0.01],
+  ['x_i','drvx','',9.43,3,100,0.01],
   ['x_nm','drvx','rpm',3000,500,6000,50],
-  ['x_k','drvx','',1,1,2,1,'sel',[1,2]],
+  ['x_k','drvx','',2,1,2,1,'sel',[1,2]],
   ['x_ks','drvx','',1.3,1,2.5,0.05],
-  ['x_p_rated','drvx','kW',2.2,0.2,15,0.1],
+  ['x_p_rated','drvx','kW',0.1,0.05,2,0.01],
   // ④ 行走驱动 Y 向
-  ['y_v','drvy','m/s',1.2,0.1,3,0.05],
+  ['y_v','drvy','m/s',0.8,0.1,3,0.05],
   ['y_a','drvy','m/s²',0.4,0.05,2,0.05],
   ['y_ab','drvy','m/s²',0.6,0.1,3,0.05],
   ['y_alpha','drvy','°',0,0,5,0.5],
   ['y_f','drvy','',0.02,0.005,0.1,0.005],
   ['y_eta','drvy','',0.9,0.5,0.98,0.01],
   ['y_iauto','drvy','',true,0,0,0,'bool'],
-  ['y_i','drvy','',16.36,3,100,0.01],
+  ['y_i','drvy','',11.78,3,100,0.01],
   ['y_nm','drvy','rpm',3000,500,6000,50],
-  ['y_k','drvy','',1,1,2,1,'sel',[1,2]],
+  ['y_k','drvy','',2,1,2,1,'sel',[1,2]],
   ['y_ks','drvy','',1.3,1,2.5,0.05],
-  ['y_p_rated','drvy','kW',2.2,0.2,15,0.1],
-  // ⑤ 顶升机构
-  ['lift_type','lift','','hydraulic',0,0,0,'sel',['hydraulic','cam','screw','rod']],
-  ['h_lift','lift','mm',150,20,400,5],
-  ['t_lift','lift','s',2,0.5,10,0.1],
+  ['y_p_rated','drvy','kW',0.1,0.05,2,0.01],
+  // ⑤ 凸轮组（顶升 + 换向）
+  ['h_lift','lift','mm',10,3,60,1],
+  ['t_lift','lift','s',1.2,0.2,5,0.1],
   ['lift_mode','lift','','auto',0,0,0,'sel',['auto','manual']],
-  ['m_lift','lift','kg',1205,100,5000,10],
+  ['m_lift','lift','kg',55,1,300,1],
   ['k_imp','lift','',1.2,1,2,0.05],
-  ['p_sys','lift','MPa',16,5,31.5,1],
-  ['eta_lift','lift','',0.85,0.4,0.98,0.01],
-  ['p_lead','lift','mm',5,1,20,1],
-  ['clr_lift','lift','mm',5,5,50,1],
+  ['clr_lift','lift','mm',5,1,20,1],
+  ['n_cam','lift','rpm',30,1,300,1],
+  ['phi_lift','lift','°',90,30,180,5],
+  ['r_base','lift','mm',25,5,80,1],
+  ['alpha_allow','lift','°',45,10,80,1],
+  ['eta_cam','lift','',0.8,0.4,0.98,0.01],
+  ['t_rated','lift','N·m',0.6,0.05,20,0.05],
+  ['t_delay','lift','s',0.5,0.1,5,0.1],
   // ⑥ 电池与续航
   ['U','batt','V',48,24,80,2],
-  ['Q','batt','Ah',100,20,400,5],
+  ['Q','batt','Ah',20,5,200,1],
   ['dod','batt','',0.8,0.5,1,0.05],
   ['eta_bat','batt','',0.95,0.8,1,0.01],
   ['s_cycle','batt','m',60,10,300,5],
@@ -443,31 +472,33 @@ const FIELDS = [
   ['n_day','batt','次',200,10,2000,10],
   ['t_day','batt','h',8,1,24,0.5],
   ['eta_ch','batt','',0.9,0.7,1,0.01],
-  ['i_ch','batt','A',30,5,200,5],
-  // ⑦ 工况与尺寸链
+  ['i_ch','batt','A',10,2,100,1],
+  // ⑦ 工况、塑料货架与尺寸链
   ['mu','cond','',0.3,0.05,0.8,0.01],
   ['K_d','cond','',1.2,1,2,0.05],
-  ['h_layer','cond','mm',1800,800,12000,50],
-  ['h_cargo','cond','mm',1200,100,3000,50],
-  ['w_slot','cond','mm',1200,700,2000,10],
-  ['c_side','cond','mm',40,5,200,5],
-  ['clr_wheel','cond','mm',3,3,20,1],
-  ['t_delay','cond','s',1,0.2,5,0.1],
+  ['p_shelf','cond','MPa',2.5,0.5,20,0.1],
+  ['t_panel','cond','mm',20,5,60,1],
+  ['post_b','cond','mm',30,10,100,1],
+  ['post_load','cond','N',4000,100,20000,100],
+  ['h_layer','cond','mm',1200,400,4000,50],
+  ['h_cargo','cond','mm',400,100,2000,50],
+  ['w_slot','cond','mm',650,300,1500,10],
+  ['c_side','cond','mm',20,5,100,5],
+  ['clr_wheel','cond','mm',3,1,20,1],
   // ⑧ 高级系数
   ['defl_div','adv','',500,200,1000,50],
   ['kst_min','adv','',1.5,1,3,0.1],
-  ['p_allow','adv','MPa',5,0.5,800,0.5],
+  ['p_allow','adv','MPa',5,0.5,100,0.5],
   ['p_margin','adv','%',10,0,50,1],
   ['ks_struct','adv','',1.5,1,3,0.1],
   ['n_beam','adv','',2,1,4,1,'sel',[1,2,3,4]],
-  ['beam_mat','adv','','Q235',0,0,0,'sel',['Q235','Q345','Q355']],
-  ['beam_h','adv','mm',60,20,200,5],
-  ['beam_b','adv','mm',60,20,200,5],
-  ['beam_t','adv','mm',4,2,20,1],
+  ['beam_mat','adv','','6061',0,0,0,'sel',['Q235','Q345','Q355','6061']],
+  ['beam_h','adv','mm',40,10,200,5],
+  ['beam_b','adv','mm',40,10,200,5],
+  ['beam_t','adv','mm',3,1,20,1],
   ['h_cg_self','adv','mm',250,50,800,10],
-  ['stab_basis','adv','','dir',0,0,0,'sel',['dir','b']],
   ['energy_basis','adv','','steady',0,0,0,'sel',['steady','profile']],
-  ['sb_limit','adv','mm',1500,100,10000,50]
+  ['sb_limit','adv','mm',1000,100,5000,50]
 ].map(a=>({ k:a[0], g:a[1], u:a[2], def:a[3], min:a[4], max:a[5], step:a[6], type:a[7]||'num', opts:a[8] }));
 const FIELD_MAP = {};
 FIELDS.forEach(f=>{ FIELD_MAP[f.k]=f; });
@@ -479,11 +510,11 @@ FIELDS.forEach(f=>{ FIELD_MAP[f.k]=f; });
  * 技术符号与单位（N·m、rpm、mm、MPa…）按工程惯例保持拉丁写法，不做本地化。
  */
 const T = {
-  'app.title':['四向穿梭车整机设计计算','Four-Way Shuttle Design Calc','四方向シャトル設計計算'],
+  'app.title':['OKS机器人设计计算','OKS Robot Design Calc','OKS ロボット設計計算'],
   'app.dirty':['未保存','Unsaved','未保存'],
-  'app.notice':['本工具为工程初算辅助，最终选型须由工程师结合电机/减速机/轮子样本与实际工况实测复核；结果不替代强度校核、型式试验与安全评估。',
-    'Preliminary engineering aid only. Final selection must be verified by an engineer against motor / gearbox / wheel datasheets and measured duty. Not a substitute for strength verification, type tests or safety assessment.',
-    '本ツールは概算設計の補助です。最終選定はエンジニアがモータ・減速機・ホイールのカタログ値と実測条件で確認してください。強度検討・形式試験・安全評価の代替にはなりません。'],
+  'app.notice':['本工具为工程初算辅助，最终选型须由工程师结合电机/减速机/凸轮/轮子样本、塑料货架承载试验与实测工况复核；结果不替代强度校核、型式试验与安全评估。',
+    'Preliminary engineering aid only. Final selection must be verified by an engineer against motor / gearbox / cam / wheel datasheets, plastic-rack load tests and measured duty. Not a substitute for strength verification, type tests or safety assessment.',
+    '本ツールは概算設計の補助です。最終選定はエンジニアがモータ・減速機・カム・ホイールのカタログ値、樹脂ラックの荷重試験、実測条件で確認してください。強度検討・形式試験・安全評価の代替にはなりません。'],
   'btn.example':['载入示例','Load example','サンプル読込'],
   'btn.save':['保存','Save','保存'],
   'btn.saveas':['另存为','Save as','別名保存'],
@@ -503,6 +534,7 @@ const T = {
   'btn.savecopy':['另存为副本','Save copy','複製保存'],
   'out.unit':['单位','Units','単位'],
   'out.detail':['计算明细表','Calculation detail','計算明細'],
+  'out.cards':['关键指标','Key metrics','主要指標'],
   'out.checks':['校核清单','Design checks','検証項目'],
   'out.charts':['曲线图表','Charts','グラフ'],
   'out.unitPow':['功率','Power','出力'],
@@ -522,7 +554,7 @@ const T = {
   'chart.n':['转速 (rpm)','Speed (rpm)','回転数 (rpm)'],
   'chart.tq':['扭矩 (N·m)','Torque (N·m)','トルク (N·m)'],
   'chart.s1':['整车输入功率','Total input power','入力合計'],
-  'chart.s2':['顶升功率','Lift power','昇降出力'],
+  'chart.s2':['凸轮顶升功率','Cam lift power','カム昇降出力'],
   'chart.s3':['工作点','Operating point','動作点'],
   'chart.s4':['额定功率包络','Rated power envelope','定格出力包絡'],
   'tbl.item':['项目','Item','項目'],
@@ -538,32 +570,36 @@ const T = {
   'g.basic':['基本与载荷','Basics & payload','基本・荷重'],
   'g.geo':['外形与轮系','Geometry & wheels','外形・車輪系'],
   'g.drvx':['行走驱动 X 向','Travel drive X','走行駆動 X'],
-  'g.drvy':['行走驱动 Y 向 / 换向','Travel drive Y','走行駆動 Y'],
-  'g.lift':['顶升机构','Lift mechanism','昇降機構'],
+  'g.drvy':['行走驱动 Y 向','Travel drive Y','走行駆動 Y'],
+  'g.lift':['凸轮组（顶升 + 换向）','Cam units (lift + shift)','カムユニット（昇降＋切替）'],
   'g.batt':['电池与续航','Battery & endurance','バッテリ・航続'],
-  'g.cond':['工况与尺寸链','Duty & tolerance chain','稼働条件・寸法連鎖'],
+  'g.cond':['工况、塑料货架与尺寸链','Duty, plastic rack & chain','稼働・樹脂ラック・寸法連鎖'],
   'g.adv':['高级系数','Advanced factors','上級係数'],
+  'geo.note':['整车 8 轮：X 向 4 轮 + Y 向 4 轮。每个角 1 个 X 轮 + 1 个 Y 轮 + 1 个圆柱凸轮 = 1 个凸轮组，共 4 组；同一凸轮同时完成顶升与换向。',
+    '8 wheels total: 4 for X + 4 for Y. Each corner has 1 X wheel + 1 Y wheel + 1 barrel cam = one cam unit (4 units); the same cam performs lift and direction shift.',
+    '全 8 輪：X 用 4 輪＋Y 用 4 輪。各コーナーに X 輪 1＋Y 輪 1＋円筒カム 1＝カムユニット 1（計 4）。同一カムで昇降と切替を兼用。'],
 
   'f.m_load':['额定载重','Rated load','定格積載'], 'f.m_pallet':['托盘/货箱自重','Pallet tare','パレット自重'],
-  'f.m_self':['整车自重','Vehicle mass','車体質量'], 'f.h_cg':['货物重心高度','Cargo CG height','荷重重心高さ'],
+  'f.m_self':['整车自重（<50 kg）','Vehicle mass (<50 kg)','車体質量（<50 kg）'], 'f.h_cg':['货物重心高度','Cargo CG height','荷重重心高さ'],
   'f.e_off':['允许偏心距','Allowed offset','許容偏心'],
-  'f.L':['车身长','Body length','車体長'], 'f.W':['车身宽','Body width','車体幅'], 'f.H':['车身高','Body height','車体高'],
-  'f.l_fork':['货叉长','Fork length','フォーク長'], 'f.w_fork':['货叉宽','Fork width','フォーク幅'],
-  'f.t_fork':['货叉厚','Fork thickness','フォーク厚'], 'f.D':['行走轮直径','Wheel diameter','車輪径'],
-  'f.b':['轮宽','Wheel width','車輪幅'], 'f.wheel_mat':['轮材质','Wheel material','車輪材質'],
-  'f.n_w':['每向轮数','Wheels per direction','方向当たり車輪数'], 'f.B':['轮距','Track','輪距'],
-  'f.A':['轴距','Wheelbase','軸距'], 'f.dh':['两向轮组高度差','Wheel-set height diff','車輪群高低差'],
+  'f.L':['车身长','Body length','車体長'], 'f.W':['车身宽','Body width','車体幅'], 'f.H':['车身（承载面）高','Body (deck) height','車体（デッキ）高'],
+  'f.D':['行走轮直径','Wheel diameter','車輪径'], 'f.b':['轮宽','Wheel width','車輪幅'],
+  'f.wheel_mat':['轮材质','Wheel material','車輪材質'],
+  'f.bx':['X 轮距','X wheel base','X 輪距'], 'f.by':['Y 轮距','Y wheel base','Y 輪距'],
+  'f.dh':['X/Y 轮组高度差','Wheel-set height diff','X/Y 車輪群高低差'],
   'f.v':['最高速度','Max speed','最高速度'], 'f.a':['加速度','Acceleration','加速度'],
   'f.ab':['减速度','Deceleration','減速度'], 'f.alpha':['轨道坡度','Track slope','軌道勾配'],
   'f.f':['滚动阻力系数','Rolling resistance','転がり抵抗係数'], 'f.eta':['传动效率','Drive efficiency','伝達効率'],
   'f.iauto':['自动求解减速比','Auto gear ratio','減速比自動計算'], 'f.i':['减速比','Gear ratio','減速比'],
-  'f.nm':['电机额定转速','Motor rated speed','モータ定格回転数'], 'f.k':['驱动电机数量','Motor count','モータ数'],
+  'f.nm':['电机额定转速','Motor rated speed','モータ定格回転数'], 'f.k':['每向驱动电机数','Motors per direction','方向当たりモータ数'],
   'f.ks':['安全系数 K_s','Safety factor K_s','安全率 K_s'], 'f.p_rated':['电机样本额定功率','Motor rated power','モータ定格出力'],
-  'f.lift_type':['顶升形式','Lift type','昇降方式'], 'f.h_lift':['顶升行程','Lift stroke','昇降ストローク'],
-  'f.t_lift':['顶升时间','Lift time','昇降時間'], 'f.lift_mode':['顶升质量模式','Lift mass mode','昇降質量モード'],
-  'f.m_lift':['顶升质量','Lifted mass','昇降質量'], 'f.k_imp':['冲击系数','Impact factor','衝撃係数'],
-  'f.p_sys':['系统压力','System pressure','系統圧力'], 'f.eta_lift':['机构效率','Mechanism efficiency','機構効率'],
-  'f.p_lead':['丝杠导程','Screw lead','ボールねじリード'], 'f.clr_lift':['顶升安全余量','Stroke margin','ストローク余裕'],
+  'f.h_lift':['顶升行程','Lift stroke','昇降ストローク'], 'f.t_lift':['顶升时间','Lift time','昇降時間'],
+  'f.lift_mode':['顶升质量模式','Lift mass mode','昇降質量モード'], 'f.m_lift':['顶升质量','Lifted mass','昇降質量'],
+  'f.k_imp':['冲击系数','Impact factor','衝撃係数'], 'f.clr_lift':['顶升行程安全余量','Stroke margin','ストローク余裕'],
+  'f.n_cam':['凸轮转速','Cam speed','カム回転数'], 'f.phi_lift':['举升/分度角','Lift / index angle','昇降・割出角度'],
+  'f.r_base':['凸轮基圆半径','Cam base radius','カム基円半径'], 'f.alpha_allow':['许用压力角','Allowable pressure angle','許容圧力角'],
+  'f.eta_cam':['凸轮组效率','Cam unit efficiency','カムユニット効率'], 'f.t_rated':['凸轮额定转矩','Cam rated torque','カム定格トルク'],
+  'f.t_delay':['状态确认延时','State confirm delay','状態確認遅延'],
   'f.U':['电压平台','Voltage','電圧'], 'f.Q':['电池容量','Battery capacity','バッテリ容量'],
   'f.dod':['放电深度 DOD','Depth of discharge','放電深度'], 'f.eta_bat':['放电效率','Discharge efficiency','放電効率'],
   'f.s_cycle':['单次循环行走距离','Travel per cycle','1 サイクル走行距離'],
@@ -571,104 +607,104 @@ const T = {
   'f.n_day':['每日循环次数','Cycles per day','1 日サイクル数'], 'f.t_day':['每日工作时长','Shift hours','1 日稼働時間'],
   'f.eta_ch':['充电效率','Charge efficiency','充電効率'], 'f.i_ch':['充电电流','Charge current','充電電流'],
   'f.mu':['附着系数','Friction coefficient','付着係数'], 'f.K_d':['动载系数','Dynamic factor','動荷重係数'],
+  'f.p_shelf':['塑料搁板许用面压','Plastic deck allow. pressure','樹脂棚許容面圧'],
+  'f.t_panel':['搁板厚度','Deck thickness','棚板厚'], 'f.post_b':['支柱截面边长','Post side length','支柱断面辺'],
+  'f.post_load':['单柱许用载荷','Post allowable load','支柱許容荷重'],
   'f.h_layer':['货架层高','Rack level height','ラック段高さ'], 'f.h_cargo':['货物总高','Cargo height','荷高さ'],
   'f.w_slot':['货位净宽','Slot clear width','棚口内幅'], 'f.c_side':['侧间隙要求','Side clearance req.','側面余裕要求'],
   'f.clr_wheel':['非承载轮离地间隙','Idle wheel clearance','非接地車輪クリアランス'],
-  'f.t_delay':['换向延时','Shift delay','切替遅延'],
   'f.defl_div':['挠度限值 1/n','Deflection limit 1/n','たわみ限界 1/n'],
-  'f.kst_min':['稳定系数要求','Stability factor req.','安定率要求'], 'f.p_allow':['许用轮压','Allowable pressure','許容面圧'],
-  'f.p_margin':['轮压安全余量','Pressure margin','面圧余裕'], 'f.ks_struct':['结构安全系数','Structural safety factor','構造安全率'],
+  'f.kst_min':['稳定系数要求','Stability factor req.','安定率要求'], 'f.p_allow':['轮材质许用轮压','Wheel allow. pressure','車輪許容面圧'],
+  'f.p_margin':['压力安全余量','Pressure margin','面圧余裕'], 'f.ks_struct':['结构安全系数','Structural safety factor','構造安全率'],
   'f.n_beam':['主梁数量','Main beams','主桁本数'], 'f.beam_mat':['主梁材质','Beam material','主桁材質'],
   'f.beam_h':['主梁外高','Beam outer height','主桁外高'], 'f.beam_b':['主梁外宽','Beam outer width','主桁外幅'],
   'f.beam_t':['主梁壁厚','Beam wall thickness','主桁肉厚'], 'f.h_cg_self':['车体重心高','Body CG height','車体重心高さ'],
-  'f.stab_basis':['稳定支距口径','Stability base basis','安定支距基準'],
   'f.energy_basis':['能耗计算口径','Energy model','消費電力モデル'], 'f.sb_limit':['允许制动距离','Allowed braking dist.','許容制動距離'],
 
-  't.m_load':['F_f、ΣF 与轮压的起点。按单托盘最大净重取值，含超载工况时另加余量。','Drives F_f, ΣF and wheel load. Use the heaviest single pallet; add margin for overload cases.','F_f・ΣF・面圧の起点。1 パレットの最大積載で入力。'],
-  't.m_pallet':['托盘或货箱自重，计入总质量 M。','Pallet or bin tare mass, included in M.','パレット等の自重。M に加算。'],
-  't.m_self':['含车架、轮系、电池、电机减速机。可按同类机型类比或点估算。','Frame, wheel sets, battery, drives. Estimate from a similar machine.','フレーム・車輪・電池・駆動系を含む。類似機で概算可。'],
-  't.h_cg':['M 的合成重心与临界加速度 a_crit = g·(支距/2)/H_cg 直接相关，取载货后重心。','Feeds H_cg,act → a_crit = g·(base/2)/H_cg. Use the loaded CG.','H_cg,act → a_crit = g·(支距/2)/H_cg に影響。積載時重心。'],
-  't.e_off':['偏心使单侧轮压放大：N_max = N·(1+2e/B)。货叉偏载或托盘变形时取实测值。','Off-centre load amplifies wheel load: N_max = N·(1+2e/B). Use measured values.','偏心で片側面圧が増加：N_max = N·(1+2e/B)。'],
-  't.L':['主梁简支梁跨距，δ = 5qL⁴/(384EI) 对 L 极敏感。','Simply-supported span for the beam check; δ scales with L⁴.','主桁の支間。δ は L⁴ に比例。'],
-  't.W':['与货位净宽一起校核侧向间隙：(w_slot-W)/2。','Used with slot width for side clearance.','棚口内幅との側面余裕に使用。'],
-  't.H':['车架高，承载面高 H_deck = H + 货叉厚。','Frame height; deck height H_deck = H + fork thickness.','車体高。デッキ高 = H + フォーク厚。'],
-  't.l_fork':['承载面纵向尺寸，影响整车长度与货位匹配。','Fork length for slot matching.','フォーク長。棚口との整合に使用。'],
-  't.w_fork':['侧向尺寸链基准：(w_slot - w_fork)/2。','Side tolerance basis: (w_slot - w_fork)/2.','側面寸法連鎖の基準。'],
-  't.t_fork':['承载面厚度，进入 H_deck 与垂直尺寸链。','Deck thickness, part of H_deck.','デッキ厚。H_deck に加算。'],
-  't.D':['n_w = 60v/(πD/1000)；T_w = ΣF·D/2000。径小则转速高、扭矩小。','n_w = 60v/(πD/1000); T_w = ΣF·D/2000. Smaller D → higher speed, lower torque.','n_w = 60v/(πD/1000)、T_w = ΣF·D/2000。'],
-  't.b':['赫兹接触宽度与轮压：A = 2a_h·b。轮宽越大 p_w 越低。','Hertz contact area A = 2a_h·b; wider wheel → lower pressure.','ヘルツ接触幅 A = 2a_h·b。'],
-  't.wheel_mat':['切换材质会联动写入滚动阻力系数 f 与许用轮压 p_allow（可在高级系数改回）。','Switching material writes f and p_allow; override in Advanced.','材質変更で f と p_allow を自動設定（上級係数で変更可）。'],
-  't.n_w':['单轮法向载荷 N = M·g·K_d/n_w，同时决定附着校核的 k/4 项。','N = M·g·K_d/n_w; also sets the k/4 term in the adhesion check.','N = M·g·K_d/n_w。'],
-  't.B':['横倾支距：a_crit,Y = g·(B/2)/H_cg；偏心轮压也用它。','Rollover base in Y: a_crit,Y = g·(B/2)/H_cg. Also used for eccentric load.','横転支距：a_crit,Y = g·(B/2)/H_cg。'],
-  't.A':['纵倾支距：a_crit,X = g·(A/2)/H_cg。','Pitch base in X: a_crit,X = g·(A/2)/H_cg.','前後支距：a_crit,X = g·(A/2)/H_cg。'],
-  't.dh':['顶升换向时非承载轮离地间隙来源，要求 ≥ 3 mm（工况页可改）。','Idle wheel lift-off gap; must be ≥ 3 mm.','非接地車輪の浮上量。3 mm 以上。'],
-  't.v':['n_w = 60v/(πD/1000)，P_pk = ΣF·v/η。两向可不同，取严者定功率。','n_w = 60v/(πD/1000), P_pk = ΣF·v/η. Use the stricter direction for rating.','n_w = 60v/(πD/1000)、P_pk = ΣF·v/η。'],
-  't.a':['F_a = M·a，占 ΣF 大头；同时受稳定系数 K_st = a_crit/a 约束。','F_a = M·a dominates ΣF; also limited by K_st = a_crit/a.','F_a = M·a。K_st = a_crit/a で制約。'],
+  't.m_load':['超轻型设计上限 50 kg；F_f、ΣF 与轮压的起点，取单箱最大净重。','Light-duty max 50 kg; drives F_f, ΣF and wheel load.','超軽量 50 kg 上限。F_f・ΣF・面圧の起点。'],
+  't.m_pallet':['塑料箱/托盘自重，计入总质量 M。','Plastic bin or pallet tare, included in M.','樹脂箱等の自重。M に加算。'],
+  't.m_self':['含车架、8 轮、4 凸轮组、电池与驱动；整机要求 < 50 kg。','Frame, 8 wheels, 4 cam units, battery and drives; must stay below 50 kg.','フレーム・8 輪・4 カム・電池・駆動を含む。50 kg 未満。'],
+  't.h_cg':['载货后重心高，直接进入 a_crit = g·(轮距/2)/H_cg。','Loaded CG height; feeds a_crit = g·(base/2)/H_cg.','積載時重心高。a_crit に影響。'],
+  't.e_off':['偏心使单侧轮压放大：N_max = N·(1+2e/by)。','Off-centre load: N_max = N·(1+2e/by).','偏心で片側面圧増加：N_max = N·(1+2e/by)。'],
+  't.L':['主梁简支梁跨距，δ = 5qL⁴/(384EI) 对 L 极敏感。','Simply-supported span; δ scales with L⁴.','主桁支間。δ は L⁴ に比例。'],
+  't.W':['潜伏式顶升无货叉，侧向尺寸链用车身宽：c_side = (w_slot − W)/2。','No fork; side chain uses body width: c_side = (w_slot − W)/2.','フォーク無し。側面連鎖は車体幅で算出。'],
+  't.H':['无货叉，承载面高 H_deck = H，进入垂直尺寸链。','No fork: deck height H_deck = H.','フォーク無し：H_deck = H。'],
+  't.D':['n_w = 60v/(πD/1000)；T_w = ΣF·D/2000。径小则转速高、扭矩小。','n_w = 60v/(πD/1000); T_w = ΣF·D/2000.','n_w = 60v/(πD/1000)、T_w = ΣF·D/2000。'],
+  't.b':['赫兹接触宽度与轮压：A = 2a_h·b。轮宽越大 p_w 越低。','Hertz contact A = 2a_h·b; wider wheel → lower pressure.','ヘルツ接触 A = 2a_h·b。'],
+  't.wheel_mat':['切换材质会联动写入滚动阻力系数 f 与轮材许用轮压（最终轮压取它与塑料搁板许用值的较小者）。','Sets f and wheel allowable pressure; final limit is min(wheel, plastic deck).','f と車輪許容面圧を自動設定。最終値は樹脂棚との小さい方。'],
+  't.bx':['X 向（纵向）支距：a_crit,X = g·(bx/2)/H_cg,act，用于纵向稳定。','Longitudinal base: a_crit,X = g·(bx/2)/H_cg,act.','前後支距：a_crit,X = g·(bx/2)/H_cg,act。'],
+  't.by':['Y 向（横向）支距：a_crit,Y = g·(by/2)/H_cg,act，并用于偏心轮压。','Lateral base: a_crit,Y = g·(by/2)/H_cg,act; also used for eccentric load.','左右支距：a_crit,Y = g·(by/2)/H_cg,act。'],
+  't.dh':['凸轮把非承载轮组抬离地面的高度，须 ≥ 非承载轮离地间隙要求。','Lift-off height of idle wheels given by the cam; must meet the clearance requirement.','非接地車輪の浮上量。クリアランス要求以上。'],
+  't.v':['n_w = 60v/(πD/1000)，P_pk = ΣF·v/η。两向可不同，取严者定功率。','n_w = 60v/(πD/1000), P_pk = ΣF·v/η.','n_w = 60v/(πD/1000)、P_pk = ΣF·v/η。'],
+  't.a':['F_a = M·a，占 ΣF 大头；同时受稳定系数 K_st = a_crit/a 约束。','F_a = M·a dominates ΣF; limited by K_st = a_crit/a.','F_a = M·a。K_st = a_crit/a で制約。'],
   't.ab':['制动距离 s_b = v²/(2a_b)，制动力 F_b = M·a_b。','s_b = v²/(2a_b), F_b = M·a_b.','s_b = v²/(2a_b)、F_b = M·a_b。'],
-  't.alpha':['F_g = M·g·sinα；有坡道时按最大坡度取。','F_g = M·g·sinα; use the steepest ramp.','F_g = M·g·sinα。最大勾配で入力。'],
-  't.f':['PU 0.015–0.03，尼龙 0.012–0.02，钢轮 0.003–0.008。轨道清洁度差时取上限。','PU 0.015–0.03, nylon 0.012–0.02, steel 0.003–0.008. Use upper bound for dirty track.','PU 0.015–0.03、ナイロン 0.012–0.02、鋼 0.003–0.008。'],
+  't.alpha':['F_g = M·g·sinα；有坡道时按最大坡度取。','F_g = M·g·sinα; use the steepest ramp.','F_g = M·g·sinα。'],
+  't.f':['PU 0.015–0.03，尼龙 0.012–0.02，钢轮 0.003–0.008。轨道不洁取上限。','PU 0.015–0.03, nylon 0.012–0.02, steel 0.003–0.008.','PU 0.015–0.03、ナイロン 0.012–0.02、鋼 0.003–0.008。'],
   't.eta':['齿轮减速机 0.90–0.95，蜗轮蜗杆 0.6–0.8。','Planetary 0.90–0.95; worm 0.6–0.8.','遊星 0.90–0.95、ウォーム 0.6–0.8。'],
   't.iauto':['开：i = n_m/n_w 由计算得出；关：i 变输入，反解 v = πD·n_m/(60i) 并回填全链。','On: i = n_m/n_w computed. Off: i is input, v is back-solved.','ON：i を計算。OFF：i 入力、v を逆算。'],
-  't.i':['自动模式下只读。关闭后可手填样本速比，实际速度随之下调。','Read-only in auto mode. When off, enter the datasheet ratio.','自動時は読取専用。'],
-  't.nm':['伺服 3000 rpm 常见，异步 1500/3000 rpm。额定点扭矩决定选型。','Servo 3000 rpm typical. Rated-point torque drives selection.','サーボ 3000 rpm が一般的。'],
-  't.k':['k=1 单驱，k=2 双驱分担。注意 K_s 只作用在总功率上一次。','k=1 single drive, k=2 dual. K_s is applied once to total power.','k=1 単駆動、k=2 両駆動。K_s は総出力に 1 回。'],
+  't.i':['自动模式下只读。关闭后可手填样本速比，实际速度随之下调。','Read-only in auto mode.','自動時は読取専用。'],
+  't.nm':['伺服 3000 rpm 常见，额定点扭矩决定选型。','Servo 3000 rpm typical.','サーボ 3000 rpm が一般的。'],
+  't.k':['每向驱动电机数（X、Y 各一组）。k=2 时功率与附着均按双机分摊。','Motors per direction. k=2 splits power and traction.','方向当たりモータ数。k=2 で分担。'],
   't.ks':['工程初算取 1.2–1.5；包含启停冲击与电压波动。','Use 1.2–1.5 for preliminary design.','概算では 1.2–1.5。'],
-  't.p_rated':['仅用于"电机功率"校核对照，不参与功率需求计算。','Only for the motor-power check; not used in the demand calculation.','モータ出力検証の比較用。'],
-  't.lift_type':['液压输出缸径/压力/流量；凸轮与丝杠输出扭矩；推杆按丝杠等效导程。','Hydraulic → bore/pressure/flow; cam & screw → torque; rod uses screw formula.','油圧はボア径・圧力・流量、カム・ねじはトルク。'],
-  't.h_lift':['校核 h ≥ Δh + 余量；同时进入垂直尺寸链。','Check h ≥ Δh + margin; also part of the vertical chain.','h ≥ Δh + 余裕を検証。'],
-  't.t_lift':['决定顶升功率 P = F·(h/1000)/t/η 与换向节拍。','Sets P_lift and the shift cycle time.','P_lift と切替サイクルを決定。'],
-  't.lift_mode':['自动 = 载重 + 托盘 + 0.5×车重；手动用于特殊夹具。','Auto = load + pallet + 0.5×body. Manual for special fixtures.','自動 = 積載+パレット+0.5×車重。'],
-  't.m_lift':['自动模式只读。顶升力 F_lift = m_lift·g·K_imp。','Read-only in auto mode. F_lift = m_lift·g·K_imp.','自動時は読取専用。'],
-  't.k_imp':['取放货冲击 1.1–1.4，硬限位取上限。','1.1–1.4; use the upper bound for hard stops.','1.1–1.4。ハードストップは上限。'],
-  't.p_sys':['液压系统常用 12–20 MPa；缸径按 d = √(4F/(πp)) 反算后圆整。','Typical 12–20 MPa. Bore is solved then rounded to standard.','油圧は 12–20 MPa が一般的。'],
-  't.eta_lift':['液压缸 0.85–0.95，丝杠 0.6–0.9，凸轮 0.5–0.8。','Cylinder 0.85–0.95; screw 0.6–0.9; cam 0.5–0.8.','油圧 0.85–0.95、ねじ 0.6–0.9、カム 0.5–0.8。'],
-  't.p_lead':['T = F·P_lead/(2π·η)。导程越大扭矩越大、转速越低。','T = F·P_lead/(2π·η).','T = F·P_lead/(2π·η)。'],
-  't.clr_lift':['行程校核的安全余量，一般 ≥ 5 mm。','Stroke margin, normally ≥ 5 mm.','ストローク余裕。通常 5 mm 以上。'],
-  't.U':['48 V 为主流；重载可 80 V。Q_req = E_day/(U·DOD·η_b)。','48 V typical; 80 V for heavy duty.','48 V が主流、重載は 80 V。'],
-  't.Q':['与 Q_req 比较判定容量是否足够；实际续航 N_ok = E_use/E_c。','Compared with Q_req; endurance N_ok = E_use/E_c.','Q_req と比較。'],
+  't.p_rated':['仅用于"电机功率"校核对照，不参与功率需求计算。','Only for the motor-power check.','モータ出力検証の比較用。'],
+  't.h_lift':['潜伏式顶升行程，校核 h ≥ Δh + 余量；同时进入垂直尺寸链。','Check h ≥ Δh + margin; part of the vertical chain.','h ≥ Δh + 余裕を検証。'],
+  't.t_lift':['决定顶升功率 P = F·(h/1000)/t/η 与状态切换时间。','Sets lift power and state-change time.','P_lift と状態切替時間を決定。'],
+  't.lift_mode':['自动 = 载重 + 托盘（顶升整垛）；手动用于特殊夹具/工装。','Auto = load + pallet; manual for fixtures.','自動 = 積載+パレット。手動は治具用。'],
+  't.m_lift':['自动模式只读。顶升力 F_lift = m_lift·g·K_imp，四组均分 F_cam = F_lift/4。','Read-only in auto. F_lift = m_lift·g·K_imp, F_cam = F_lift/4.','自動時は読取専用。F_cam = F_lift/4。'],
+  't.k_imp':['取放货冲击 1.1–1.4，硬限位取上限。','1.1–1.4; upper bound for hard stops.','1.1–1.4。ハードストップは上限。'],
+  't.clr_lift':['行程校核的安全余量，一般 ≥ 5 mm。','Stroke safety margin, normally ≥ 5 mm.','ストローク余裕。通常 5 mm 以上。'],
+  't.n_cam':['凸轮最高转速。建议与举升时间匹配：n_cam ≈ φ_lift·60/(360·t_lift)，否则转矩按功率法会偏离实际。','Cam max speed. Keep n_cam ≈ φ_lift·60/(360·t_lift) with the lift time.','カム最高回転数。n_cam ≈ φ_lift·60/(360·t_lift) が目安。'],
+  't.phi_lift':['完成一次举升（或一个工位分度）所需的凸轮转角，默认 90°。','Cam angle per lift/index step, default 90°.','1 回の昇降・割出に要するカム角度。既定 90°。'],
+  't.r_base':['压力角 α = atan((h_lift/φ)/r_base)，基圆越大压力角越小。','α = atan((h_lift/φ)/r_base); larger base → smaller angle.','α = atan((h_lift/φ)/r_base)。'],
+  't.alpha_allow':['圆柱凸轮许用压力角一般 ≤ 45°。','Cylindrical cam pressure angle normally ≤ 45°.','円筒カムは通常 45° 以下。'],
+  't.eta_cam':['含凸轮副、导向与轴承损失，0.6–0.85。','Includes cam pair, guides and bearings, 0.6–0.85.','カム対・ガイド・軸受損失込み 0.6–0.85。'],
+  't.t_rated':['凸轮/减速机输出额定转矩，用于与 T_cam 比较。','Cam/gearbox rated output torque vs T_cam.','カム・減速機の定格トルク。'],
+  't.t_delay':['制动与状态确认延时，0.3–1 s。','Brake and state-confirm delay, 0.3–1 s.','制動・状態確認の遅延。'],
+  't.U':['48 V 为主流；Q_req = E_day/(U·DOD·η_b)。','48 V typical.','48 V が主流。'],
+  't.Q':['与 Q_req 比较判定容量是否足够；续航 N_ok = E_use/E_c。','Compared with Q_req; endurance N_ok = E_use/E_c.','Q_req と比較。'],
   't.dod':['磷酸铁锂取 0.8，铅酸取 0.5–0.6。','LiFePO4 0.8; lead-acid 0.5–0.6.','LFP 0.8、鉛 0.5–0.6。'],
   't.eta_bat':['含 DC/DC 与线损，0.92–0.97。','Includes DC/DC and cable loss, 0.92–0.97.','DC/DC・配線損失込み 0.92–0.97。'],
-  't.s_cycle':['一个存取循环的总行走距离，图表按 s/2 作单程。','Total travel per cycle; charts use s/2 per leg.','1 サイクルの総走行距離。グラフは s/2 を片道。'],
+  't.s_cycle':['一个存取循环的总行走距离，图表按 s/2 作单程。','Total travel per cycle; charts use s/2 per leg.','1 サイクルの総走行距離。'],
   't.n_lift_cycle':['每循环顶升次数，进入 E_c = P_v·t + n·P_lift·t_lift。','Lifts per cycle in E_c.','1 サイクルの昇降回数。'],
-  't.n_day':['日能耗 E_day = E_c·N_day，直接决定容量与充电次数。','E_day = E_c·N_day drives capacity and charging.','E_day = E_c·N_day。'],
-  't.t_day':['用于判断续航是否覆盖班次，不足则需机会充电。','Used to judge whether endurance covers the shift.','航続が勤務時間を満たすか判定。'],
+  't.n_day':['日能耗 E_day = E_c·N_day，直接决定容量与充电次数。','E_day = E_c·N_day.','E_day = E_c·N_day。'],
+  't.t_day':['用于判断续航是否覆盖班次，不足则需机会充电。','Judges whether endurance covers the shift.','航続が勤務時間を満たすか判定。'],
   't.eta_ch':['充电机效率 0.85–0.93。','Charger efficiency 0.85–0.93.','充電器効率 0.85–0.93。'],
   't.i_ch':['单次充电时长 t = Q·DOD/I_ch。','t = Q·DOD/I_ch.','t = Q·DOD/I_ch。'],
-  't.mu':['聚氨酯轮对钢轨 0.2–0.5，潮湿或油污取低值。','PU on steel 0.2–0.5; lower when oily.','PU-鋼 0.2–0.5。'],
+  't.mu':['聚氨酯轮对塑料/钢 0.2–0.5，潮湿或油污取低值。','PU on plastic/steel 0.2–0.5; lower when oily.','PU-樹脂/鋼 0.2–0.5。'],
   't.K_d':['轮压动载放大，1.1–1.4。','Wheel-load dynamic factor 1.1–1.4.','面圧動的係数 1.1–1.4。'],
-  't.h_layer':['垂直尺寸链基准：c_v = h_layer − (H_deck + h_cargo + h_lift + Δh)。','Vertical chain basis.','上下寸法連鎖の基準。'],
-  't.h_cargo':['含托盘高度的货物外形高。','Cargo height including the pallet.','パレット込みの荷高さ。'],
-  't.w_slot':['侧向尺寸链基准：单侧间隙 = (w_slot − w_fork)/2。','Side chain basis.','側面寸法連鎖の基準。'],
-  't.c_side':['设计要求的单侧最小间隙，一般 30–50 mm。','Required one-side clearance, usually 30–50 mm.','片側最小余裕。通常 30–50 mm。'],
+  't.p_shelf':['纤维增强塑料搁板许用面压（含蠕变），一般 1.5–3 MPa；轮压取 min(轮材许用, 搁板许用)。','FRP deck allowable pressure incl. creep, 1.5–3 MPa; wheel limit = min(wheel, deck).','FRP 棚の許容面圧（クリープ込み）1.5–3 MPa。'],
+  't.t_panel':['塑料搁板厚度，进入垂直尺寸链。','Plastic deck thickness; part of the vertical chain.','棚板厚。上下寸法連鎖に加算。'],
+  't.post_b':['塑料立柱方形截面边长，用于单柱压应力校核。','Square plastic post side; used for post compression stress.','樹脂支柱の断面辺。圧縮応力検討に使用。'],
+  't.post_load':['单个支柱许用轴向载荷（由货架厂提供）。','Allowable axial load per post (from rack vendor).','支柱 1 本の許容軸荷重。'],
+  't.h_layer':['垂直尺寸链：c_v = h_layer − (t_panel + h_cargo + h_lift + Δh)。','Vertical chain: c_v = h_layer − (t_panel + h_cargo + h_lift + Δh).','上下連鎖：c_v = h_layer − (t_panel + h_cargo + h_lift + Δh)。'],
+  't.h_cargo':['含托盘/箱体的货物总高。','Cargo height including bin/pallet.','パレット込みの荷高さ。'],
+  't.w_slot':['侧向尺寸链：单侧间隙 = (w_slot − W)/2。','Side chain: (w_slot − W)/2.','側面連鎖：(w_slot − W)/2。'],
+  't.c_side':['设计要求的单侧最小间隙，超轻车型一般 15–30 mm。','Required one-side clearance, usually 15–30 mm.','片側最小余裕。通常 15–30 mm。'],
   't.clr_wheel':['换向时非承载轮必须离地，一般 ≥ 3 mm。','Idle wheels must lift off during shifting, ≥ 3 mm.','切替時に非接地車輪を浮かせる。3 mm 以上。'],
-  't.t_delay':['PLC 换向确认与延时，0.5–2 s。','PLC confirmation delay, 0.5–2 s.','PLC 切替確認の遅延。'],
   't.defl_div':['主梁挠度限值 L/n，500 为常规，精密定位取 800。','Deflection limit L/n; 500 typical.','たわみ限界 L/n。'],
   't.kst_min':['稳定系数 K_st = a_crit/a ≥ 1.5（保守可取 1.8）。','K_st ≥ 1.5; 1.8 for conservative design.','K_st ≥ 1.5。'],
-  't.p_allow':['聚氨酯 3–8，尼龙 20–30，钢轮按赫兹另算。切换材质会自动联动。','PU 3–8 MPa, nylon 20–30 MPa. Auto-linked with material.','PU 3–8 MPa、ナイロン 20–30 MPa。'],
+  't.p_allow':['聚氨酯 3–8，尼龙 20–30，钢轮按赫兹另算；最终轮压还会与塑料搁板许用值取小。','PU 3–8 MPa, nylon 20–30 MPa; final limit is min with the plastic deck.','PU 3–8 MPa、ナイロン 20–30 MPa。'],
   't.p_margin':['轮压余量低于该比例时判"警告"。','Below this margin the wheel check turns to WARN.','この余裕を下回ると注意判定。'],
   't.ks_struct':['σ ≤ σ_s/n，一般 1.5。','σ ≤ σ_s/n, normally 1.5.','σ ≤ σ_s/n。'],
   't.n_beam':['载荷按主梁数量均分：q = M·g·K_d/(n_b·L)。','Load shared by beam count.','荷重を主桁本数で分担。'],
-  't.beam_mat':['决定 σ_s 与 E（Q235/Q345/Q355）。','Sets σ_s and E.','σ_s と E を決定。'],
+  't.beam_mat':['决定 σ_s 与 E；超轻车架推荐 6061-T6 铝。','Sets σ_s and E; 6061-T6 for light frames.','σ_s と E。超軽量は 6061-T6。'],
   't.beam_h':['方管外高，W_x = 2I/H，对强度最敏感。','Outer height; W_x = 2I/H.','外高。W_x = 2I/H。'],
   't.beam_b':['方管外宽。','Outer width.','外幅。'],
   't.beam_t':['壁厚，进入 I 与 W_x 计算。','Wall thickness for I and W_x.','肉厚。'],
   't.h_cg_self':['只算车体部分的重心高，用于合成 H_cg,act。','Body-only CG height for H_cg,act.','車体のみの重心高。'],
-  't.stab_basis':['按行驶方向：X 用轴距 A、Y 用轮距 B（推荐）；严格按 B/2 则两向都用轮距。','By direction (X→A, Y→B), or strictly B/2 for both.','方向別（X→A、Y→B）または B/2 固定。'],
-  't.energy_basis':['匀速近似 = P_v·t（原文口径）；曲线积分 = 按加减速曲线逐段积分。','Steady = P_v·t (spec formula); Profile = integrate the accel profile.','定速近似 = P_v·t、曲線積分 = 加減速を積分。'],
+  't.energy_basis':['匀速近似 = P_v·t（原文口径）；曲线积分 = 按加减速曲线逐段积分。','Steady = P_v·t; Profile = integrate the accel profile.','定速近似 = P_v·t、曲線積分 = 加減速を積分。'],
   't.sb_limit':['制动距离上限，用于与 s_b 比较。','Upper bound for the braking distance.','制動距離の上限。'],
 
   'o.wheel_mat.pu':['聚氨酯 95A','PU 95A','ポリウレタン 95A'],
   'o.wheel_mat.pa':['尼龙','Nylon','ナイロン'],
   'o.wheel_mat.steel':['钢','Steel','鋼'],
   'o.wheel_mat.rubber':['橡胶','Rubber','ゴム'],
-  'o.lift_type.hydraulic':['液压','Hydraulic','油圧'],
-  'o.lift_type.cam':['凸轮','Cam','カム'],
-  'o.lift_type.screw':['丝杠','Ball screw','ボールねじ'],
-  'o.lift_type.rod':['电动推杆','Electric rod','電動シリンダ'],
   'o.lift_mode.auto':['自动估算','Auto','自動概算'],
   'o.lift_mode.manual':['手动输入','Manual','手動入力'],
-  'o.stab_basis.dir':['按行驶方向（推荐）','By direction (recommended)','方向別（推奨）'],
-  'o.stab_basis.b':['严格按 B/2','Strictly B/2','B/2 固定'],
+  'o.beam_mat.Q235':['Q235 钢','Q235 steel','Q235 鋼'],
+  'o.beam_mat.Q345':['Q345 钢','Q345 steel','Q345 鋼'],
+  'o.beam_mat.Q355':['Q355 钢','Q355 steel','Q355 鋼'],
+  'o.beam_mat.6061':['6061-T6 铝','6061-T6 Al','6061-T6 アルミ'],
   'o.energy_basis.steady':['匀速近似（原文）','Steady (spec)','定速近似（原文）'],
   'o.energy_basis.profile':['加减速曲线积分','Accel profile','加減速積分'],
 
@@ -677,12 +713,12 @@ const T = {
   'c.ratio':['减速比','Gear ratio','減速比'],
   'c.wheel':['单轮压','Wheel pressure','車輪面圧'],
   'c.liftf':['顶升力','Lift force','昇降力'],
-  'c.bore':['缸径 / 顶升扭矩','Bore / lift torque','ボア径 / トルク'],
+  'c.camT':['凸轮转矩','Cam torque','カムトルク'],
   'c.battcap':['所需电池容量','Required capacity','必要容量'],
   'c.endurance':['续航','Endurance','航続'],
   'c.kst':['稳定系数','Stability factor','安定率'],
   'c.brake':['制动距离','Braking distance','制動距離'],
-  'c.swrate':['换向节拍','Shift rate','切替能力'],
+  'c.swrate':['状态切换时间','State change time','状態切替時間'],
   'c.mass':['整车总重','Total mass','総質量'],
 
   'd.M':['总质量','Total mass','総質量'],
@@ -709,15 +745,20 @@ const T = {
   'd.Pav':['平均轮压','Mean pressure','平均面圧'],
   'd.Pmx':['峰值轮压','Peak pressure','ピーク面圧'],
   'd.Nmx':['偏心最大轮压','Eccentric max load','偏心最大荷重'],
+  'd.Plim':['轮压许用值','Pressure limit','面圧許容値'],
+  'd.Npost':['单柱载荷','Post load','支柱荷重'],
+  'd.Spost':['支柱压应力','Post stress','支柱圧縮応力'],
   'd.Fl':['顶升力','Lift force','昇降力'],
+  'd.Fcam':['单组凸轮顶升力','Per-cam lift force','1 カム昇降力'],
   'd.Vl':['顶升速度','Lift speed','昇降速度'],
   'd.Pl':['顶升功率','Lift power','昇降出力'],
-  'd.Dreq':['理论缸径','Required bore','必要ボア径'],
-  'd.Dstd':['标准缸径','Standard bore','標準ボア径'],
-  'd.Pact':['实际工作压力','Actual pressure','実圧力'],
-  'd.Acyl':['活塞面积','Piston area','ピストン面積'],
-  'd.Qh':['所需流量','Required flow','必要流量'],
-  'd.Tq':['所需输出扭矩','Required torque','必要トルク'],
+  'd.Wcam':['凸轮角速度','Cam angular speed','カム角速度'],
+  'd.Tcam':['凸轮转矩','Cam torque','カムトルク'],
+  'd.Alp':['凸轮压力角','Pressure angle','圧力角'],
+  'd.Aal':['许用压力角','Allowable angle','許容圧力角'],
+  'd.Tidx':['分度时间','Index time','割出時間'],
+  'd.Tst':['状态切换时间','State change time','状態切替時間'],
+  'd.Rate':['切换节拍','Shift rate','切替能力'],
   'd.Ec':['单循环能耗','Energy per cycle','1 サイクル消費'],
   'd.Eday':['日能耗','Daily energy','日消費'],
   'd.Qreq':['所需电池容量','Required capacity','必要容量'],
@@ -745,12 +786,8 @@ const T = {
   'd.Dlim':['挠度限值','Deflection limit','たわみ限界'],
   'd.Hdk':['承载面高','Deck height','デッキ高'],
   'd.Gv':['垂直最小间隙','Vertical clearance','上下余裕'],
-  'd.Gs':['侧向间隙（货叉）','Side clearance (fork)','側面余裕（フォーク）'],
-  'd.Gc':['侧向间隙（车身）','Side clearance (body)','側面余裕（車体）'],
+  'd.Gs':['侧向间隙','Side clearance','側面余裕'],
   'd.Gmin':['最小间隙','Min clearance','最小余裕'],
-  'd.Tsw':['换向时间','Shift time','切替時間'],
-  'd.Tswc':['含上升的完整周期','Full shift cycle','上昇込み周期'],
-  'd.Rate':['换向节拍','Shift rate','切替能力'],
 
   'k.motor.n':['电机功率','Motor power','モータ出力'],
   'k.motor.r':['单机需求 <b>{v}</b> ≤ 样本 <b>{l}</b>（余量 {p}%）','Demand <b>{v}</b> ≤ rated <b>{l}</b> (margin {p}%)','必要 <b>{v}</b> ≤ 定格 <b>{l}</b>（余裕 {p}%）'],
@@ -758,18 +795,27 @@ const T = {
   'k.adhesion.n':['附着力','Traction','付着力'],
   'k.adhesion.r':['可用 <b>{v}</b> vs 总阻力 <b>{l}</b>（余量 {p}%）；并行参考 μ·M·g·k/n_w = {ref}','Available <b>{v}</b> vs <b>{l}</b> (margin {p}%); ref μ·M·g·k/n_w = {ref}','利用 <b>{v}</b> vs 抵抗 <b>{l}</b>（余裕 {p}%）；参考 {ref}'],
   'k.adhesion.a':['降低加速度、提高轮轨摩擦或增加驱动轮压。','Lower acceleration, raise friction, or increase drive-wheel load.','加速度低減、摩擦増、駆動輪荷重増。'],
-  'k.wheel.n':['轮压','Wheel pressure','車輪面圧'],
-  'k.wheel.r':['峰值 <b>{v}</b> vs 许用 <b>{l}</b>（余量 {p}%）','Peak <b>{v}</b> vs allowable <b>{l}</b> (margin {p}%)','ピーク <b>{v}</b> vs 許容 <b>{l}</b>（余裕 {p}%）'],
-  'k.wheel.a':['加宽轮面、增大轮径、提高轮数或换高承载材质。','Widen the wheel, increase D or n_w, or use a harder material.','車輪幅・径・本数を増やす。'],
+  'k.wheel.n':['轮压（塑料搁板）','Wheel pressure (plastic)','車輪面圧（樹脂棚）'],
+  'k.wheel.r':['峰值 <b>{v}</b> vs 许用 <b>{l}</b>（余量 {p}%，取轮材与塑料搁板较小值）','Peak <b>{v}</b> vs allowable <b>{l}</b> (margin {p}%; min of wheel and plastic deck)','ピーク <b>{v}</b> vs 許容 <b>{l}</b>（余裕 {p}%）'],
+  'k.wheel.a':['加宽轮面、增大轮径、增加轮数、换高承载轮材或更换更厚的塑料搁板。','Widen the wheel, increase D, or use a stronger wheel / thicker deck.','車輪幅・径を増やす、棚板を厚くする。'],
+  'k.post.n':['支柱载荷','Post load','支柱荷重'],
+  'k.post.r':['单柱载荷 <b>{v}</b> vs 许用 <b>{l}</b>（余量 {p}%）；压应力 {ref} MPa','Post load <b>{v}</b> vs allowable <b>{l}</b> (margin {p}%); stress {ref} MPa','支柱荷重 <b>{v}</b> vs 許容 <b>{l}</b>（余裕 {p}%）；応力 {ref} MPa'],
+  'k.post.a':['增大支柱截面、增加支柱数量，或降低整机重量/载重。','Enlarge the post section, add posts, or reduce mass/load.','支柱断面・本数を増やす、質量を低減。'],
   'k.defl.n':['主梁挠度','Beam deflection','主桁たわみ'],
   'k.defl.r':['最大挠度 <b>{v}</b> vs 限值 <b>{l}</b>','Deflection <b>{v}</b> vs limit <b>{l}</b>','たわみ <b>{v}</b> vs 限界 <b>{l}</b>'],
   'k.defl.a':['加高主梁截面、增加主梁数量或缩短跨距。','Deepen the section, add beams, or shorten the span.','断面高さ増、本数増、支間短縮。'],
   'k.stab.n':['运行稳定','Running stability','走行安定性'],
   'k.stab.r':['稳定系数 <b>{v}</b> vs 要求 <b>{l}</b>','Stability <b>{v}</b> vs required <b>{l}</b>','安定率 <b>{v}</b> vs 要求 <b>{l}</b>'],
-  'k.stab.a':['降低加速度、降低重心或加大轴距/轮距。','Reduce acceleration or CG height, or enlarge A/B.','加速度・重心を下げる、A/B を広げる。'],
+  'k.stab.a':['降低加速度/重心，或增大 X/Y 轮距。','Reduce acceleration or CG height, or enlarge bx/by.','加速度・重心を下げる、bx/by を広げる。'],
   'k.liftstroke.n':['顶升行程','Lift stroke','昇降ストローク'],
   'k.liftstroke.r':['行程 <b>{v}</b> vs 需求 Δh+余量 <b>{l}</b>','Stroke <b>{v}</b> vs required <b>{l}</b>','ストローク <b>{v}</b> vs 必要 <b>{l}</b>'],
   'k.liftstroke.a':['加大顶升行程或减小两向轮组高度差。','Increase stroke or reduce Δh.','ストローク増または Δh 低減。'],
+  'k.camangle.n':['凸轮压力角','Cam pressure angle','カム圧力角'],
+  'k.camangle.r':['压力角 <b>{v}</b> vs 许用 <b>{l}</b>','Pressure angle <b>{v}</b> vs allowable <b>{l}</b>','圧力角 <b>{v}</b> vs 許容 <b>{l}</b>'],
+  'k.camangle.a':['增大基圆半径、减小升程或增大举升角。','Increase the base radius, reduce stroke, or increase the lift angle.','基円半径増、ストローク減、角度増。'],
+  'k.camtorque.n':['凸轮转矩','Cam torque','カムトルク'],
+  'k.camtorque.r':['需求 <b>{v}</b> vs 额定 <b>{l}</b>（余量 {p}%）','Demand <b>{v}</b> vs rated <b>{l}</b> (margin {p}%)','必要 <b>{v}</b> vs 定格 <b>{l}</b>（余裕 {p}%）'],
+  'k.camtorque.a':['选更大额定转矩的凸轮/减速机，或降低顶升速度、提高效率。','Use a higher-torque cam/gearbox, or reduce lift speed / raise efficiency.','高トルクのカム・減速機を選ぶ、速度低減。'],
   'k.battcap.n':['电池容量','Battery capacity','バッテリ容量'],
   'k.battcap.r':['配置 <b>{v}</b> vs 需求 <b>{l}</b>','Installed <b>{v}</b> vs required <b>{l}</b>','搭載 <b>{v}</b> vs 必要 <b>{l}</b>'],
   'k.battcap.a':['加大容量、提高电压平台、减少日循环数或压缩单循环能耗。','Increase capacity, raise voltage, cut cycles or energy per cycle.','容量増、電圧増、サイクル低減。'],
@@ -778,19 +824,36 @@ const T = {
   'k.endurance.a':['安排机会充电/换电，或加大容量、减少日循环数。','Add opportunity charging / battery swap, or increase capacity.','機会充電・交換を計画、または容量増。'],
   'k.strength.n':['主梁强度','Beam strength','主桁強度'],
   'k.strength.r':['弯曲应力 <b>{v}</b> vs 许用 <b>{l}</b>','Bending <b>{v}</b> vs allowable <b>{l}</b>','曲げ <b>{v}</b> vs 許容 <b>{l}</b>'],
-  'k.strength.a':['换 Q345/Q355、加高截面或增加主梁。','Use Q345/Q355, deepen the section, or add beams.','Q345/Q355 へ変更、断面増。'],
+  'k.strength.a':['换 6061/Q345/Q355、加高截面或增加主梁。','Use 6061/Q345/Q355, deepen the section, or add beams.','6061/Q345/Q355 へ変更、断面増。'],
   'k.brake.n':['制动距离','Braking distance','制動距離'],
   'k.brake.r':['制动距离 <b>{v}</b> vs 允许 <b>{l}</b>','Distance <b>{v}</b> vs allowed <b>{l}</b>','制動距離 <b>{v}</b> vs 許容 <b>{l}</b>'],
   'k.brake.a':['提高减速度或降低最高速度。','Raise deceleration or reduce top speed.','減速度増または最高速度低減。'],
   'k.swgap.n':['换向离地间隙','Shift lift-off gap','切替浮上量'],
   'k.swgap.r':['轮组高度差 <b>{v}</b> vs 要求 <b>{l}</b>','Height diff <b>{v}</b> vs required <b>{l}</b>','高低差 <b>{v}</b> vs 要求 <b>{l}</b>'],
-  'k.swgap.a':['提高两向轮组高度差或增加顶升预压量。','Increase Δh or add pre-lift.','Δh 増または予備昇降を追加。'],
+  'k.swgap.a':['提高 X/Y 轮组高度差或增加凸轮预压量。','Increase Δh or add cam pre-load.','Δh 増または予備昇降を追加。'],
   'k.gap.n':['尺寸链间隙','Tolerance clearance','寸法余裕'],
   'k.gap.r':['最小间隙 <b>{v}</b> vs 要求 <b>{l}</b>','Min clearance <b>{v}</b> vs required <b>{l}</b>','最小余裕 <b>{v}</b> vs 要求 <b>{l}</b>'],
   'k.gap.a':['降低货物高度/顶升行程，或加大货位净宽与层高。','Reduce cargo height/stroke, or enlarge slot and level height.','荷高・ストローク低減、棚口拡大。'],
   'k.ecc.n':['偏心轮压放大','Eccentric amplification','偏心増幅'],
   'k.ecc.r':['最大 <b>{v}</b> vs 平均 <b>{l}</b>（系数 {p}）','Max <b>{v}</b> vs mean <b>{l}</b> (factor {p})','最大 <b>{v}</b> vs 平均 <b>{l}</b>'],
-  'k.ecc.a':['控制托盘偏载，或提高轮压余量与轮宽。','Limit off-centre loading or add wheel-width margin.','偏載を抑制、面圧余裕を確保。'],
+  'k.ecc.a':['控制箱体偏载，或提高轮压余量与轮宽。','Limit off-centre loading or add wheel-width margin.','偏載を抑制、面圧余裕を確保。'],
+
+  'sw.title':['四状态切换表','Cam four-state table','カム4状態表'],
+  'sw.angle':['凸轮角度','Cam angle','カム角度'],
+  'sw.state':['举升状态','Lift state','昇降状態'],
+  'sw.dir':['行走方向','Travel dir.','走行方向'],
+  'sw.wh':['承载轮组','Loaded wheels','支持車輪'],
+  'sw.gap':['非承载轮离地','Idle wheel gap','非接地浮上量'],
+  'sw.lift0':['未举升','Not lifted','非昇降'],
+  'sw.lift1':['举升','Lifted','昇降'],
+  'sw.x':['X 向','X','X 方向'],
+  'sw.y':['Y 向','Y','Y 方向'],
+  'sw.whx':['X 轮组 4 轮','X wheels (4)','X 車輪 4 輪'],
+  'sw.why':['Y 轮组 4 轮','Y wheels (4)','Y 車輪 4 輪'],
+  'sw.t':['状态切换','State change','状態切替'],
+  'sw.note':['每个凸轮组 = 1 个 X 轮 + 1 个 Y 轮 + 1 个圆柱凸轮。凸轮转到 0°/90°/180°/270° 四个位置，同时完成「顶升 / 未举升」与「X / Y 行走」的切换：举升时顶板托起货架，未举升时车体可潜入货架下方。',
+    'Each cam unit = 1 X wheel + 1 Y wheel + 1 barrel cam. Four positions (0°/90°/180°/270°) combine lift / no-lift with X / Y travel: lifted, the top plate carries the rack; not lifted, the robot can slide under it.',
+    '各カムユニット＝X 輪 1＋Y 輪 1＋円筒カム 1。0°/90°/180°/270° の 4 位置で「昇降／非昇降」と「X／Y 走行」を同時に切替。'],
 
   'msg.saved':['方案已保存','Scheme saved','方案を保存しました'],
   'msg.deleted':['方案已删除','Scheme deleted','方案を削除しました'],
@@ -810,11 +873,11 @@ const T = {
   'msg.autocalc':['自动求解已开启：减速比由 n_m/n_w 计算','Auto mode: ratio computed from n_m/n_w','自動計算：n_m/n_w から算出'],
   'msg.autooff':['已切入手动减速比，速度将按 i 反算','Manual ratio: speed back-solved from i','手動減速比：i から速度逆算'],
   'out.params':['参数表','Parameter table','パラメータ表'],
-  'grp.wheel':['轮压与地面','Wheel load & floor','車輪面圧・床'],
+  'grp.wheel':['轮压、支柱与接触','Wheel load & posts','車輪面圧・支柱'],
   'grp.stab':['稳定与制动','Stability & braking','安定・制動'],
   'grp.struct':['结构强度','Structural strength','構造強度'],
   'grp.geo2':['尺寸链','Tolerance chain','寸法連鎖'],
-  'grp.sw':['换向','Direction shift','切替']
+  'grp.sw':['状态切换','State shift','状態切替']
 };
 /* ===== [I18N:END] ===== */
 
@@ -822,21 +885,29 @@ const T = {
 /**
  * 纯函数计算引擎。输入 params 对象，输出 results 对象，不触碰 DOM。
  *
- * 公式来源（与需求书一致）：
+ * OKS 产品口径（与需求书一致）：
+ *   额定载重 ≤ 50 kg，整车自重 < 50 kg；潜伏式顶升、无货叉；共 8 轮（X 4 + Y 4）；
+ *   每角 1 个 X 轮 + 1 个 Y 轮 + 1 个圆柱凸轮 = 1 个凸轮组（共 4 组），
+ *   一个凸轮同时完成顶升与换向，产生「未举升 X / 未举升 Y / 举升 X / 举升 Y」四状态。
+ *
+ * 公式来源：
  *   行走：F_f=M·g·f·cosα、F_g=M·g·sinα、F_a=M·a、ΣF=Σ、P_v=(F_f+F_g)·v/η、P_pk=ΣF·v/η
  *   扭矩：T_w=ΣF·D/2000、T_m=T_w/(i·η)
- *   轮压：N=M·g·K_d/n_w；赫兹线接触 A=2a_h·b，a_h=√(4NR/(πbE*))
- *   顶升：F_lift=m_lift·g·K_imp、P=F·(h/1000)/t/η、d=√(4F/(πp))
+ *   轮压：N=M·g·K_d/4；赫兹线接触 A=2a_h·b，a_h=√(4NR/(πbE*))；p_max=4p_avg/π
+ *   塑料货架：p_limit=min(轮材 p_allow, p_shelf)；单柱载荷 F_post=M·g·K_d/4，σ_post=F_post/post_b²
+ *   凸轮组：F_lift=m_lift·g·K_imp、F_cam=F_lift/4、v=h/t_lift、P=F·v/η_cam、
+ *           ω=2πn_cam/60、T_cam=F_cam·v/(ω·η_cam)、α=atan((h/(φ·π/180))/r_base)
  *   电池：E_c=P_v·t_travel+n·P_lift·t_lift、Q_req=E_day/(U·DOD·η_b)
- *   稳定：a_crit=g·(支距/2)/H_cg、K_st=a_crit/a、s_b=v²/(2a_b)
+ *   稳定：a_crit=g·(bx或by/2)/H_cg、K_st=a_crit/a、s_b=v²/(2a_b)
  *   结构：q=M·g·K_d/(n_b·L)、M_max=qL²/8、σ=M_max/W_x、δ=5qL⁴/(384EI)
  */
 const Calc = (function(){
   const G = CONFIG.g;
   const PI = Math.PI;
+  const NPD = CONFIG.wheelsPerDir;   // 每向轮数 4
+  const NCG = CONFIG.camGroups;      // 凸轮组数 4
   const clamp = (v,a,b)=>Math.min(b,Math.max(a,v));
   const nearest = (arr,x)=>arr.reduce((a,b)=>Math.abs(b-x)<Math.abs(a-x)?b:a,arr[0]);
-  const ceilBore = mm=>{ for(const d of CONFIG.bores){ if(d>=mm) return d; } return CONFIG.bores[CONFIG.bores.length-1]; };
   const f1 = x=>(isFinite(x)?x:0).toFixed(1);
   const f2 = x=>(isFinite(x)?x:0).toFixed(2);
   const f3 = x=>(isFinite(x)?x:0).toFixed(3);
@@ -886,21 +957,20 @@ const Calc = (function(){
 
   function run(p){
     const p2 = p || {};
-    const R = { meta:{ valid:true }, checks:[], cards:[], detail:[], chart:{} };
+    const R = { meta:{ valid:true }, checks:[], cards:[], detail:[], chart:{}, states:[] };
 
     /* ---------- 派生量 ---------- */
     const mLoad = rp(p2,'m_load'), mPallet = rp(p2,'m_pallet'), mSelf = rp(p2,'m_self');
     const M = mLoad + mPallet + mSelf;
     const hCg = rp(p2,'h_cg'), hCgSelf = rp(p2,'h_cg_self');
     const HcgAct = ((mLoad+mPallet)*hCg + mSelf*hCgSelf)/M;
-    const D = rp(p2,'D'), bW = rp(p2,'b'), nW = rp(p2,'n_w'), B = rp(p2,'B'), A = rp(p2,'A'), dh = rp(p2,'dh');
-    const L = rp(p2,'L'), W = rp(p2,'W'), H = rp(p2,'H'), tFork = rp(p2,'t_fork');
-    const wFork = rp(p2,'w_fork');
+    const D = rp(p2,'D'), bW = rp(p2,'b'), bx = rp(p2,'bx'), by = rp(p2,'by'), dh = rp(p2,'dh');
+    const L = rp(p2,'L'), W = rp(p2,'W'), H = rp(p2,'H');
+    const Hdeck = H;                       // 潜伏式顶升、无货叉：车体顶面即承载面
     const matKey = rp(p2,'wheel_mat'); const mat = CONFIG.materials[matKey] || CONFIG.materials.pu;
     const mu = rp(p2,'mu'), Kd = rp(p2,'K_d');
     const liftMode = rp(p2,'lift_mode');
-    const mLift = liftMode==='auto' ? (mLoad+mPallet+0.5*mSelf) : rp(p2,'m_lift');
-    const Hdeck = H + tFork;
+    const mLift = liftMode==='auto' ? (mLoad+mPallet) : rp(p2,'m_lift');
     const sCycle = rp(p2,'s_cycle');
 
     /* ---------- 行走（X / Y 独立） ---------- */
@@ -927,7 +997,7 @@ const Calc = (function(){
       const Tm = Tw/(i*eta);
       const Tcruise = (Ff+Fg)*(D/2000)/(i*eta);
       const Fadh = mu*M*G*(k/4);
-      const FadhRef = mu*M*G*k/nW;
+      const FadhRef = mu*M*G*k/NPD;
       const sb = vEff*vEff/(2*ab);
       const Fb = M*ab;
       const Tb = Fb*(D/2000)/(i*eta);
@@ -939,38 +1009,49 @@ const Calc = (function(){
     R.travel = { x:TX, y:TY, vEff:TX.vEff };
     R.load = { M, HcgAct, mLift, Hdeck };
 
-    /* ---------- 轮压（赫兹线接触） ---------- */
-    const N = M*G*Kd/nW;
+    /* ---------- 轮压、支柱与塑料搁板 ---------- */
+    const N = M*G*Kd/NPD;                  // 每向 4 轮承载
     const Estr = mat.e/(1-mat.nu*mat.nu);
     const aH = Math.sqrt(4*N*(D/2000)/(PI*(bW/1000)*Estr));
     const Acont = 2*aH*(bW/1000);
     const pAvg = N/Acont/1e6;
     const pMax = 4*pAvg/PI;
-    const Nmax = N*(1+2*rp(p2,'e_off')/B);
+    const Nmax = N*(1+2*rp(p2,'e_off')/by);
     const pAllow = rp(p2,'p_allow');
+    const pShelf = rp(p2,'p_shelf');
+    const pLimit = Math.min(pAllow,pShelf);     // 塑料搁板常常是薄弱环节
+    const postB = rp(p2,'post_b'), postLoad = rp(p2,'post_load');
+    const Fpost = M*G*Kd/NCG;                    // 每库位 4 根支柱分摊
+    const Apost = postB*postB;
+    const sigPost = Fpost/Apost;
     const eccFactor = Nmax/N;
-    R.wheel = { N, Estr, aH, Acont, pAvg, pMax, Nmax, pAllow, mat, eccFactor };
+    R.wheel = { N, Estr, aH, Acont, pAvg, pMax, Nmax, pAllow, pShelf, pLimit,
+                mat, eccFactor, Fpost, Apost, sigPost, postLoad };
 
-    /* ---------- 顶升 ---------- */
-    const liftType = rp(p2,'lift_type');
-    const hLift = rp(p2,'h_lift'), tLift = rp(p2,'t_lift');
-    const kImp = rp(p2,'k_imp'), pSys = rp(p2,'p_sys'), etaLift = rp(p2,'eta_lift');
-    const pLead = rp(p2,'p_lead'), clrLift = rp(p2,'clr_lift');
-    const Fl = mLift*G*kImp;
-    const vLift = (hLift/1000)/tLift;
-    const Pl = Fl*vLift/etaLift;
-    let dReq=null, dStd=null, pAct=null, Acyl=null, Qhyd=null, Tq=null;
-    if(liftType==='hydraulic'){
-      dReq = Math.sqrt(4*Fl/(PI*pSys*1e6))*1000;
-      dStd = ceilBore(dReq);
-      pAct = 4*Fl/(PI*Math.pow(dStd/1000,2))/1e6;
-      Acyl = PI/4*Math.pow(dStd/1000,2)*1e6;
-      Qhyd = (PI/4*Math.pow(dStd/1000,2))*vLift*60000;
-    }else{
-      const lead = (liftType==='cam' ? hLift : pLead)/1000;
-      Tq = Fl*lead/(2*PI*etaLift);
-    }
-    R.lift = { F:Fl, v:vLift, P:Pl, type:liftType, dReq, dStd, pAct, Acyl, Qhyd, Tq, pSys, hLift, tLift, clrLift, mLift };
+    /* ---------- 凸轮组：顶升 + 换向 合并 ---------- */
+    const hLift = rp(p2,'h_lift'), tLift = rp(p2,'t_lift'), kImp = rp(p2,'k_imp');
+    const clrLift = rp(p2,'clr_lift'), nCam = rp(p2,'n_cam'), phi = rp(p2,'phi_lift');
+    const rBase = rp(p2,'r_base'), alphaAllow = rp(p2,'alpha_allow'), etaCam = rp(p2,'eta_cam');
+    const tRated = rp(p2,'t_rated'), tDelay = rp(p2,'t_delay'), clrWheel = rp(p2,'clr_wheel');
+    const Fl = mLift*G*kImp;                 // 顶升力
+    const Fcam = Fl/NCG;                     // 每组凸轮顶升力
+    const vLift = (hLift/1000)/tLift;        // 顶升线速度 m/s
+    const Pl = Fl*vLift/etaCam;              // 顶升功率
+    const wCam = 2*PI*nCam/60;               // 凸轮角速度
+    const Tcam = Fcam*vLift/(wCam*etaCam);   // 凸轮输出转矩（功率法）
+    const alp = Math.atan((hLift/(phi*PI/180))/rBase)*180/PI;  // 压力角
+    const tIndex = (phi/360)/nCam*60;        // 分度（换向）时间
+    const tState = Math.max(tLift,tIndex)+tDelay;
+    const rate = 3600/tState;
+    R.lift = { mLift, F:Fl, Fcam, v:vLift, P:Pl, w:wCam, Tcam, alpha:alp, alphaAllow,
+               tRated, hLift, tLift, etaCam, nCam, phi, rBase, kImp };
+    R.shuttle = { gapWheel:dh, clrWheel, tIndex, tState, rate, tDelay };
+    R.states = [
+      { ang:0,   lift:false, dir:'x' },
+      { ang:90,  lift:true,  dir:'x' },
+      { ang:180, lift:false, dir:'y' },
+      { ang:270, lift:true,  dir:'y' }
+    ];
 
     /* ---------- 电池与续航 ---------- */
     const U = rp(p2,'U'), Q = rp(p2,'Q'), dod = rp(p2,'dod'), etaBat = rp(p2,'eta_bat');
@@ -998,18 +1079,16 @@ const Calc = (function(){
     R.batt = { Ec, Eday, Qreq, Euse, Nok, hours, nChg, tChg, needCharge, tTravel, tCycle, Elift, Etravel };
 
     /* ---------- 稳定与制动 ---------- */
-    const basis = rp(p2,'stab_basis');
-    const baseX = (basis==='b' ? B : A)/1000;
-    const aCritX = G*(baseX/2)/(HcgAct/1000);
-    const aCritY = G*((B/1000)/2)/(HcgAct/1000);
+    const aCritX = G*((bx/1000)/2)/(HcgAct/1000);
+    const aCritY = G*((by/1000)/2)/(HcgAct/1000);
     const KstX = aCritX/TX.a, KstY = aCritY/TY.a;
     const Kst = Math.min(KstX,KstY);
-    R.stab = { HcgAct, aCritX, aCritY, KstX, KstY, Kst, basis, sb:TX.sb, sbmm:TX.sb*1000, Fb:TX.Fb, Tb:TX.Tb };
+    R.stab = { HcgAct, aCritX, aCritY, KstX, KstY, Kst, sb:TX.sb, sbmm:TX.sb*1000, Fb:TX.Fb, Tb:TX.Tb };
 
     /* ---------- 结构与尺寸链 ---------- */
     const nBeam = rp(p2,'n_beam'), bMat = rp(p2,'beam_mat');
     const bH = rp(p2,'beam_h'), bB = rp(p2,'beam_b'), bT = rp(p2,'beam_t');
-    const bm = CONFIG.beamMats[bMat] || CONFIG.beamMats.Q235;
+    const bm = CONFIG.beamMats[bMat] || CONFIG.beamMats['6061'];
     const q = M*G*Kd/(nBeam*L);
     const Mmax = q*L*L/8;
     const bIn = Math.max(bB-2*bT,1), hIn = Math.max(bH-2*bT,1);
@@ -1019,18 +1098,11 @@ const Calc = (function(){
     const delta = 5*q*Math.pow(L,4)/(384*bm.e*Ix);
     const dLim = L/rp(p2,'defl_div');
     const sigAllow = bm.sy/rp(p2,'ks_struct');
-    const gapV = rp(p2,'h_layer') - (Hdeck + rp(p2,'h_cargo') + hLift + dh);
-    const gapSide = (rp(p2,'w_slot') - wFork)/2;
-    const gapCart = (rp(p2,'w_slot') - W)/2;
-    const gapMin = Math.min(gapV, gapSide, gapCart);
-    R.struct = { q, Mmax, Ix, Wx, sigma, delta, dLim, sigAllow, bm, gapV, gapSide, gapCart, gapMin, Hdeck };
-
-    /* ---------- 换向 ---------- */
-    const tDelay = rp(p2,'t_delay'), clrWheel = rp(p2,'clr_wheel');
-    const tSw = tLift + tDelay;
-    const tSwCycle = 2*tLift + tDelay;
-    const swRate = 3600/tSw;
-    R.shuttle = { gapWheel:dh, clrWheel, tSw, tSwCycle, swRate, tDelay };
+    const tPanel = rp(p2,'t_panel');
+    const gapV = rp(p2,'h_layer') - (tPanel + rp(p2,'h_cargo') + hLift + dh);
+    const gapSide = (rp(p2,'w_slot') - W)/2;
+    const gapMin = Math.min(gapV, gapSide);
+    R.struct = { q, Mmax, Ix, Wx, sigma, delta, dLim, sigAllow, bm, gapV, gapSide, gapMin, Hdeck, tPanel };
 
     /* ---------- 校核 ---------- */
     const WM = CONFIG.warnMargin;
@@ -1044,20 +1116,24 @@ const Calc = (function(){
     const pRatedX = rp(p2,'x_p_rated')*1000, pRatedY = rp(p2,'y_p_rated')*1000;
     const worse = TX.PmOne >= TY.PmOne ? 'x' : 'y';
     const TW = worse==='x'?TX:TY, pRatedW = worse==='x'?pRatedX:pRatedY;
+    const cSide = rp(p2,'c_side');
     chk('motor', pRatedW>=TW.PmOne, (pRatedW-TW.PmOne)/Math.max(TW.PmOne,1e-9), TW.PmOne, pRatedW, 'W');
     chk('adhesion', TW.Fadh>=TW.SF, (TW.Fadh-TW.SF)/Math.max(TW.SF,1e-9), TW.Fadh, TW.SF, 'N', { ref:TW.FadhRef });
-    chk('wheel', pMax<=pAllow, (pAllow-pMax)/Math.max(pAllow,1e-9), pMax, pAllow, 'MPa');
+    chk('wheel', pMax<=pLimit, (pLimit-pMax)/Math.max(pLimit,1e-9), pMax, pLimit, 'MPa', { ref:pAvg });
+    chk('post', Fpost<=postLoad && sigPost<=pShelf,
+        Math.min((postLoad-Fpost)/postLoad,(pShelf-sigPost)/pShelf), Fpost, postLoad, 'N', { ref:sigPost });
     chk('defl', delta<=dLim, (dLim-delta)/Math.max(dLim,1e-9), delta, dLim, 'mm');
     chk('stab', Kst>=rp(p2,'kst_min'), (Kst-rp(p2,'kst_min'))/Math.max(rp(p2,'kst_min'),1e-9), Kst, rp(p2,'kst_min'), '');
     chk('liftstroke', hLift>=dh+clrLift, (hLift-(dh+clrLift))/Math.max(dh+clrLift,1e-9), hLift, dh+clrLift, 'mm');
+    chk('camangle', alp<=alphaAllow, (alphaAllow-alp)/Math.max(alphaAllow,1e-9), alp, alphaAllow, '°');
+    chk('camtorque', tRated>=Tcam, (tRated-Tcam)/Math.max(tRated,1e-9), Tcam, tRated, 'N·m');
     chk('battcap', Q>=Qreq, (Q-Qreq)/Math.max(Qreq,1e-9), Q, Qreq, 'Ah');
     chk('endurance', hours>=tDay, (hours-tDay)/Math.max(tDay,1e-9), hours, tDay, 'h', { n:nChg });
     chk('strength', sigma<=sigAllow, (sigAllow-sigma)/Math.max(sigAllow,1e-9), sigma, sigAllow, 'MPa');
     chk('brake', R.stab.sbmm<=rp(p2,'sb_limit'), (rp(p2,'sb_limit')-R.stab.sbmm)/Math.max(rp(p2,'sb_limit'),1e-9), R.stab.sbmm, rp(p2,'sb_limit'), 'mm');
     chk('swgap', dh>=clrWheel, (dh-clrWheel)/Math.max(clrWheel,1e-9), dh, clrWheel, 'mm');
-    const gapOk = gapMin>=0;
-    const gapSt = chk('gap', gapOk, gapMin>=5?1:(gapMin/5), gapMin, 0, 'mm');
-    if(gapSt==='pass' && gapMin<5) R.checks[R.checks.length-1].status = 'warn';
+    const gapSt = chk('gap', gapMin>=cSide, (gapMin-cSide)/Math.max(cSide,1e-9), gapMin, cSide, 'mm');
+    if(gapSt==='pass' && gapMin-cSide<5) R.checks[R.checks.length-1].status = 'warn';
     chk('ecc', Nmax<=1.25*N, (1.25*N-Nmax)/(1.25*N), Nmax, N, 'N', { ref:eccFactor });
 
     const statusOf = id=>{ const c = R.checks.find(x=>x.id===id); return c?c.status:'pass'; };
@@ -1074,13 +1150,12 @@ const Calc = (function(){
       { id:'ratio', val:TW.i, u:'', sub:'i_std '+TW.iStd, st:'pass' },
       { id:'wheel', val:pMax, u:'MPa', sub:f1(N)+' N / '+f2(Nmax)+' N max', st:statusOf('wheel') },
       { id:'liftf', val:Fl, u:'N', sub:'m='+f1(mLift)+' kg', st:'pass' },
-      { id:'bore', val:(liftType==='hydraulic'?dStd:Tq), u:(liftType==='hydraulic'?'mm':'N·m'),
-        sub:(liftType==='hydraulic'?('p='+f2(pAct)+' MPa'):'T_out'), st:'pass' },
+      { id:'camT', val:Tcam, u:'N·m', sub:'α='+f1(alp)+'°', st:statusOf('camtorque') },
       { id:'battcap', val:Qreq, u:'Ah', sub:'installed '+f1(Q)+' Ah', st:statusOf('battcap') },
       { id:'endurance', val:hours, u:'h', sub:'N_ok='+f1(Nok), st:statusOf('endurance') },
       { id:'kst', val:Kst, u:'', sub:'X '+f2(KstX)+' / Y '+f2(KstY), st:statusOf('stab') },
       { id:'brake', val:R.stab.sbmm, u:'mm', sub:'a_b='+f2(TX.ab)+' m/s²', st:statusOf('brake') },
-      { id:'swrate', val:swRate, u:'次/h', sub:'t_sw='+f2(tSw)+' s', st:statusOf('swgap') },
+      { id:'swrate', val:tState, u:'s', sub:Math.round(rate)+' /h', st:'pass' },
       { id:'mass', val:M, u:'kg', sub:'m_self '+f1(mSelf), st:'pass' }
     ];
 
@@ -1094,7 +1169,7 @@ const Calc = (function(){
     row('drvx','Fg','F_g','M·g·sinα', f1(M)+'×9.81×sin'+f1(rp(p2,'x_alpha')), RX.Fg, 'N','X');
     row('drvx','Fa','F_a','M·a', f1(M)+'×'+f2(RX.a), RX.Fa, 'N','X');
     row('drvx','SF','ΣF','F_f+F_g+F_a', f1(RX.Ff)+'+'+f1(RX.Fg)+'+'+f1(RX.Fa), RX.SF, 'N','X');
-    row('drvx','Pv','P_v','(F_f+F_g)·v/η', '('+f1(RX.Ff+RX.Fg)+')×'+f2(RX.vEff)+'/0.9', RX.Pv, 'W','X');
+    row('drvx','Pv','P_v','(F_f+F_g)·v/η', '('+f1(RX.Ff+RX.Fg)+')×'+f2(RX.vEff)+'/'+f2(RX.eta), RX.Pv, 'W','X');
     row('drvx','Ppk','P_pk','ΣF·v/η', f1(RX.SF)+'×'+f2(RX.vEff)+'/'+f2(RX.eta), RX.Ppk, 'W','X');
     row('drvx','Pm','P_m','P_pk·K_s', f1(RX.Ppk)+'×'+f2(RX.Ks), RX.Pm, 'W','X');
     row('drvx','Pm1','P_m1','P_m/k', f1(RX.Pm)+'/'+RX.k, RX.PmOne, 'W','X');
@@ -1114,28 +1189,29 @@ const Calc = (function(){
     row('drvy','i','i','n_m/n_w', f1(RY.nm)+'/'+f2(RY.nw), RY.i, '','Y');
     row('drvy','Tm','T_m','T_w/(i·η)', f1(RY.Tw)+'/('+f2(RY.i)+'×'+f2(RY.eta)+')', RY.Tm, 'N·m','Y');
     row('drvy','Fadh','F_μ','μ·M·g·(k/4)', f2(mu)+'×'+f1(M)+'×9.81×('+RY.k+'/4)', RY.Fadh, 'N','Y');
-    // 轮压
-    row('wheel','Nw','N','M·g·K_d/n_w', f1(M)+'×9.81×'+f2(Kd)+'/'+nW, N, 'N');
+    // 轮压、支柱与塑料搁板
+    row('wheel','Nw','N','M·g·K_d/4', f1(M)+'×9.81×'+f2(Kd)+'/'+NPD, N, 'N');
     row('wheel','Estr','E*','E/(1-ν²)', f1(mat.e/1e6)+'/(1-'+f2(mat.nu)+'²)', Estr/1e6, 'MPa');
     row('wheel','Ah','a_h','√(4NR/(πbE*))', '√(4×'+f1(N)+'×'+f4(D/2000)+'/(π×'+f3(bW/1000)+'×'+f1(Estr/1e6)+'e6))', aH*1000, 'mm');
     row('wheel','Ac','A','2a_h·b', '2×'+f2(aH*1000)+'×'+f1(bW), Acont*1e6, 'mm²');
     row('wheel','Pav','p_avg','N/A', f1(N)+'/'+f2(Acont*1e6), pAvg, 'MPa');
     row('wheel','Pmx','p_max','4p_avg/π', '4×'+f2(pAvg)+'/π', pMax, 'MPa');
-    row('wheel','Nmx','N_max','N·(1+2e/B)', f1(N)+'×(1+2×'+f1(rp(p2,'e_off'))+'/'+f1(B)+')', Nmax, 'N');
-    // 顶升
+    row('wheel','Nmx','N_max','N·(1+2e/by)', f1(N)+'×(1+2×'+f1(rp(p2,'e_off'))+'/'+f1(by)+')', Nmax, 'N');
+    row('wheel','Plim','p_lim','min(p_allow,p_shelf)', 'min('+f1(pAllow)+','+f2(pShelf)+')', pLimit, 'MPa');
+    row('wheel','Npost','N_post','M·g·K_d/4', f1(M)+'×9.81×'+f2(Kd)+'/4', Fpost, 'N');
+    row('wheel','Spost','σ_post','N_post/post_b²', f1(Fpost)+'/'+f1(postB)+'²', sigPost, 'MPa');
+    // 凸轮组（顶升 + 换向）
     row('lift','Fl','F_lift','m_lift·g·K_imp', f1(mLift)+'×9.81×'+f2(kImp), Fl, 'N');
+    row('lift','Fcam','F_cam','F_lift/4', f1(Fl)+'/4', Fcam, 'N');
     row('lift','Vl','v_lift','h/t_lift', f1(hLift)+'/'+f1(tLift), vLift*1000, 'mm/s');
-    row('lift','Pl','P_lift','F·v/η_lift', f1(Fl)+'×'+f3(vLift)+'/'+f2(etaLift), Pl, 'W');
-    if(liftType==='hydraulic'){
-      row('lift','Dreq','d_req','√(4F/(πp))', '√(4×'+f1(Fl)+'/(π×'+f1(pSys)+'e6))', dReq, 'mm');
-      row('lift','Dstd','d_std','标准缸径圆整', '≥'+f1(dReq)+' → '+dStd, dStd, 'mm');
-      row('lift','Pact','p_act','4F/(πd²)', '4×'+f1(Fl)+'/(π×'+f1(dStd)+'²)', pAct, 'MPa');
-      row('lift','Acyl','A_cyl','πd²/4', 'π×'+f1(dStd)+'²/4', Acyl, 'mm²');
-      row('lift','Qh','Q_hyd','A·v·60000', f1(Acyl)+'e-6×'+f3(vLift)+'×60000', Qhyd, 'L/min');
-    }else{
-      const lead = (liftType==='cam'? hLift : pLead);
-      row('lift','Tq','T','F·P/(2πη)', f1(Fl)+'×'+f1(lead)+'/(2π×'+f2(etaLift)+')', Tq, 'N·m');
-    }
+    row('lift','Pl','P_lift','F·v/η_cam', f1(Fl)+'×'+f3(vLift)+'/'+f2(etaCam), Pl, 'W');
+    row('lift','Wcam','ω_cam','2π·n_cam/60', '2π×'+f1(nCam)+'/60', wCam, 'rad/s');
+    row('lift','Tcam','T_cam','F_cam·v/(ω·η)', f1(Fcam)+'×'+f3(vLift)+'/('+f2(wCam)+'×'+f2(etaCam)+')', Tcam, 'N·m');
+    row('lift','Alp','α','atan((h/φ)/r_base)', 'atan(('+f1(hLift)+'/'+f1(phi)+'°)/'+f1(rBase)+')', alp, '°');
+    row('lift','Aal','α_allow','许用压力角', '取 '+f1(alphaAllow), alphaAllow, '°');
+    row('lift','Tidx','t_index','(φ/360)/n_cam·60', '('+f1(phi)+'/360)/'+f1(nCam)+'×60', tIndex, 's');
+    row('lift','Tst','t_state','max(t_lift,t_index)+t_delay', 'max('+f1(tLift)+','+f2(tIndex)+')+'+f1(tDelay), tState, 's');
+    row('lift','Rate','N_sw','3600/t_state', '3600/'+f2(tState), rate, '次/h');
     // 电池
     row('batt','Ec','E_c','P_v·t + n·P_lift·t_lift', f1(RX.Pv)+'×'+f1(tTravel)+'/3600+'+nLiftCycle+'×'+f1(Pl)+'×'+f1(tLift)+'/3600', Ec, 'Wh');
     row('batt','Eday','E_day','E_c·N_day', f1(Ec)+'×'+nDay+'/1000', Eday, 'kWh');
@@ -1148,9 +1224,9 @@ const Calc = (function(){
     row('batt','Tchg','t_chg','Q·DOD/I_ch', f1(Q)+'×'+f2(dod)+'/'+f1(iCh), tChg, 'h');
     // 稳定
     row('stab','Hcg','H_cg,act','Σ(m_i·h_i)/M', '(('+f1(mLoad)+'+'+f1(mPallet)+')×'+f1(hCg)+'+'+f1(mSelf)+'×'+f1(hCgSelf)+')/'+f1(M), HcgAct, 'mm');
-    row('stab','Acx','a_crit,X','g·(A/2)/H_cg', '9.81×('+f1(A)+'/2)/'+f1(HcgAct), aCritX, 'm/s²');
+    row('stab','Acx','a_crit,X','g·(bx/2)/H_cg', '9.81×('+f1(bx)+'/2)/'+f1(HcgAct), aCritX, 'm/s²');
     row('stab','Kx','K_st,X','a_crit/a', f2(aCritX)+'/'+f2(RX.a), KstX, '');
-    row('stab','Acy','a_crit,Y','g·(B/2)/H_cg', '9.81×('+f1(B)+'/2)/'+f1(HcgAct), aCritY, 'm/s²');
+    row('stab','Acy','a_crit,Y','g·(by/2)/H_cg', '9.81×('+f1(by)+'/2)/'+f1(HcgAct), aCritY, 'm/s²');
     row('stab','Ky','K_st,Y','a_crit/a', f2(aCritY)+'/'+f2(RY.a), KstY, '');
     row('stab','Sb','s_b','v²/(2a_b)', f2(RX.vEff)+'²/(2×'+f2(RX.ab)+')', RX.sb, 'm');
     row('stab','Fb','F_b','M·a_b', f1(M)+'×'+f2(RX.ab), RX.Fb, 'N');
@@ -1163,17 +1239,12 @@ const Calc = (function(){
     row('struct','Sig','σ','M_max/W_x', f1(Mmax)+'/'+f1(Wx), sigma, 'MPa');
     row('struct','Dlt','δ','5qL⁴/(384EI)', '5×'+f2(q)+'×'+f1(L)+'⁴/(384×'+f1(bm.e)+'×'+f1(Ix)+')', delta, 'mm');
     row('struct','Dlim','δ_lim','L/'+rp(p2,'defl_div'), f1(L)+'/'+rp(p2,'defl_div'), dLim, 'mm');
-    // 尺寸链
-    row('geo','Hdk','H_deck','H+t_fork', f1(H)+'+'+f1(tFork), Hdeck, 'mm');
-    row('geo','Gv','c_v','h_layer-(H_deck+h_cargo+h_lift+Δh)',
-      f1(rp(p2,'h_layer'))+'-('+f1(Hdeck)+'+'+f1(rp(p2,'h_cargo'))+'+'+f1(hLift)+'+'+f1(dh)+')', gapV, 'mm');
-    row('geo','Gs','c_side','(w_slot-w_fork)/2', '('+f1(rp(p2,'w_slot'))+'-'+f1(wFork)+')/2', gapSide, 'mm');
-    row('geo','Gc','c_cart','(w_slot-W)/2', '('+f1(rp(p2,'w_slot'))+'-'+f1(W)+')/2', gapCart, 'mm');
-    row('geo','Gmin','c_min','min(c_v,c_side,c_cart)', 'min('+f1(gapV)+','+f1(gapSide)+','+f1(gapCart)+')', gapMin, 'mm');
-    // 换向
-    row('sw','Tsw','t_sw','t_down+t_delay', f1(tLift)+'+'+f1(tDelay), tSw, 's');
-    row('sw','Tswc','t_cycle,sw','2t_lift+t_delay', '2×'+f1(tLift)+'+'+f1(tDelay), tSwCycle, 's');
-    row('sw','Rate','N_sw','3600/t_sw', '3600/'+f2(tSw), swRate, '次/h');
+    // 尺寸链（无货叉）
+    row('geo','Hdk','H_deck','H', f1(H), Hdeck, 'mm');
+    row('geo','Gv','c_v','h_layer-(t_panel+h_cargo+h_lift+Δh)',
+      f1(rp(p2,'h_layer'))+'-('+f1(tPanel)+'+'+f1(rp(p2,'h_cargo'))+'+'+f1(hLift)+'+'+f1(dh)+')', gapV, 'mm');
+    row('geo','Gs','c_side','(w_slot-W)/2', '('+f1(rp(p2,'w_slot'))+'-'+f1(W)+')/2', gapSide, 'mm');
+    row('geo','Gmin','c_min','min(c_v,c_side)', 'min('+f1(gapV)+','+f1(gapSide)+')', gapMin, 'mm');
     R.detail = DR;
 
     /* ---------- 图表数据 ---------- */
@@ -1217,18 +1288,24 @@ const Calc = (function(){
   }
 
   /**
-   * 验收算例自检：m_load=1000 / m_pallet=30 / m_self=350 / v=1.5 / a=0.5 / D=125
-   * f=0.02 / α=0 / η=0.9 / n_m=3000 / k=1 / K_s=1.3
-   * 期望：M=1380、ΣF≈961、P_pk≈1.60kW、P_m≥2.08kW、n_w≈229、i≈13.1、T_w≈60、T_m≈5.1
+   * 验收算例自检（OKS-50 默认口径）：
+   * m_load=50 / m_pallet=5 / m_self=45 / x_v=1.0 / x_a=0.5 / D=60 / b=25
+   * f=0.02 / α=0 / η=0.9 / n_m=3000 / k=2 / K_s=1.3 / 凸轮 4 组 / h=10 / t=1.2 / n_cam=30
+   * 期望：M=100、ΣF≈69.6、P_pk≈77.4 W、P_m≈100.6 W、n_w≈318.3、i≈9.43、
+   *       T_w≈2.09、T_m≈0.246、p_max≈2.22、F_lift≈647.5、T_cam≈0.537
    */
   function selfTest(){
     const p = {};
     FIELDS.forEach(f=>p[f.k]=f.def);
-    Object.assign(p,{ m_load:1000, m_pallet:30, m_self:350, x_v:1.5, x_a:0.5, D:125, x_f:0.02,
-      x_alpha:0, x_eta:0.9, x_nm:3000, x_k:1, x_ks:1.3, x_iauto:true });
+    Object.assign(p,{ m_load:50, m_pallet:5, m_self:45, x_v:1.0, x_a:0.5, D:60, b:25,
+      x_f:0.02, x_alpha:0, x_eta:0.9, x_nm:3000, x_k:2, x_ks:1.3, x_iauto:true,
+      wheel_mat:'pu', K_d:1.2, h_lift:10, t_lift:1.2, n_cam:30, phi_lift:90, r_base:25,
+      eta_cam:0.8, k_imp:1.2, lift_mode:'auto' });
     const R = run(p), X = R.travel.x;
-    const exp = { M:1380, SF:961, Ppk:1601, Pm:2082, nw:229, i:13.1, Tw:60, Tm:5.1 };
-    const got = { M:R.load.M, SF:X.SF, Ppk:X.Ppk, Pm:X.Pm, nw:X.nw, i:X.i, Tw:X.Tw, Tm:X.Tm };
+    const exp = { M:100, SF:69.62, Ppk:77.36, Pm:100.56, nw:318.31, i:9.425,
+      Tw:2.089, Tm:0.246, pMax:2.221, Fl:647.46, Tcam:0.537 };
+    const got = { M:R.load.M, SF:X.SF, Ppk:X.Ppk, Pm:X.Pm, nw:X.nw, i:X.i, Tw:X.Tw, Tm:X.Tm,
+      pMax:R.wheel.pMax, Fl:R.lift.F, Tcam:R.lift.Tcam };
     return Object.keys(exp).map(k=>({
       k, exp:exp[k], got:got[k], dev:Math.abs(got[k]-exp[k])/exp[k]*100, ok:Math.abs(got[k]-exp[k])/exp[k]<0.02
     }));
@@ -1334,7 +1411,7 @@ function fieldRow(f){
     });
     sel.value = String(S.params[f.k]);
     sel.addEventListener('change', ()=>{
-      S.params[f.k] = f.k==='n_w'||f.k==='n_beam' ? Number(sel.value) : sel.value;
+      S.params[f.k] = f.k==='n_beam' ? Number(sel.value) : sel.value;
       if(f.k==='wheel_mat') applyMaterial(sel.value);
       if(f.k==='lift_mode' || f.k==='x_iauto' || f.k==='y_iauto') syncMode(f.k);
       markDirty(); schedule();
@@ -1438,6 +1515,12 @@ function buildParams(){
       '</span><span class="car">▶</span><span class="cnt">'+fs.length+'</span></summary>';
     const rows = document.createElement('div'); rows.className='rows';
     fs.forEach(f=>rows.appendChild(fieldRow(f)));
+    if(gr.id==='geo'){
+      const note = document.createElement('div');
+      note.className='rowline';
+      note.innerHTML = esc(t('geo.note'));
+      rows.appendChild(note);
+    }
     det.appendChild(rows);
     root.appendChild(det);
   });
@@ -1508,6 +1591,25 @@ function renderChecks(R){
   const sum = $('statusSum');
   sum.className = 'pill '+(R.status.fail?'bad':(R.status.warn?'warn':'ok'));
   sum.textContent = t('sum.tpl',{p:R.status.pass,w:R.status.warn,f:R.status.fail});
+}
+
+function renderStates(R){
+  const box = $('states'); if(!box || !R) return;
+  const dh = R.shuttle.gapWheel;
+  let h = '<table><thead><tr>'+
+    ['sw.angle','sw.state','sw.dir','sw.wh','sw.gap'].map(k=>'<th>'+esc(t(k))+'</th>').join('')+
+    '</tr></thead><tbody>';
+  R.states.forEach(s=>{
+    const airborne = s.dir==='x' ? t('sw.why') : t('sw.whx');
+    h += '<tr><td class="ang">'+s.ang+'°</td>'+
+      '<td><span class="chip '+(s.lift?'on':'off')+'">'+esc(s.lift?t('sw.lift1'):t('sw.lift0'))+'</span></td>'+
+      '<td>'+esc(s.dir==='x'?t('sw.x'):t('sw.y'))+'</td>'+
+      '<td>'+esc(s.dir==='x'?t('sw.whx'):t('sw.why'))+'</td>'+
+      '<td class="gap">'+esc(airborne)+' +'+dh.toFixed(1)+' mm</td></tr>';
+  });
+  h += '</tbody></table><div class="sw-note">'+esc(t('sw.note'))+'</div>';
+  box.innerHTML = h;
+  $('stateTag').textContent = t('sw.t')+' '+R.shuttle.tState.toFixed(2)+' s';
 }
 
 function updateBadPill(){
@@ -1603,6 +1705,7 @@ function compute(){
   const t0 = performance.now();
   S.res = Calc.run(S.params);
   renderCards(S.res);
+  renderStates(S.res);
   renderDetail(S.res);
   renderChecks(S.res);
   Charts.draw(S.res);
@@ -1647,7 +1750,7 @@ function buildPrint(R){
   }
   h += '</tbody></table>';
 
-  h += '<h2>2. 关键指标</h2><table class="pr-tbl"><tbody>';
+  h += '<h2>2. '+esc(t('out.cards'))+'</h2><table class="pr-tbl"><tbody>';
   for(let i=0;i<R.cards.length;i+=2){
     const a=R.cards[i], b=R.cards[i+1];
     const cell = c=>{
@@ -1661,7 +1764,19 @@ function buildPrint(R){
   }
   h += '</tbody></table>';
 
-  h += '<h2>3. '+esc(t('out.checks'))+'</h2><table class="pr-tbl pr-chk"><tbody>';
+  h += '<h2>3. '+esc(t('sw.title'))+'</h2><table class="pr-tbl"><thead><tr>'+
+    ['sw.angle','sw.state','sw.dir','sw.wh','sw.gap'].map(k=>'<th>'+esc(t(k))+'</th>').join('')+
+    '</tr></thead><tbody>';
+  R.states.forEach(s=>{
+    const airborne = s.dir==='x' ? t('sw.why') : t('sw.whx');
+    h += '<tr><td>'+s.ang+'°</td><td>'+(s.lift?esc(t('sw.lift1')):esc(t('sw.lift0')))+'</td>'+
+      '<td>'+esc(s.dir==='x'?t('sw.x'):t('sw.y'))+'</td>'+
+      '<td>'+esc(s.dir==='x'?t('sw.whx'):t('sw.why'))+'</td>'+
+      '<td>'+esc(airborne)+' +'+R.shuttle.gapWheel.toFixed(1)+' mm</td></tr>';
+  });
+  h += '</tbody></table><p style="font-size:7.5pt;color:#444">'+esc(t('sw.note'))+'</p>';
+
+  h += '<h2>4. '+esc(t('out.checks'))+'</h2><table class="pr-tbl pr-chk"><tbody>';
   R.checks.forEach(c=>{
     const fv=fmtVal(c.v,c.u), fl=fmtVal(c.l,c.u);
     let reason = t('k.'+c.id+'.r',{v:fv.v+' '+(fv.u||''),l:fl.v+' '+(fl.u||''),p:c.pct.toFixed(1),n:(c.n!==undefined?c.n:'')});
@@ -1672,7 +1787,7 @@ function buildPrint(R){
   });
   h += '</tbody></table>';
 
-  h += '<h2>4. '+esc(t('out.detail'))+'</h2><table class="pr-tbl pr-dt"><thead><tr>'+
+  h += '<h2>5. '+esc(t('out.detail'))+'</h2><table class="pr-tbl pr-dt"><thead><tr>'+
     ['tbl.item','tbl.sym','tbl.formula','tbl.subst','tbl.result','tbl.unit'].map(k=>'<th>'+esc(t(k))+'</th>').join('')+
     '</tr></thead><tbody>';
   R.detail.forEach(d=>{
@@ -1682,7 +1797,7 @@ function buildPrint(R){
   });
   h += '</tbody></table>';
 
-  h += '<h2>5. '+esc(t('chart.speed'))+' / '+esc(t('chart.power'))+'</h2><div class="pr-charts">';
+  h += '<h2>6. '+esc(t('chart.speed'))+' / '+esc(t('chart.power'))+'</h2><div class="pr-charts">';
   ['cSpeed','cPower','cMotor'].forEach(id=>{
     const cv = $(id);
     try{ if(cv && window.Chart){ h += '<img src="'+cv.toDataURL('image/png')+'" alt="">'; } }catch(e){}
@@ -1842,15 +1957,10 @@ function drawerOp(ev){
 
 /* ------------------------------------------------------------------ 示例 */
 const EXAMPLES = [
-  { key:'light', name:['1000 kg 轻载型','1000 kg light duty','1000 kg 軽載型'],
+  { key:'std', name:['OKS-50 标准型','OKS-50 Standard','OKS-50 標準型'],
     over:{} },
-  { key:'heavy', name:['1500 kg 重载型','1500 kg heavy duty','1500 kg 重載型'],
-    over:{ m_load:1500, m_self:520, D:150, b:60, B:950, A:1050, wheel_mat:'steel',
-      x_v:1.2, x_a:0.4, x_ab:0.7, y_v:1.0, y_a:0.35, y_ab:0.6,
-      x_k:2, y_k:2, x_p_rated:2.2, y_p_rated:2.2,
-      h_lift:200, t_lift:2.5, m_lift:2300, lift_mode:'manual',
-      U:80, Q:160, s_cycle:80, h_cargo:1400, h_layer:2000, h_cg:700,
-      p_allow:600, beam_mat:'Q345', beam_h:80, beam_b:80, beam_t:5 } }
+  { key:'long', name:['OKS-50 长续航型','OKS-50 Long-range','OKS-50 長航続型'],
+    over:{ Q:40, n_day:150, s_cycle:45, t_lift:1.0 } }
 ];
 
 /* ------------------------------------------------------------------ 初始化 */
@@ -1859,7 +1969,7 @@ function bindEvents(){
     S.lang = Number(e.target.value);
     localStorage.setItem(Store.LANG, String(S.lang));
     document.documentElement.lang = ['zh-CN','en','ja'][S.lang];
-    applyStaticLang(); buildParams(); renderCards(S.res); renderDetail(S.res); renderChecks(S.res);
+    applyStaticLang(); buildParams(); renderCards(S.res); renderStates(S.res); renderDetail(S.res); renderChecks(S.res);
     renderDrawer(); buildPrint(S.res);
   });
   $('uPow').addEventListener('change', e=>{ S.uPow=e.target.value; renderCards(S.res); renderDetail(S.res); renderChecks(S.res); buildPrint(S.res); });
