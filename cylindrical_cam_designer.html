@@ -143,6 +143,8 @@ input.inp-sm { width: 80px; }
 .seg-trans select { width: auto; padding: 2px 4px; font-size: 0.78em; }
 .seg-trans input { width: 76px; padding: 2px 5px; font-size: 0.78em; }
 .seg-trans .trans-unit, .seg-trans .trans-eq { font-size: 0.72em; color: var(--text-muted); }
+.seg-trans .trans-min { font-size: 0.72em; color: var(--text-muted); }
+.seg-trans.trans-bad .trans-min { color: var(--warn); font-weight: 600; }
 .seg-trans .trans-warn { font-size: 0.72em; color: var(--warn); font-weight: 600; }
 .seg-field input, .seg-field select {
   width: 100%; min-width: 0; padding: 3px 5px; font-size: 0.8em;
@@ -200,21 +202,6 @@ input.inp-sm { width: 80px; }
   overflow: hidden; position: relative;
 }
 canvas { display: block; width: 100%; height: auto; background: var(--canvas-bg); }
-
-/* ========== 数据表 ========== */
-.data-table-wrap {
-  max-height: 380px; overflow: auto; border: 1px solid var(--border); border-radius: 8px;
-}
-.data-table { width: 100%; border-collapse: collapse; font-size: 0.82em; }
-.data-table thead { position: sticky; top: 0; z-index: 2; }
-.data-table th {
-  background: var(--panel-alt); color: var(--text); padding: 7px 6px; font-weight: 600;
-  text-align: right; white-space: nowrap; border-bottom: 2px solid var(--border);
-}
-.data-table th:first-child { text-align: center; }
-.data-table td { padding: 4px 6px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--bg); font-family: 'Menlo', 'Consolas', monospace; }
-.data-table td:first-child { text-align: center; color: var(--text-muted); }
-.data-table tr:hover td { background: var(--panel-alt); }
 
 /* ========== 动画控制 ========== */
 .anim-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
@@ -430,15 +417,15 @@ hr.section { border: none; border-top: 1px solid var(--border); margin: 14px 0; 
       </div>
 
       <div id="viz-curves" class="viz-pane">
-        <div class="canvas-wrap"><canvas id="cvCurves" width="900" height="340"></canvas></div>
+        <div class="canvas-wrap"><canvas id="cvCurves" width="900" height="470"></canvas></div>
       </div>
 
       <div id="viz-flatten" class="viz-pane hidden">
-        <div class="canvas-wrap"><canvas id="cvFlatten" width="900" height="380"></canvas></div>
+        <div class="canvas-wrap"><canvas id="cvFlatten" width="900" height="480"></canvas></div>
       </div>
 
       <div id="viz-line3d" class="viz-pane hidden">
-        <div class="canvas-wrap"><canvas id="cv3D" width="900" height="420"></canvas></div>
+        <div class="canvas-wrap"><canvas id="cv3D" width="900" height="520"></canvas></div>
         <div class="anim-controls">
           <button class="anim-btn" onclick="App.animControl('stepRev')" data-i18n-title="tStepRev" title="步进反转">⏮</button>
           <button class="anim-btn" onclick="App.animControl('backward')" data-i18n-title="tBack" title="连续反转">◀</button>
@@ -451,34 +438,7 @@ hr.section { border: none; border-top: 1px solid var(--border); margin: 14px 0; 
       </div>
 
       <div id="viz-indic" class="viz-pane hidden">
-        <div class="canvas-wrap"><canvas id="cvIndic" width="900" height="420"></canvas></div>
-      </div>
-    </div>
-
-    <!-- 数据表 -->
-    <div class="panel">
-      <h2><span class="icon">📋</span><span data-i18n="secTable">逐点数据表</span></h2>
-      <div class="data-table-wrap">
-        <table class="data-table" id="dataTable">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>φ°</th>
-              <th data-i18n="colS">s(mm)</th>
-              <th data-i18n="colV">v(mm/°)</th>
-              <th data-i18n="colA">a(mm/°²)</th>
-              <th data-i18n="colJ">j(mm/°³)</th>
-              <th data-i18n="colAlpha">α°</th>
-              <th data-i18n="colTorque">T(N·m)</th>
-              <th data-i18n="colForce">N(N)</th>
-              <th data-i18n="colTheory">理论X</th>
-              <th data-i18n="colTheoryY">理论Y</th>
-              <th data-i18n="colWorkX">工作X</th>
-              <th data-i18n="colWorkY">工作Y</th>
-            </tr>
-          </thead>
-          <tbody id="dataBody"><tr><td colspan="13" class="muted" data-i18n="tableEmpty">等待计算…</td></tr></tbody>
-        </table>
+        <div class="canvas-wrap"><canvas id="cvIndic" width="900" height="460"></canvas></div>
       </div>
     </div>
 
@@ -593,6 +553,7 @@ Object.assign(I18N.zh, {
   transByRatio: "比例",
   transByLength: "长度",
   transTooShort: "过渡 {l} mm < 最小 {d} mm",
+  transMin: "最小 {d} mm（≈{r}%）",
   alertTransShort: "第 {seg} 段梯形过渡长度 {l} mm 小于最小允许值 {d} mm（由滚子直径决定），当前 {cur}%，建议不小于 {r}%。",
   sugTransShort: "将过渡比例增大到 {r}% 以上，或增大该段转角/基圆直径，或减小滚子直径。",
   alertTransImpossible: "第 {seg} 段转角过小或滚子直径过大：最小过渡长度已超过该段弧长的 49%，无法形成有效梯形过渡（弧长 {arc} mm，滚子直径 {d} mm）。",
@@ -641,6 +602,7 @@ Object.assign(I18N.en, {
   transByRatio: "Ratio",
   transByLength: "Length",
   transTooShort: "Blend {l} mm < min {d} mm",
+  transMin: "Min {d} mm (≈{r}%)",
   alertTransShort: "Segment {seg}: trapezoid blend length {l} mm is below the minimum {d} mm (set by roller diameter); current {cur}%, recommended ≥ {r}%.",
   sugTransShort: "Increase the blend ratio to at least {r}%, or enlarge the segment angle / base diameter, or reduce the roller diameter.",
   alertTransImpossible: "Segment {seg}: the minimum blend length exceeds 49% of the segment arc, so a valid trapezoid cannot be formed (arc {arc} mm, roller dia {d} mm).",
@@ -689,6 +651,7 @@ Object.assign(I18N.ja, {
   transByRatio: "比率",
   transByLength: "長さ",
   transTooShort: "遷移 {l} mm < 最小 {d} mm",
+  transMin: "最小 {d} mm（≈{r}%）",
   alertTransShort: "第 {seg} 区間：台形の遷移長さ {l} mm が最小値 {d} mm（ローラ径で決定）未満です。現在 {cur}%、{r}% 以上を推奨。",
   sugTransShort: "遷移比率を {r}% 以上に増やすか、区間角度/基円径を大きくするか、ローラ径を小さくしてください。",
   alertTransImpossible: "第 {seg} 区間：最小遷移長さが区間弧長の 49% を超え、有効な台形遷移を形成できません（弧長 {arc} mm、ローラ径 {d} mm）。",
@@ -1181,7 +1144,8 @@ const App = {
           <input type="number" min="0.01" step="0.5" value="${val}" onchange="App.setTransValue(${i},this.value)">
           <span class="trans-unit">${mode === 'ratio' ? '%' : 'mm'}</span>
           <span class="trans-eq">${mode === 'ratio' ? '≈ ' + lenMm.toFixed(2) + ' mm' : '≈ ' + (tr * 100).toFixed(1) + ' %'}</span>
-          ${bad ? `<span class="trans-warn">${this.t('transTooShort', { l: lenMm.toFixed(2), d: rollerDia.toFixed(2) })}</span>` : ''}
+          <span class="trans-min">${this.t('transMin', { d: rollerDia.toFixed(2), r: minPct.toFixed(1) })}</span>
+          ${bad ? `<span class="trans-warn">⚠ ${this.t('transTooShort', { l: lenMm.toFixed(2), d: rollerDia.toFixed(2) })}</span>` : ''}
         </div>`;
       }
 
@@ -1407,7 +1371,6 @@ const App = {
 
     this.state.points = pts;
     this.runValidator(segs, p, pts);
-    this.renderDataTable(pts);
     this.renderAllViz();
   },
 
@@ -1541,29 +1504,7 @@ const App = {
     if (alerts.length > 20) box.innerHTML += `<div class="alert alert-i"><span class="level">i</span><span class="body">${this.t('moreAlerts', { n: alerts.length - 20 })}</span></div>`;
   },
 
-  /* -------- 数据表 -------- */
-  renderDataTable(pts) {
-    const body = document.getElementById('dataBody');
-    const step = Math.max(1, Math.floor(pts.length / 200));
-    const filtered = pts.filter((_, i) => i % step === 0 || i === pts.length - 1);
-    body.innerHTML = filtered.map((pt, idx) => `
-      <tr>
-        <td>${idx * step}</td>
-        <td>${pt.phi.toFixed(2)}</td>
-        <td>${pt.s.toFixed(3)}</td>
-        <td>${pt.v.toFixed(4)}</td>
-        <td>${pt.a.toFixed(4)}</td>
-        <td>${pt.j.toFixed(5)}</td>
-        <td>${pt.alphaDeg.toFixed(2)}</td>
-        <td>${pt.torqueNmm.toFixed(2)}</td>
-        <td>${pt.forceN.toFixed(2)}</td>
-        <td>${pt.x_theory.toFixed(2)}</td>
-        <td>${pt.y_theory.toFixed(2)}</td>
-        <td>${pt.x_work.toFixed(2)}</td>
-        <td>${pt.y_work.toFixed(2)}</td>
-      </tr>
-    `).join('');
-  },
+  /* -------- 数据表已移除：逐点数据仅在后台计算，不再渲染表格 -------- */
 
   /* -------- 可视化切换 -------- */
   switchViz(name, btn) {
@@ -1591,7 +1532,7 @@ const App = {
     const ctx = cv.getContext('2d');
     const W = cv.width, H = cv.height;
     ctx.clearRect(0, 0, W, H);
-    const pad = { l: 64, r: 20, t: 26, b: 40 };
+    const pad = { l: 108, r: 22, t: 26, b: 42 };
     const plotW = W - pad.l - pad.r, plotH = H - pad.t - pad.b;
 
     const pts = this.state.points;
@@ -1642,15 +1583,16 @@ const App = {
       });
       ctx.stroke();
 
-      // 左侧图例：符号 + 单位 + 峰值
-      ctx.textAlign = 'left'; ctx.font = '600 12px sans-serif';
-      ctx.fillStyle = this.cssVar(row.v);
-      ctx.fillText(row.label, pad.l - 62, y0 + 12);
-      ctx.font = '10px sans-serif'; ctx.fillStyle = dimC;
-      ctx.fillText(row.unit, pad.l - 50, y0 + 12);
-      ctx.textAlign = 'right';
-      ctx.fillText('+' + vMax.toFixed(2), pad.l - 6, y0 + 12);
-      ctx.fillText('-' + vMax.toFixed(2), pad.l - 6, y1);
+      // 左侧图例：上行 符号 + 单位，下行 峰值，留足间距
+      const lx = 10;
+      ctx.textAlign = 'left';
+      ctx.font = '600 13px sans-serif'; ctx.fillStyle = this.cssVar(row.v);
+      ctx.fillText(row.label, lx, y0 + 17);
+      const lw = ctx.measureText(row.label).width;
+      ctx.font = '11px sans-serif'; ctx.fillStyle = dimC;
+      ctx.fillText(row.unit, lx + lw + 6, y0 + 17);
+      ctx.fillStyle = mutedC;
+      ctx.fillText('±' + vMax.toFixed(2), lx, y0 + 34);
     });
 
     // 底部轴标签 + 刻度
