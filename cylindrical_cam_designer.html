@@ -5,304 +5,336 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>圆柱凸轮设计工具 · Cylindrical Cam Designer</title>
 <style>
-/* ========== 浅灰主题 ========== */
-:root {
-  --bg: #f2f3f5;
-  --panel: #ffffff;
-  --panel-alt: #f8f9fb;
-  --border: #dfe1e5;
-  --border-strong: #c9ccd1;
-  --text: #1f2328;
-  --text-dim: #5c6370;
-  --text-muted: #8c9299;
-  --primary: #4158d0;
-  --primary-alt: #c850c0;
-  --primary-grad: linear-gradient(135deg, #4158d0, #c850c0);
-  --ok: #2f9e44;
-  --warn: #d9480f;
-  --info: #1864ab;
-  --warn-bg: #fff9db;
-  --err-bg: #ffe3e3;
-  --info-bg: #d0ebff;
-  --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04);
-  --canvas-bg: #ffffff;
-  --axis: #8c9299;
-  --grid: #e5e7eb;
-  --line-s: #4158d0;
-  --line-v: #c850c0;
-  --line-a: #f76707;
-  --line-j: #2f9e44;
-  --line-alpha: #7048e8;
-  --line-force: #0b7285;
-  --line-norm: #d6336c;
-  --cam-surface: #b8c0ff;
-  --cam-edge: #4158d0;
-  --roller: #ff922b;
-  --follower-rod: #868e96;
-  --stroke-good: #2f9e44;
-  --stroke-warn: #d9480f;
-  --stroke-info: #1864ab;
+/* ========== OKS 工程计算视觉系统（与「整机设计计算工具」一致） ========== */
+:root{
+  --bg:#e9edf3; --panel:#ffffff; --panel2:#f5f7fa; --panel-alt:#f5f7fa;
+  --ink:#1b2430; --ink2:#5b6676; --ink3:#8b95a5;
+  --text:#1b2430; --text-dim:#5b6676; --text-muted:#8b95a5;
+  --line:#d3dae4; --line2:#e6ebf2; --border:#d3dae4; --border-strong:#c3ccd8;
+  --acc:#14568f; --acc2:#e7f0f9; --acc3:#bfd6ea; --primary:#14568f; --primary-alt:#14568f;
+  --primary-grad:linear-gradient(180deg,#173a58,#0e2337);
+  --ok:#1c7a45; --okbg:#e9f6ee; --warn:#9a6b12; --warnbg:#fcf5e2; --bad:#b33326; --badbg:#fdecea;
+  --info:#14568f; --info-bg:#e7f0f9; --warn-bg:#fcf5e2; --err-bg:#fdecea;
+  --top:#0e2337; --top2:#173a58;
+  --shadow:0 1px 6px rgba(9,20,32,.18);
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --r:4px;
+  --canvas-bg:#ffffff; --axis:#8b95a5; --grid:#e6ebf2;
+  --line-s:#14568f; --line-v:#0b7285; --line-a:#b45309; --line-j:#1c7a45;
+  --line-alpha:#6d28d9; --line-force:#0f766e; --line-norm:#b33326;
+  --cam-surface:#c9d9e8; --cam-edge:#14568f; --roller:#c2410c; --follower-rod:#8b95a5;
+  --stroke-good:#1c7a45; --stroke-warn:#9a6b12; --stroke-info:#14568f;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--ink);font:12px/1.55 var(--sans);-webkit-font-smoothing:antialiased;min-height:100vh}
+button,input,select{font-family:inherit;font-size:12px;color:inherit}
+button{cursor:pointer}
+canvas{max-width:100%;display:block}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:#c2cbd8;border-radius:9px}
+::-webkit-scrollbar-track{background:transparent}
+.hidden{display:none!important}
+
+/* ---------- 顶栏 ---------- */
+.topbar{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  padding:7px 14px;background:linear-gradient(180deg,var(--top2),var(--top));color:#dce7f2;
+  border-bottom:1px solid #0a1a28;box-shadow:0 1px 6px rgba(9,20,32,.25)}
+.tt{display:flex;align-items:baseline;gap:7px;white-space:nowrap}
+.tt .logo{color:#5fa8e0;font-size:14px}
+.tt .t1{font-size:13.5px;font-weight:600;letter-spacing:.3px}
+.tt .t2{font-size:10px;color:#7e99b3;font-family:var(--mono)}
+.scheme{display:flex;align-items:center;gap:6px;flex:0 0 auto}
+.name{width:190px;padding:4px 7px;background:#0a1c2c;border:1px solid #2a4b6a;color:#eaf2fa;border-radius:var(--r)}
+.name:focus{outline:none;border-color:#5fa8e0}
+.dirty{font-size:10px;padding:1px 6px;border-radius:9px;background:#7a4a05;color:#ffd98a;border:1px solid #a97516;white-space:nowrap}
+.acts{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-left:auto}
+.acts button{padding:4px 9px;background:#1b3d5c;border:1px solid #2f587c;color:#dbe8f5;border-radius:var(--r);white-space:nowrap}
+.acts button:hover{background:#28577f;border-color:#4d7ea8}
+.acts button:active{background:#0f2c45}
+.acts button.pri{background:#1f5f92;border-color:#3f80b5}
+.acts .sel{padding:4px 5px;background:#0a1c2c;border:1px solid #2a4b6a;color:#dbe8f5;border-radius:var(--r);max-width:130px}
+.acts .sep{width:1px;height:18px;background:#2a4b6a}
+
+/* ---------- 提示条 ---------- */
+.notice{display:flex;gap:8px;align-items:flex-start;padding:6px 14px;background:#fff8e1;color:#7a5406;
+  border-bottom:1px solid #f0dfa8;font-size:11.5px}
+
+/* ---------- 布局 ---------- */
+main{display:grid;grid-template-columns:404px minmax(0,1fr);gap:10px;padding:10px;align-items:start}
+@media (max-width:1279px){
+  main{grid-template-columns:1fr}
+  .left-col{position:static!important;max-height:none!important}
+}
+.left-col{position:sticky;top:48px;max-height:calc(100vh - 58px);overflow:auto;padding-right:2px;min-width:0}
+.right-col{min-width:0}
+
+/* ---------- 参数分组 ---------- */
+.grp,.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);margin-bottom:7px;overflow:hidden}
+.grp>summary{display:flex;align-items:center;gap:7px;padding:6px 9px;background:var(--panel2);
+  border-bottom:1px solid var(--line2);font-weight:600;font-size:12px;list-style:none;cursor:pointer;user-select:none}
+.grp>summary::-webkit-details-marker{display:none}
+.grp>summary .no{font-family:var(--mono);color:var(--acc);font-size:11px}
+.grp>summary .cnt{margin-left:auto;font-weight:400;font-size:10px;color:var(--ink3);font-family:var(--mono)}
+.grp>summary .car{color:var(--ink3);font-size:10px;transition:transform .15s}
+.grp[open]>summary .car{transform:rotate(90deg)}
+.grp .rows{padding:5px 8px 7px}
+.panel>h2{display:flex;align-items:center;gap:7px;padding:6px 9px;background:var(--panel2);
+  border-bottom:1px solid var(--line2);font-size:12px;font-weight:600}
+.panel>h2 .icon{font-size:11px;color:var(--acc)}
+.panel>.param-grid,.panel>.seg-list,.panel>.panel-hint{padding-left:8px;padding-right:8px}
+
+/* ---------- 参数行 ---------- */
+.form-row{display:grid;grid-template-columns:minmax(0,1fr) 94px;gap:6px;align-items:center;
+  padding:2px 0;border-bottom:1px dashed #eef1f6}
+.form-row:last-child{border-bottom:none}
+.form-row>label{display:flex;align-items:center;gap:4px;font-size:11.5px;color:var(--ink2);min-width:0}
+.form-row>label>span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.form-row .unit{font-size:10px;color:var(--ink3);font-family:var(--mono);white-space:nowrap}
+.form-row input[type=number],.form-row input[type=text],.form-row select{
+  width:100%;padding:3px 5px;background:#fbfcfe;border:1px solid var(--line);border-radius:3px;
+  font-family:var(--mono);font-size:11.5px}
+.form-row input[type=number],.form-row input[type=text]{text-align:right}
+.form-row input:focus,.form-row select:focus{outline:none;border-color:var(--acc);background:#fff;box-shadow:0 0 0 2px var(--acc2)}
+.form-row input:disabled{background:#eef1f5;color:var(--ink3);cursor:not-allowed}
+.form-row input.bad{border-color:var(--bad);background:var(--badbg)}
+.type-note{grid-column:1/-1;font-size:10px;color:var(--ink3);font-family:var(--mono);padding:0 0 2px 2px}
+.form-row h3{grid-column:1/-1;font-size:11px;color:var(--acc);font-weight:600;margin:6px 0 2px}
+
+/* 复合凸轮层切换 */
+.layer-bar{display:flex;gap:4px;padding:6px 8px 0}
+.layer-btn{padding:3px 10px;background:#eef2f7;border:1px solid var(--line);border-radius:3px;font-size:11px;color:var(--ink2)}
+.layer-btn.active{background:var(--acc2);border-color:var(--acc3);color:var(--acc);font-weight:600}
+.layer-hint{margin:6px 8px 8px;padding:5px 7px;background:var(--acc2);border:1px solid var(--acc3);
+  border-radius:3px;font-size:10.5px;color:#28496b;line-height:1.55}
+
+/* ---------- 右侧结果 ---------- */
+.outbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:5px 9px}
+.outbar .lb{font-size:11px;color:var(--ink3)}
+.outbar .sp{margin-left:auto}
+.outbar button{padding:3px 9px;background:#eef2f7;border:1px solid var(--line);border-radius:3px;font-size:11px}
+.outbar button:hover{background:var(--acc2);border-color:var(--acc3)}
+.pill{font-size:10.5px;padding:1px 7px;border-radius:9px;border:1px solid var(--line);color:var(--ink2);background:#fbfcfe;font-family:var(--mono)}
+.pill.ok{background:var(--okbg);border-color:#b9e0c8;color:var(--ok)}
+.pill.warn{background:var(--warnbg);border-color:#eddb9f;color:var(--warn)}
+.pill.bad{background:var(--badbg);border-color:#f2c2bc;color:var(--bad)}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:7px;margin-bottom:9px}
+.card{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--ink3);border-radius:var(--r);
+  padding:6px 8px 7px;min-height:64px;position:relative}
+.card.ok{border-left-color:var(--ok)}
+.card.warn{border-left-color:var(--warn)}
+.card.bad{border-left-color:var(--bad)}
+.card .cl{font-size:10.5px;color:var(--ink2);display:flex;align-items:center;gap:4px;white-space:nowrap;overflow:hidden}
+.card .cl em{font-style:normal;color:var(--ink3);font-family:var(--mono);font-size:9.5px}
+.card .cv{font-family:var(--mono);font-size:19px;font-weight:600;letter-spacing:-.3px;line-height:1.25;
+  font-variant-numeric:tabular-nums;margin-top:2px;white-space:nowrap}
+.card .cv small{font-size:10.5px;font-weight:400;color:var(--ink3);margin-left:3px;letter-spacing:0}
+.card .cs{font-size:10px;color:var(--ink3);font-family:var(--mono);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card.bad .cv{color:var(--bad)}
+.card.warn .cv{color:var(--warn)}
+
+.blk{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);margin-bottom:9px;overflow:hidden}
+.blk>h3{margin:0;padding:6px 9px;background:var(--panel2);border-bottom:1px solid var(--line2);
+  font-size:12px;font-weight:600;display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none}
+.blk>h3 .car{color:var(--ink3);font-size:10px;transition:transform .15s}
+.blk.closed>h3 .car{transform:rotate(-90deg)}
+.blk.closed>.body{display:none}
+.blk>h3 .tag{margin-left:auto;font-weight:400;font-size:10px;color:var(--ink3);font-family:var(--mono)}
+.blk .body{padding:0}
+
+/* 校验提示 */
+.alert-list{padding:2px 0}
+.alert{display:grid;grid-template-columns:16px minmax(0,1fr);gap:7px;align-items:start;
+  padding:5px 9px;border-bottom:1px solid #f0f3f7;font-size:11.5px}
+.alert:last-child{border-bottom:none}
+.alert .level{width:14px;height:14px;line-height:13px;text-align:center;border-radius:50%;
+  font-size:9px;font-family:var(--mono);font-weight:600;margin-top:1px}
+.alert-i .level{background:var(--acc2);color:var(--acc);border:1px solid var(--acc3)}
+.alert-w .level{background:var(--warnbg);color:var(--warn);border:1px solid #eddb9f}
+.alert-e .level{background:var(--badbg);color:var(--bad);border:1px solid #f2c2bc}
+.alert .body b{font-weight:600;color:var(--ink)}
+.alert .impact{display:block;font-size:10.5px;color:var(--ink2);margin-top:1px}
+.alert .suggestion{display:block;font-size:10.5px;color:var(--acc);margin-top:1px}
+
+/* 可视化 */
+.viz-tabs{display:flex;gap:4px;flex-wrap:wrap;padding:6px 8px;border-bottom:1px solid var(--line2);background:#fbfcfe}
+.viz-tab{padding:3px 10px;background:#eef2f7;border:1px solid var(--line);border-radius:3px;font-size:11px;color:var(--ink2)}
+.viz-tab:hover{background:var(--acc2);border-color:var(--acc3)}
+.viz-tab.active{background:var(--acc);border-color:var(--acc);color:#fff}
+.viz-pane{padding:8px}
+.canvas-wrap{background:#fff;border:1px solid var(--line2);border-radius:var(--r);padding:4px;overflow:auto}
+.panel-hint{font-size:10.5px;color:var(--ink3);line-height:1.6;padding:5px 2px 1px}
+.row-toggles{display:flex;align-items:center;gap:5px;flex-wrap:wrap;padding:0 0 6px}
+.rt-label{font-size:10.5px;color:var(--ink3);font-family:var(--mono)}
+.rt-chip{display:inline-flex;align-items:center;gap:3px;font-size:10.5px;color:var(--ink2);
+  background:#fbfcfe;border:1px solid var(--line);border-radius:3px;padding:1px 6px;cursor:pointer}
+.rt-chip:hover{border-color:var(--acc3);background:var(--acc2)}
+.rt-chip input{margin:0}
+.anim-controls{display:flex;align-items:center;gap:5px;padding:6px 2px 0;flex-wrap:wrap}
+.anim-btn{width:26px;height:24px;background:#eef2f7;border:1px solid var(--line);border-radius:3px;
+  font-size:11px;color:var(--ink2);line-height:1}
+.anim-btn:hover{background:var(--acc2);border-color:var(--acc3)}
+.anim-btn.active{background:var(--acc);border-color:var(--acc);color:#fff}
+.phase-label{font-family:var(--mono);font-size:11px;color:var(--acc);min-width:88px}
+.anim-controls input[type=range]{flex:1;min-width:120px;accent-color:var(--acc)}
+
+/* ---------- 运动分段 ---------- */
+.seg-list{display:flex;flex-direction:column;gap:6px;padding-top:3px}
+.seg-card{border:1px solid var(--line);border-radius:var(--r);background:#fcfdff;overflow:hidden}
+.seg-head{display:flex;align-items:center;gap:6px;padding:3px 6px;background:var(--panel2);border-bottom:1px solid var(--line2)}
+.seg-idx{font-family:var(--mono);font-size:10px;color:#fff;background:var(--acc);border-radius:9px;padding:0 6px;line-height:15px}
+.seg-name{flex:1;min-width:0;padding:2px 5px;background:#fff;border:1px solid var(--line);border-radius:3px;font-size:11.5px}
+.seg-name:focus{outline:none;border-color:var(--acc)}
+.seg-del{width:20px;height:20px;background:transparent;border:1px solid transparent;border-radius:3px;
+  color:var(--ink3);font-size:11px;line-height:1}
+.seg-del:hover{background:var(--badbg);border-color:#f2c2bc;color:var(--bad)}
+.seg-fields{display:grid;grid-template-columns:1fr 1fr;gap:4px 6px;padding:5px 6px}
+.seg-field{display:flex;flex-direction:column;gap:1px;font-size:10px;color:var(--ink3);min-width:0}
+.seg-field .seg-lbl{display:flex;align-items:center;gap:3px;flex-wrap:wrap}
+.seg-field input,.seg-field select{width:100%;padding:2px 4px;background:#fff;border:1px solid var(--line);
+  border-radius:3px;font-family:var(--mono);font-size:11px}
+.seg-field input:focus,.seg-field select:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 2px var(--acc2)}
+.seg-field input:disabled{background:#eef1f5;color:var(--ink3)}
+.seg-static{padding:2px 4px;font-family:var(--mono);font-size:11px;color:var(--ink2);background:#f5f7fa;
+  border:1px solid var(--line2);border-radius:3px}
+.seg-field .follow{display:inline-flex;align-items:center;gap:2px;font-size:9.5px;color:var(--acc)}
+.seg-field .follow input{margin:0}
+.seg-trans{grid-column:1/-1;display:flex;align-items:center;gap:5px;flex-wrap:wrap;
+  padding:4px 5px;background:var(--acc2);border:1px solid var(--acc3);border-radius:3px;font-size:10px;color:var(--ink2)}
+.seg-trans select,.seg-trans input{width:auto;max-width:92px;padding:2px 4px;background:#fff;border:1px solid var(--line);
+  border-radius:3px;font-family:var(--mono);font-size:10.5px}
+.trans-lbl{color:var(--ink2)}
+.trans-eq,.trans-min,.trans-unit{font-family:var(--mono);color:var(--ink3)}
+.trans-warn{color:var(--bad);font-family:var(--mono)}
+.seg-trans.trans-bad{background:var(--badbg);border-color:#f2c2bc}
+.seg-sum{margin:6px 8px 2px;padding:3px 7px;border-radius:3px;font-family:var(--mono);font-size:11px}
+.sum-ok{background:var(--okbg);color:var(--ok);border:1px solid #b9e0c8}
+.sum-bad{background:var(--badbg);color:var(--bad);border:1px solid #f2c2bc}
+
+/* ---------- 方案抽屉 ---------- */
+.drawer{position:fixed;top:0;right:0;bottom:0;width:400px;max-width:92vw;background:var(--panel);
+  border-left:1px solid var(--line);box-shadow:-6px 0 24px rgba(14,35,55,.18);z-index:60;display:flex;flex-direction:column}
+.drawer .dh{display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--top);color:#dce7f2}
+.drawer .dh b{font-size:12.5px}
+.drawer .dh button{margin-left:auto;background:#1b3d5c;border:1px solid #2f587c;color:#dbe8f5;padding:2px 8px;border-radius:3px}
+.drawer .dl{flex:1;overflow:auto;padding:8px}
+.drawer .df{padding:8px 12px;border-top:1px solid var(--line2);display:flex;gap:6px}
+.drawer .df button{flex:1;padding:5px;background:#eef2f7;border:1px solid var(--line);border-radius:3px}
+.drawer .df button:hover{background:var(--acc2);border-color:var(--acc3)}
+.drawer[hidden]{display:none!important}
+.sch{border:1px solid var(--line);border-radius:var(--r);padding:7px 9px;margin-bottom:6px;background:#fcfdff}
+.sch.cur{border-color:var(--acc);box-shadow:inset 0 0 0 1px var(--acc2)}
+.sch .sn{font-weight:600;font-size:12px;display:flex;gap:6px;align-items:center}
+.sch .sn .cur{font-size:9px;color:var(--acc);border:1px solid var(--acc3);border-radius:8px;padding:0 5px}
+.sch .sm{font-size:10.5px;color:var(--ink3);font-family:var(--mono);margin:2px 0 4px}
+.sch .sb{display:flex;gap:4px;flex-wrap:wrap}
+.sch .sb button{padding:2px 7px;font-size:10.5px;background:#eef2f7;border:1px solid var(--line);border-radius:3px}
+.sch .sb button:hover{background:var(--acc2);border-color:var(--acc3)}
+.sch .sb button.del:hover{background:var(--badbg);border-color:#e5b3ad;color:var(--bad)}
+.empty{text-align:center;color:var(--ink3);font-size:11.5px;padding:28px 10px;line-height:1.8}
+
+/* ---------- 提示 / 吐司 ---------- */
+.tip{position:fixed;z-index:90;max-width:300px;background:#12283d;color:#dce7f2;font-size:11px;line-height:1.6;
+  padding:6px 9px;border-radius:var(--r);box-shadow:0 4px 16px rgba(10,25,40,.3);pointer-events:none}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:100;background:#12283d;color:#e8f1f9;
+  padding:7px 15px;border-radius:16px;font-size:11.5px;box-shadow:0 6px 20px rgba(10,25,40,.35);opacity:0;
+  transition:opacity .18s;pointer-events:none}
+.toast.on{opacity:1}
+
+/* ---------- 打印：A4 计算书 ---------- */
+#printRoot{display:none}
+@media print{
+  @page{size:A4;margin:12mm}
+  html,body{background:#fff}
+  .topbar,.notice,.left-col,.right-col,.drawer,.tip,.toast{display:none!important}
+  main{display:block;padding:0}
+  #printRoot{display:block;color:#111;font-size:9pt;line-height:1.45}
+  #printRoot h2{font-size:10.5pt;margin:10px 0 4px;padding-bottom:2px;border-bottom:1px solid #999;break-after:avoid}
+  .pr-hd{border-bottom:2px solid #111;padding-bottom:6px;margin-bottom:8px}
+  .pr-hd .pr-t{font-size:15pt;font-weight:700}
+  .pr-hd .pr-m{font-size:9pt;color:#333;margin-top:2px}
+  .pr-tbl{width:100%;border-collapse:collapse;font-size:8pt;table-layout:fixed}
+  .pr-tbl th,.pr-tbl td{border:1px solid #bbb;padding:2px 4px;vertical-align:top;word-break:break-word}
+  .pr-tbl th{background:#eee;text-align:left;font-weight:600}
+  .pr-tbl tr{break-inside:avoid}
+  .pr-tbl .pn{width:34%;color:#222}
+  .pr-tbl .pv{text-align:right;font-family:ui-monospace,monospace;white-space:nowrap}
+  .pr-tbl .pu{width:10%;color:#666}
+  .pr-chk .ps{width:52px;font-weight:700;text-align:center}
+  .pr-chk tr.st-pass .ps{color:#1c7a45}
+  .pr-chk tr.st-warn .ps{color:#9a6b12}
+  .pr-chk tr.st-fail .ps{color:#b33326}
+  .pr-chk i{color:#666;font-style:normal;font-size:7.5pt}
+  .pr-charts img{width:100%;border:1px solid #ddd}
+  .pr-foot{margin-top:10px;border-top:1px solid #999;padding-top:5px;font-size:7.5pt;color:#444}
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans", sans-serif; font-size: 14px; line-height: 1.5; min-height: 100vh; }
-
-/* ========== 顶部导航 ========== */
-header {
-  background: var(--panel); border-bottom: 1px solid var(--border);
-  padding: 12px 24px; display: flex; align-items: center; justify-content: space-between;
-  flex-wrap: wrap; gap: 8px 16px;
-  position: sticky; top: 0; z-index: 50; box-shadow: var(--shadow);
-}
-header h1 { font-size: 1.2em; font-weight: 600; min-width: 0; }
-header h1 .sub { font-weight: 400; color: var(--text-dim); font-size: 0.75em; margin-left: 8px; }
-.lang-switch { display: flex; gap: 4px; background: var(--bg); border-radius: 6px; padding: 3px; }
-.lang-switch button {
-  border: none; background: transparent; padding: 5px 12px; border-radius: 4px;
-  cursor: pointer; font-size: 0.85em; color: var(--text-dim); font-weight: 500;
-}
-.lang-switch button.active { background: var(--panel); color: var(--primary); box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-
-/* ========== 主体布局 ========== */
-main { display: grid; grid-template-columns: 430px minmax(0, 1fr); gap: 18px; padding: 18px 24px; align-items: start; }
-@media (max-width: 1240px) { main { grid-template-columns: minmax(0, 1fr); } }
-.left-col { min-width: 0; }
-.right-col { min-width: 0; }
-
-.panel {
-  background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
-  padding: 16px 18px; box-shadow: var(--shadow); margin-bottom: 14px;
-}
-.panel h2 {
-  font-size: 1em; font-weight: 600; color: var(--text);
-  padding-bottom: 8px; margin-bottom: 12px;
-  border-bottom: 2px solid var(--bg);
-  display: flex; align-items: center; gap: 8px;
-}
-.panel h2 .icon { font-size: 1.1em; }
-.panel h3 { font-size: 0.88em; font-weight: 600; color: var(--text-dim); margin: 12px 0 6px; text-transform: uppercase; letter-spacing: 0.5px; }
-
-/* ========== 表单 ========== */
-.form-row {
-  display: flex; flex-direction: column; align-items: stretch;
-  gap: 3px; min-width: 0;
-}
-.form-row label {
-  font-size: 0.8em; color: var(--text-dim); font-weight: 500;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.form-row label .unit { color: var(--text-muted); font-size: 0.95em; margin-left: 3px; font-weight: 400; }
-.form-row label .tip { color: var(--text-muted); font-size: 0.9em; }
-input[type="number"], input[type="text"], select {
-  width: 100%; min-width: 0; padding: 5px 8px;
-  border: 1px solid var(--border); border-radius: 6px;
-  font-size: 0.86em; background: var(--panel); color: var(--text);
-  transition: border-color 0.15s;
-}
-input[type="number"]:focus, select:focus, input[type="text"]:focus {
-  outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(65,88,208,0.12);
-}
-input[type="checkbox"] { margin-right: 6px; }
-input.inp-wide { width: 140px; }
-input.inp-sm { width: 80px; }
-
-/* ========== 分段卡片 ========== */
-.seg-list { display: flex; flex-direction: column; gap: 8px; }
-.seg-card {
-  border: 1px solid var(--border); border-radius: 8px;
-  padding: 8px 10px 10px; background: var(--panel-alt);
-}
-.seg-head { display: flex; align-items: center; gap: 6px; margin-bottom: 7px; }
-.seg-head .seg-idx {
-  flex-shrink: 0; width: 20px; height: 20px; border-radius: 50%;
-  background: var(--primary); color: #fff; font-size: 0.72em; font-weight: 600;
-  display: inline-flex; align-items: center; justify-content: center;
-}
-.seg-head input.seg-name {
-  flex: 1; min-width: 0; padding: 3px 7px; font-size: 0.85em; font-weight: 600;
-  border: 1px solid var(--border); border-radius: 5px; background: var(--panel);
-}
-.seg-head .seg-del {
-  flex-shrink: 0; border: none; background: transparent; cursor: pointer;
-  color: var(--text-muted); font-size: 0.95em; padding: 2px 6px; border-radius: 4px;
-}
-.seg-head .seg-del:hover { background: var(--err-bg); color: var(--warn); }
-.seg-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 8px; }
-.seg-field { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.seg-field > span { font-size: 0.72em; color: var(--text-muted); white-space: nowrap; }
-.seg-field .seg-lbl { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
-.seg-field .follow { display: inline-flex; align-items: center; gap: 2px; font-size: 0.95em; color: var(--text-muted); cursor: pointer; white-space: nowrap; }
-.seg-field .follow input[type="checkbox"] { margin: 0; width: 11px; height: 11px; accent-color: var(--primary); }
-.seg-field input[disabled] { background: var(--bg); color: var(--text-muted); cursor: not-allowed; }
-.seg-trans {
-  grid-column: 1 / -1; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
-  padding: 5px 7px; border-radius: 5px; background: var(--panel);
-  border: 1px dashed var(--border);
-}
-.seg-trans.trans-bad { border-color: #ffc9c9; background: var(--err-bg); }
-.seg-trans .trans-lbl { font-size: 0.72em; color: var(--text-muted); font-weight: 600; }
-.seg-trans select { width: auto; padding: 2px 4px; font-size: 0.78em; }
-.seg-trans input { width: 76px; padding: 2px 5px; font-size: 0.78em; }
-.seg-trans .trans-unit, .seg-trans .trans-eq { font-size: 0.72em; color: var(--text-muted); }
-.seg-trans .trans-min { font-size: 0.72em; color: var(--text-muted); }
-.seg-trans.trans-bad .trans-min { color: var(--warn); font-weight: 600; }
-.seg-trans .trans-warn { font-size: 0.72em; color: var(--warn); font-weight: 600; }
-.seg-field input, .seg-field select {
-  width: 100%; min-width: 0; padding: 3px 5px; font-size: 0.8em;
-  border: 1px solid var(--border); border-radius: 5px; background: var(--panel); color: var(--text);
-}
-.seg-field .seg-static {
-  font-size: 0.8em; padding: 3px 5px; color: var(--text-dim);
-  background: var(--panel); border: 1px dashed var(--border); border-radius: 5px;
-  text-align: center; font-family: 'Menlo', 'Consolas', monospace;
-}
-.seg-sum {
-  margin-top: 10px; padding: 7px 10px; border-radius: 6px;
-  font-size: 0.84em; font-weight: 600; text-align: center;
-  background: var(--panel-alt); border: 1px solid var(--border);
-}
-.seg-sum.sum-ok { color: var(--ok); }
-.seg-sum.sum-bad { color: var(--warn); background: var(--err-bg); border-color: #ffc9c9; }
-
-.btn-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
-.btn {
-  padding: 6px 14px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.88em;
-  font-weight: 500; transition: all 0.15s; display: inline-flex; align-items: center; gap: 5px;
-}
-.btn-primary { background: var(--primary); color: #fff; }
-.btn-primary:hover { background: #3451b2; }
-.btn-secondary { background: var(--panel-alt); color: var(--text); border: 1px solid var(--border); }
-.btn-secondary:hover { background: #e9ecef; }
-.btn-danger { background: var(--panel); color: var(--warn); border: 1px solid #ffc9c9; }
-.btn-danger:hover { background: var(--err-bg); }
-
-/* ========== 凸轮类型 / 层切换 ========== */
-.layer-bar { display: flex; gap: 4px; background: var(--bg); border-radius: 6px; padding: 3px; margin-top: 8px; }
-.layer-btn {
-  flex: 1; border: none; background: transparent; padding: 5px 8px; border-radius: 4px;
-  cursor: pointer; font-size: 0.82em; color: var(--text-dim); font-weight: 500;
-}
-.layer-btn.active { background: var(--panel); color: var(--primary); box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
-.layer-hint { margin-top: 7px; font-size: 0.75em; color: var(--text-muted); line-height: 1.45; }
-.type-note { font-size: 0.72em; color: var(--info); margin-top: 2px; }
-input.derived { background: var(--bg); color: var(--text-dim); }
-
-/* ========== 警告条 ========== */
-.alert-list { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
-.alert {
-  padding: 8px 12px; border-radius: 6px; font-size: 0.85em; line-height: 1.5;
-  border-left: 4px solid; display: flex; gap: 8px; align-items: flex-start;
-}
-.alert-e { background: var(--err-bg); border-color: var(--warn); color: #c92a2a; }
-.alert-w { background: var(--warn-bg); border-color: #f59f00; color: #764a00; }
-.alert-i { background: var(--info-bg); border-color: var(--info); color: #1864ab; }
-.alert .level { font-weight: 700; flex-shrink: 0; }
-.alert .body { flex: 1; }
-.alert .suggestion { display: block; margin-top: 4px; padding-top: 4px; border-top: 1px dashed rgba(0,0,0,0.1); font-size: 0.92em; font-weight: 500; }
-.alert .impact { display: block; margin-top: 4px; font-size: 0.92em; opacity: 0.88; }
-input.input-bad, select.input-bad, textarea.input-bad {
-  border-color: var(--warn) !important; background: #fff5f5 !important;
-  box-shadow: 0 0 0 2px rgba(217,72,15,0.12) !important;
-}
-.seg-card.seg-bad { border-color: #ffa8a8; background: #fff5f5; }
-
-/* ========== 可视化区 ========== */
-.right-col { display: flex; flex-direction: column; gap: 14px; }
-.viz-tabs { display: flex; gap: 4px; background: var(--bg); border-radius: 6px; padding: 3px; margin-bottom: 12px; }
-.viz-tab {
-  border: none; background: transparent; padding: 6px 14px; border-radius: 4px;
-  cursor: pointer; font-size: 0.85em; color: var(--text-dim); font-weight: 500;
-}
-.viz-tab.active { background: var(--panel); color: var(--primary); box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
-
-.canvas-wrap {
-  background: var(--canvas-bg); border: 1px solid var(--border); border-radius: 8px;
-  overflow: hidden; position: relative;
-}
-canvas { display: block; width: 100%; height: auto; background: var(--canvas-bg); }
-
-/* ========== 动画控制 ========== */
-.anim-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
-.anim-controls input[type="range"] { flex: 1; min-width: 150px; accent-color: var(--primary); }
-.anim-controls .phase-label { font-size: 0.85em; color: var(--text-dim); font-family: 'Menlo', monospace; white-space: nowrap; }
-.anim-btn {
-  width: 34px; height: 30px; border: 1px solid var(--border); background: var(--panel);
-  border-radius: 6px; cursor: pointer; font-size: 1em; display: inline-flex; align-items: center; justify-content: center;
-  transition: all 0.15s;
-}
-.anim-btn:hover { background: var(--panel-alt); border-color: var(--primary); }
-.anim-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
-
-/* ========== 工具类 ========== */
-.muted { color: var(--text-muted); font-size: 0.82em; }
-.hidden { display: none !important; }
-hr.section { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
-
-/* ========== 参数网格 ========== */
-.param-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 14px; }
-.param-grid.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.field-label-row { display: flex; align-items: center; justify-content: space-between; }
-.panel-hint { font-size: 0.75em; color: var(--text-muted); margin-top: 6px; line-height: 1.45; }
-
-/* 运动曲线：行显示开关 */
-.row-toggles { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 10px; }
-.row-toggles .rt-label { font-size: 0.8em; color: var(--text-muted); margin-right: 2px; }
-.row-toggles .rt-chip {
-  display: inline-flex; align-items: center; gap: 4px;
-  font-size: 0.8em; padding: 3px 10px; border: 1px solid var(--border);
-  border-radius: 14px; background: var(--panel); cursor: pointer; user-select: none;
-  transition: border-color 0.15s, background 0.15s;
-}
-.row-toggles .rt-chip:hover { border-color: var(--primary); }
-.row-toggles .rt-chip input[type="checkbox"] { width: auto; margin: 0; accent-color: var(--primary); }
-.row-toggles .rt-chip span { color: var(--text-dim); }
-.row-toggles .rt-chip:has(input:not(:checked)) { background: var(--bg); border-style: dashed; }
-.row-toggles .rt-chip:has(input:not(:checked)) span { color: var(--text-muted); }
-
-/* ========== 滚动条 ========== */
-::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: #d1d3d8; border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: #b8bbc2; }
 </style>
 </head>
 <body>
 
-<header>
-  <h1>🔵 <span data-i18n="title">Cylindrical Cam Designer</span><span class="sub" data-i18n="titleSub">v1.0</span></h1>
-  <div class="lang-switch">
-    <button onclick="App.setLang('en')" data-lang="en">🇬🇧 English</button>
-    <button onclick="App.setLang('zh')" data-lang="zh">🇨🇳 中文</button>
-    <button onclick="App.setLang('ja')" data-lang="ja">🇯🇵 日本語</button>
+<header class="topbar">
+  <div class="tt"><span class="logo">▣</span><span class="t1" data-i18n="title">圆柱凸轮设计工具</span><span class="t2">v1.1</span></div>
+  <div class="scheme">
+    <input id="schemeName" class="name" value="未命名方案" maxlength="40" spellcheck="false" placeholder="方案名称">
+    <span id="dirty" class="dirty" hidden data-i18n="unsaved">未保存</span>
+  </div>
+  <div class="acts">
+    <select id="exampleSel" class="sel" title="内置示例"></select>
+    <button id="btnExample" data-i18n="btnExample">载入示例</button>
+    <span class="sep"></span>
+    <button id="btnSave" data-i18n="btnSaveScheme">保存</button>
+    <button id="btnSaveAs" data-i18n="btnSaveAs">另存为</button>
+    <button id="btnSchemes" data-i18n="btnSchemes">方案管理</button>
+    <span class="sep"></span>
+    <button id="btnImport" data-i18n="btnImport">导入</button>
+    <button id="btnExport" data-i18n="btnExportJson">导出 JSON</button>
+    <button id="btnCsv" data-i18n="btnExportCsv">导出 CSV</button>
+    <button id="btnStep" data-i18n="btnExportStep">导出 STEP</button>
+    <button id="btnPrint" data-i18n="btnPrint">打印 / PDF</button>
+    <span class="sep"></span>
+    <button id="btnReset" data-i18n="btnReset">重置</button>
+    <select id="langSel" class="sel">
+      <option value="zh">中文</option><option value="en">English</option><option value="ja">日本語</option>
+    </select>
   </div>
 </header>
 
+<div class="notice">
+  <b>⚠</b>
+  <span data-i18n="appNotice">本工具为凸轮机构初算辅助：结果须由工程师结合加工能力、材料与实测复核，不替代强度校核与型式试验。</span>
+</div>
+
 <main>
   <!-- ========== 左侧：参数输入 ========== -->
-  <aside class="left-col">
+  <aside class="left-col" id="params">
 
-    <div class="panel">
-      <h2><span class="icon">🧩</span><span data-i18n="secCamType">凸轮类型</span></h2>
-      <div class="form-row">
-        <select id="p_camType" onchange="App.onCamTypeChange()">
-          <option value="single" data-i18n="camSingle">单层圆柱凸轮</option>
-          <option value="compound" data-i18n="camCompound">复合圆柱凸轮（两层）</option>
-        </select>
+    <details class="grp" open>
+      <summary><span class="no">①</span><span data-i18n="secCamType">凸轮类型</span><span class="cnt" id="cntCamType"></span><span class="car">▸</span></summary>
+      <div class="rows">
+        <div class="form-row" style="grid-template-columns:1fr">
+          <label data-i18n="camTypeLbl">结构形式</label>
+          <select id="p_camType" onchange="App.onCamTypeChange()">
+            <option value="single" data-i18n="camSingle">单层圆柱凸轮</option>
+            <option value="compound" data-i18n="camCompound">复合圆柱凸轮（两层）</option>
+          </select>
+        </div>
       </div>
       <div class="layer-bar" id="layerBar" style="display:none">
         <button type="button" class="layer-btn active" data-layer="0" onclick="App.switchLayer(0)" data-i18n="layer1">第1层</button>
         <button type="button" class="layer-btn" data-layer="1" onclick="App.switchLayer(1)" data-i18n="layer2">第2层</button>
       </div>
       <div class="layer-hint" id="layerHint" style="display:none" data-i18n="layerHint"></div>
-    </div>
+    </details>
 
-    <div class="panel">
-      <h2><span class="icon">⚙️</span><span data-i18n="secBasic">基础参数</span></h2>
-      <div class="param-grid">
+    <details class="grp" open>
+      <summary><span class="no">②</span><span data-i18n="secBasic">基础参数</span><span class="cnt" id="cntBasic"></span><span class="car">▸</span></summary>
+      <div class="rows">
         <div class="form-row">
           <label><span data-i18n="baseDia">基圆直径</span><span class="unit">mm</span></label>
           <input type="number" id="p_baseDia" value="80" step="0.5" min="1">
-          <div class="type-note" id="noteBaseDia" style="display:none" data-i18n="baseDiaDerivedNote"></div>
         </div>
         <div class="form-row">
           <label><span data-i18n="camWidth">凸轮高度</span><span class="unit">mm</span></label>
@@ -331,12 +363,13 @@ hr.section { border: none; border-top: 1px solid var(--border); margin: 14px 0; 
             <option value="lh" data-i18n="handLH">左旋</option>
           </select>
         </div>
+        <div class="type-note" id="noteBaseDia" style="display:none" data-i18n="baseDiaDerivedNote"></div>
       </div>
-    </div>
+    </details>
 
-    <div class="panel" id="panelFollower">
-      <h2><span class="icon">📐</span><span data-i18n="secFollower">从动件</span></h2>
-      <div class="param-grid">
+    <details class="grp" open>
+      <summary><span class="no">③</span><span data-i18n="secFollower">从动件</span><span class="cnt" id="cntFollower"></span><span class="car">▸</span></summary>
+      <div class="rows">
         <div class="form-row">
           <label data-i18n="followerType">从动件类型</label>
           <select id="p_followerType">
@@ -348,15 +381,13 @@ hr.section { border: none; border-top: 1px solid var(--border); margin: 14px 0; 
           <label><span data-i18n="rollerCount">随动器数量</span><span class="unit" data-i18n="unitPcs">个</span></label>
           <input type="number" id="p_rollerCount" value="1" step="1" min="1" max="8">
         </div>
-        <div class="form-row" style="grid-column: 1 / -1;">
+        <div class="form-row" style="grid-template-columns:1fr">
           <label><span data-i18n="rollerAngles">相对角度</span><span class="unit">°</span></label>
           <input type="text" id="p_rollerAngles" value="" data-i18n-ph="phRollerAngles">
         </div>
-      </div>
 
-      <div id="groupTrans">
-        <h3 data-i18n="subTrans">直动参数</h3>
-        <div class="param-grid">
+        <div id="groupTrans">
+          <div class="form-row"><h3 data-i18n="subTrans">直动参数</h3></div>
           <div class="form-row">
             <label><span data-i18n="offsetDist">随动器中心距</span><span class="unit">mm</span></label>
             <input type="number" id="p_offset" value="40" step="1">
@@ -374,11 +405,9 @@ hr.section { border: none; border-top: 1px solid var(--border); margin: 14px 0; 
             <input type="number" id="p_tiltAngle" value="0" step="5" min="-90" max="90">
           </div>
         </div>
-      </div>
 
-      <div id="groupSwing" class="hidden">
-        <h3 data-i18n="subSwing">摆动参数</h3>
-        <div class="param-grid">
+        <div id="groupSwing" class="hidden">
+          <div class="form-row"><h3 data-i18n="subSwing">摆动参数</h3></div>
           <div class="form-row">
             <label><span data-i18n="swingLen">摆杆长度</span><span class="unit">mm</span></label>
             <input type="number" id="p_swingLen" value="100" step="1" min="1">
@@ -393,11 +422,11 @@ hr.section { border: none; border-top: 1px solid var(--border); margin: 14px 0; 
           </div>
         </div>
       </div>
-    </div>
+    </details>
 
-    <div class="panel">
-      <h2><span class="icon">⚡</span><span data-i18n="secForce">工况与受力</span></h2>
-      <div class="param-grid">
+    <details class="grp" open>
+      <summary><span class="no">④</span><span data-i18n="secForce">工况与受力</span><span class="cnt" id="cntForce"></span><span class="car">▸</span></summary>
+      <div class="rows">
         <div class="form-row">
           <label><span data-i18n="camSpeed">凸轮转速</span><span class="unit">rpm</span></label>
           <input type="number" id="p_camSpeed" value="60" step="10" min="1">
@@ -419,92 +448,111 @@ hr.section { border: none; border-top: 1px solid var(--border); margin: 14px 0; 
           <input type="number" id="p_pressAngleLimit" value="30" step="1" min="5" max="90">
         </div>
       </div>
-    </div>
+    </details>
 
-    <div class="panel">
-      <h2><span class="icon">📈</span><span data-i18n="secSegments">运动分段</span>
-        <button class="btn btn-secondary" onclick="App.addSegment()" style="margin-left:auto;padding:3px 10px;font-size:0.82em;">+ <span data-i18n="addSeg">新增</span></button>
-      </h2>
-      <div class="seg-list" id="segList"></div>
-      <div class="seg-sum sum-ok" id="segSum">Σ = 360° ✓</div>
-      <p class="panel-hint" data-i18n="segHint">勾选「跟随」沿用工况与受力中的转速/负载质量；取消后可单独设置，再次勾选恢复默认。</p>
-    </div>
-
-    <div class="panel">
-      <div class="btn-row">
-        <button class="btn btn-primary" onclick="App.compute()"><span>🚀</span> <span data-i18n="btnCompute">计算</span></button>
-        <button class="btn btn-secondary" onclick="App.loadDefault()"><span>📥</span> <span data-i18n="btnDefault">默认</span></button>
-        <button class="btn btn-secondary" onclick="App.saveJSON()"><span>💾</span> <span data-i18n="btnSave">保存</span></button>
-        <button class="btn btn-secondary" onclick="document.getElementById('fileLoad').click()"><span>📂</span> <span data-i18n="btnLoad">加载</span></button>
-        <button class="btn btn-secondary" onclick="App.exportCSV()"><span>📊</span> CSV</button>
-        <button class="btn btn-secondary" onclick="App.exportSTEP()"><span>🧊</span> STEP</button>
-        <input type="file" id="fileLoad" accept=".json" style="display:none" onchange="App.onLoadFile(this)">
+    <details class="grp" open>
+      <summary><span class="no">⑤</span><span data-i18n="secSegments">运动分段</span><span class="cnt" id="cntSegs"></span><span class="car">▸</span></summary>
+      <div class="rows">
+        <div class="form-row" style="grid-template-columns:1fr auto;border-bottom:none">
+          <span class="panel-hint" style="padding:0" data-i18n="segHint">勾选「跟随」沿用工况与受力中的转速/负载质量；取消后可单独设置。</span>
+          <button class="layer-btn" onclick="App.addSegment()">+ <span data-i18n="addSeg">新增</span></button>
+        </div>
+        <div class="seg-list" id="segList"></div>
+        <div class="seg-sum sum-ok" id="segSum">Σ = 360° ✓</div>
       </div>
-    </div>
+    </details>
 
   </aside>
 
-  <!-- ========== 右侧：可视化 + 结果 ========== -->
-  <section class="right-col">
+  <!-- ========== 右侧：结果 + 可视化 ========== -->
+  <section class="right-col" id="out">
 
-    <!-- 警告区 -->
-    <div class="panel">
-      <h2><span class="icon">⚠️</span><span data-i18n="secAlerts">校验与提示</span></h2>
-      <div class="alert-list" id="alertList">
-        <div class="alert alert-i"><span class="level">i</span><span class="body" data-i18n="alertRunCompute">点击"计算"按钮开始</span></div>
-      </div>
+    <div class="outbar">
+      <span class="lb" data-i18n="outStatus">校核状态</span>
+      <span id="statusSum" class="pill">—</span>
+      <span class="lb" id="calcTime"></span>
+      <span class="sp"></span>
+      <button onclick="App.compute()" data-i18n="btnRecompute">重新计算</button>
     </div>
 
-    <!-- Tabs -->
-    <div class="panel">
-      <h2><span class="icon">📊</span><span data-i18n="secViz">可视化</span></h2>
-      <div class="viz-tabs">
-        <button class="viz-tab active" onclick="App.switchViz('curves',this)" data-i18n="vizCurves">运动曲线</button>
-        <button class="viz-tab" onclick="App.switchViz('flatten',this)" data-i18n="vizFlatten">轮廓展开</button>
-        <button class="viz-tab" onclick="App.switchViz('line3d',this)" data-i18n="viz3D">3D 线框</button>
-        <button class="viz-tab" onclick="App.switchViz('indic',this)" data-i18n="vizIndic">参数示意</button>
-      </div>
+    <div id="cards" class="cards"></div>
 
-      <div id="viz-curves" class="viz-pane">
-        <div class="row-toggles" id="rowToggles">
-          <span class="rt-label" data-i18n="cvShow">显示</span>
-          <label class="rt-chip"><input type="checkbox" data-row="s" checked><span data-i18n="legS">位置</span></label>
-          <label class="rt-chip"><input type="checkbox" data-row="v_s" checked><span data-i18n="legV">速度</span></label>
-          <label class="rt-chip"><input type="checkbox" data-row="a_s" checked><span data-i18n="legA">加速度</span></label>
-          <label class="rt-chip"><input type="checkbox" data-row="j_s" checked><span data-i18n="legJ">跃度</span></label>
-          <label class="rt-chip"><input type="checkbox" data-row="alphaDeg" checked><span data-i18n="legAlpha">压力角</span></label>
-          <label class="rt-chip"><input type="checkbox" data-row="forceAxial" checked><span data-i18n="legFaxial">沿运动方向</span></label>
-          <label class="rt-chip"><input type="checkbox" data-row="forceN" checked><span data-i18n="legN">法向正压力</span></label>
-        </div>
-        <div class="canvas-wrap"><canvas id="cvCurves" width="900" height="1260"></canvas></div>
-        <p class="panel-hint" data-i18n="cvProbeHint">在曲线上移动或拖动鼠标，查看该角度各参数数值</p>
-      </div>
-
-      <div id="viz-flatten" class="viz-pane hidden">
-        <div class="canvas-wrap"><canvas id="cvFlatten" width="900" height="480"></canvas></div>
-      </div>
-
-      <div id="viz-line3d" class="viz-pane hidden">
-        <div class="canvas-wrap"><canvas id="cv3D" width="900" height="520"></canvas></div>
-        <p class="panel-hint" data-i18n="view3dHint">拖动旋转视角 · 双击复位</p>
-        <div class="anim-controls">
-          <button class="anim-btn" onclick="App.animControl('stepRev')" data-i18n-title="tStepRev" title="步进反转">⏮</button>
-          <button class="anim-btn" onclick="App.animControl('backward')" data-i18n-title="tBack" title="连续反转">◀</button>
-          <button class="anim-btn" onclick="App.animControl('stop')" data-i18n-title="tStop" title="停止">■</button>
-          <button class="anim-btn active" onclick="App.animControl('forward')" data-i18n-title="tFwd" title="连续正转">▶</button>
-          <button class="anim-btn" onclick="App.animControl('stepFwd')" data-i18n-title="tStepFwd" title="步进正转">⏭</button>
-          <span class="phase-label" id="animPhase">φ = 0.0°</span>
-          <input type="range" id="animSlider" min="0" max="3600" value="0" oninput="App.animSlider(this.value)">
+    <section class="blk" id="blkAlerts">
+      <h3 data-act="toggle"><span class="car">▾</span><span data-i18n="secAlerts">校验与提示</span><span class="tag" id="alertTag"></span></h3>
+      <div class="body">
+        <div class="alert-list" id="alertList">
+          <div class="alert alert-i"><span class="level">i</span><span class="body" data-i18n="alertRunCompute">请填写参数后点击"计算"</span></div>
         </div>
       </div>
+    </section>
 
-      <div id="viz-indic" class="viz-pane hidden">
-        <div class="canvas-wrap"><canvas id="cvIndic" width="900" height="460"></canvas></div>
+    <section class="blk" id="blkViz">
+      <h3 data-act="toggle"><span class="car">▾</span><span data-i18n="secViz">可视化</span><span class="tag" id="vizTag"></span></h3>
+      <div class="body">
+        <div class="viz-tabs">
+          <button class="viz-tab active" onclick="App.switchViz('curves',this)" data-i18n="vizCurves">运动曲线</button>
+          <button class="viz-tab" onclick="App.switchViz('flatten',this)" data-i18n="vizFlatten">轮廓展开</button>
+          <button class="viz-tab" onclick="App.switchViz('line3d',this)" data-i18n="viz3D">3D 线框</button>
+          <button class="viz-tab" onclick="App.switchViz('indic',this)" data-i18n="vizIndic">参数示意</button>
+        </div>
+
+        <div id="viz-curves" class="viz-pane">
+          <div class="row-toggles" id="rowToggles">
+            <span class="rt-label" data-i18n="cvShow">显示</span>
+            <label class="rt-chip"><input type="checkbox" data-row="s" checked><span data-i18n="legS">位置</span></label>
+            <label class="rt-chip"><input type="checkbox" data-row="v_s" checked><span data-i18n="legV">速度</span></label>
+            <label class="rt-chip"><input type="checkbox" data-row="a_s" checked><span data-i18n="legA">加速度</span></label>
+            <label class="rt-chip"><input type="checkbox" data-row="j_s" checked><span data-i18n="legJ">跃度</span></label>
+            <label class="rt-chip"><input type="checkbox" data-row="alphaDeg" checked><span data-i18n="legAlpha">压力角</span></label>
+            <label class="rt-chip"><input type="checkbox" data-row="forceAxial" checked><span data-i18n="legFaxial">沿运动方向</span></label>
+            <label class="rt-chip"><input type="checkbox" data-row="forceN" checked><span data-i18n="legN">法向正压力</span></label>
+          </div>
+          <div class="canvas-wrap"><canvas id="cvCurves" width="900" height="1260"></canvas></div>
+          <p class="panel-hint" data-i18n="cvProbeHint">在曲线上移动或拖动鼠标，查看该角度各参数数值</p>
+        </div>
+
+        <div id="viz-flatten" class="viz-pane hidden">
+          <div class="canvas-wrap"><canvas id="cvFlatten" width="900" height="480"></canvas></div>
+        </div>
+
+        <div id="viz-line3d" class="viz-pane hidden">
+          <div class="canvas-wrap"><canvas id="cv3D" width="900" height="520"></canvas></div>
+          <p class="panel-hint" data-i18n="view3dHint">拖动旋转视角 · 双击复位</p>
+          <div class="anim-controls">
+            <button class="anim-btn" onclick="App.animControl('stepRev')" data-i18n-title="tStepRev" title="步进反转">⏮</button>
+            <button class="anim-btn" onclick="App.animControl('backward')" data-i18n-title="tBack" title="连续反转">◀</button>
+            <button class="anim-btn" onclick="App.animControl('stop')" data-i18n-title="tStop" title="停止">■</button>
+            <button class="anim-btn active" onclick="App.animControl('forward')" data-i18n-title="tFwd" title="连续正转">▶</button>
+            <button class="anim-btn" onclick="App.animControl('stepFwd')" data-i18n-title="tStepFwd" title="步进正转">⏭</button>
+            <span class="phase-label" id="animPhase">φ = 0.0°</span>
+            <input type="range" id="animSlider" min="0" max="3600" value="0" oninput="App.animSlider(this.value)">
+          </div>
+        </div>
+
+        <div id="viz-indic" class="viz-pane hidden">
+          <div class="canvas-wrap"><canvas id="cvIndic" width="900" height="460"></canvas></div>
+        </div>
       </div>
-    </div>
+    </section>
 
   </section>
 </main>
+
+<div id="drawer" class="drawer" hidden>
+  <div class="dh">
+    <b data-i18n="drawerTitle">已保存方案</b>
+    <button id="btnDrawerClose" data-i18n="btnClose">关闭</button>
+  </div>
+  <div class="dl" id="schList"></div>
+  <div class="df">
+    <button id="btnExportAll" data-i18n="btnExportAll">导出全部方案</button>
+    <button id="btnImport2" data-i18n="btnImport">导入</button>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+<input type="file" id="fileIn" accept=".json,application/json" hidden>
+<div id="printRoot"></div>
 
 <script>
 /* =====================================================================
@@ -920,6 +968,71 @@ Object.assign(I18N.ja, {
   segDefaultDwell2: "停止2", segDefaultFall: "復帰"
 });
 
+/* ---- 方案 / 文件 / 打印（OKS 风格工具栏） ---- */
+Object.assign(I18N.zh, {
+  appNotice: "本工具为凸轮机构初算辅助：结果须由工程师结合加工能力、材料与实测复核，不替代强度校核与型式试验。",
+  schemeNamePh: "方案名称", unsaved: "未保存", camTypeLbl: "结构形式",
+  btnExample: "载入示例", btnSaveScheme: "保存", btnSaveAs: "另存为", btnSchemes: "方案管理",
+  btnImport: "导入", btnExportJson: "导出 JSON", btnExportCsv: "导出 CSV", btnExportStep: "导出 STEP",
+  btnPrint: "打印 / PDF", btnReset: "重置", btnRecompute: "重新计算",
+  btnLoad: "载入", btnCopy: "复制", btnRename: "重命名", btnDel: "删除", btnClose: "关闭", btnExportAll: "导出全部方案",
+  drawerTitle: "已保存方案", drawerEmpty: "暂无已保存方案。填好参数后点顶栏「保存」。", drawerCount: "共 {n} 个方案",
+  outStatus: "校核状态", statusIdle: "待计算", statusOk: "通过", statusWarn: "注意", statusBad: "不合格",
+  cardAlpha: "最大压力角", cardTorque: "最大驱动扭矩", cardForce: "最大法向力",
+  cardStroke: "工作行程", cardPoints: "计算点数", cardChecks: "校核结果",
+  cardLimit: "限值 {v}°", cardNoData: "—",
+  msgSaved: "方案已保存", msgExported: "已导出文件", msgImported: "已导入 {n} 个方案",
+  msgBadFile: "文件格式不正确，未导入", msgLoaded: "已载入方案", msgCopied: "已复制方案",
+  msgDeleted: "已删除方案", msgRenamed: "已重命名", msgNoname: "请先填写方案名称", msgDup: "同名方案已存在，是否覆盖？",
+  msgReset: "已恢复默认参数", msgExample: "已载入示例：{n}", msgNoScheme: "未找到该方案",
+  exStd: "标准 4 段", exHigh: "高速轻载（150 rpm）", exLong: "大升程（35 mm）",
+  printTitle: "圆柱凸轮设计计算书", printParams: "设计参数", printSegs: "运动分段",
+  printChecks: "校核与提示", printCurves: "运动曲线", printTime: "输出时间",
+  printFoot: "本计算书由圆柱凸轮设计工具生成，仅供工程初算参考。"
+});
+Object.assign(I18N.en, {
+  appNotice: "Preliminary design aid only. Results must be reviewed by an engineer against machining capability, materials and measured data; not a substitute for strength checks or type tests.",
+  schemeNamePh: "Scheme name", unsaved: "Unsaved", camTypeLbl: "Configuration",
+  btnExample: "Load example", btnSaveScheme: "Save", btnSaveAs: "Save as", btnSchemes: "Schemes",
+  btnImport: "Import", btnExportJson: "Export JSON", btnExportCsv: "Export CSV", btnExportStep: "Export STEP",
+  btnPrint: "Print / PDF", btnReset: "Reset", btnRecompute: "Recompute",
+  btnLoad: "Load", btnCopy: "Copy", btnRename: "Rename", btnDel: "Delete", btnClose: "Close", btnExportAll: "Export all schemes",
+  drawerTitle: "Saved schemes", drawerEmpty: "No saved schemes. Fill in parameters, then click Save.", drawerCount: "{n} scheme(s)",
+  outStatus: "Status", statusIdle: "Idle", statusOk: "Pass", statusWarn: "Attention", statusBad: "Fail",
+  cardAlpha: "Max pressure angle", cardTorque: "Max drive torque", cardForce: "Max normal force",
+  cardStroke: "Working stroke", cardPoints: "Points", cardChecks: "Checks",
+  cardLimit: "limit {v}°", cardNoData: "—",
+  msgSaved: "Scheme saved", msgExported: "File exported", msgImported: "{n} scheme(s) imported",
+  msgBadFile: "Unsupported file, nothing imported", msgLoaded: "Scheme loaded", msgCopied: "Scheme copied",
+  msgDeleted: "Scheme deleted", msgRenamed: "Renamed", msgNoname: "Enter a scheme name first", msgDup: "Same name exists. Overwrite?",
+  msgReset: "Defaults restored", msgExample: "Example loaded: {n}", msgNoScheme: "Scheme not found",
+  exStd: "Standard 4 segments", exHigh: "High speed, light load (150 rpm)", exLong: "Long stroke (35 mm)",
+  printTitle: "Cylindrical Cam Design Sheet", printParams: "Design parameters", printSegs: "Motion segments",
+  printChecks: "Checks & notes", printCurves: "Motion curves", printTime: "Generated",
+  printFoot: "Generated by Cylindrical Cam Designer for preliminary engineering reference."
+});
+Object.assign(I18N.ja, {
+  appNotice: "本ツールは初算補助です。結果は加工能力・材料・実測値と併せて技術者が確認してください。強度計算や型式試験の代替ではありません。",
+  schemeNamePh: "方案名", unsaved: "未保存", camTypeLbl: "構造形式",
+  btnExample: "例を読込", btnSaveScheme: "保存", btnSaveAs: "別名保存", btnSchemes: "方案管理",
+  btnImport: "読込", btnExportJson: "JSON 出力", btnExportCsv: "CSV 出力", btnExportStep: "STEP 出力",
+  btnPrint: "印刷 / PDF", btnReset: "リセット", btnRecompute: "再計算",
+  btnLoad: "読込", btnCopy: "複製", btnRename: "名称変更", btnDel: "削除", btnClose: "閉じる", btnExportAll: "全方案を出力",
+  drawerTitle: "保存済み方案", drawerEmpty: "保存済み方案はありません。パラメータ入力後に「保存」を押してください。", drawerCount: "全 {n} 件",
+  outStatus: "検証状態", statusIdle: "未計算", statusOk: "合格", statusWarn: "注意", statusBad: "不合格",
+  cardAlpha: "最大圧力角", cardTorque: "最大駆動トルク", cardForce: "最大法線力",
+  cardStroke: "作動ストローク", cardPoints: "計算点数", cardChecks: "検証結果",
+  cardLimit: "限界 {v}°", cardNoData: "—",
+  msgSaved: "方案を保存しました", msgExported: "ファイルを出力しました", msgImported: "{n} 件読み込みました",
+  msgBadFile: "未対応のファイルです", msgLoaded: "方案を読み込みました", msgCopied: "方案を複製しました",
+  msgDeleted: "方案を削除しました", msgRenamed: "名称を変更しました", msgNoname: "方案名を入力してください", msgDup: "同名の方案があります。上書きしますか？",
+  msgReset: "標準値に戻しました", msgExample: "例を読み込みました：{n}", msgNoScheme: "方案が見つかりません",
+  exStd: "標準 4 区間", exHigh: "高速軽負荷（150 rpm）", exLong: "大ストローク（35 mm）",
+  printTitle: "円筒カム設計計算書", printParams: "設計パラメータ", printSegs: "運動区間",
+  printChecks: "検証と注意", printCurves: "運動曲線", printTime: "出力日時",
+  printFoot: "本計算書は円筒カム設計ツールによる初算参考資料です。"
+});
+
 /* 运动规律枚举（英文 key 内部使用） */
 const LAW_KEYS = ['const','acc','cos','sin','poly345','dwell','mod_trap','trap_cubic'];
 const LAW_LABEL_KEY = {
@@ -1192,6 +1305,7 @@ const App = {
     });
     requestAnimationFrame((t) => this.animLoop(t));
     this.refreshUI();
+    this.initShell();
   },
 
   // 随动器中心距默认跟随基圆直径的一半，人工修改后不再自动跟随
@@ -1245,6 +1359,8 @@ const App = {
     this.state.lang = lang;
     localStorage.setItem('cam_lang', lang);
     document.documentElement.lang = lang === 'zh' ? 'zh-CN' : (lang === 'ja' ? 'ja' : 'en');
+    const lsel = document.getElementById('langSel');
+    if (lsel) lsel.value = lang;
     document.querySelectorAll('[data-lang]').forEach(b => {
       b.classList.toggle('active', b.dataset.lang === lang);
     });
@@ -1267,6 +1383,12 @@ const App = {
     if (this.state.segments && this.state.segments.length) this.renderSegTable(true);
     if (this.state.alerts) this.renderAlerts(this.state.alerts);
     this.renderAllViz();
+    if (this.renderCards) this.renderCards();
+    if (this.updateStatus) this.updateStatus();
+    const exSel = document.getElementById('exampleSel');
+    if (exSel && this.EXAMPLES) {
+      exSel.innerHTML = this.EXAMPLES.map(ex => '<option value="' + ex.key + '">' + this.t(ex.nameKey) + '</option>').join('');
+    }
   },
 
   // 默认分段名（停歇/升程/回程）随语言切换，用户自定义名称保持不动
@@ -1749,6 +1871,7 @@ const App = {
     this.markBadInputs(issues);
     if (this.state.hasFatalInput) {
       this.renderInputIssues(issues);
+      this.afterCompute();
       return;
     }
 
@@ -1769,6 +1892,7 @@ const App = {
     this.runValidator(segs, p, pts, this.state.compoundInfo);
     this.renderAllViz();
     this.renderLayerUI();
+    this.afterCompute();
   },
 
   /* ======== 复合凸轮：层管理 ======== */
@@ -3163,6 +3287,7 @@ const App = {
     a.download = `cam-points-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+    this.toast(this.t('msgExported'));
   },
 
   /* -------- 凸轮沟槽几何（STEP 导出与 3D 预览共用） --------
@@ -3509,6 +3634,7 @@ const App = {
     a.download = `cam-solid-${new Date().toISOString().slice(0, 10)}.step`;
     a.click();
     URL.revokeObjectURL(url);
+    this.toast(this.t('msgExported'));
   },
 
   /* -------- 刷新 -------- */
@@ -3518,6 +3644,594 @@ const App = {
     this.compute();
   }
 };
+
+/* =====================================================================
+   方案管理 / 文件导入导出 / A4 打印（OKS 风格工具栏）
+   ===================================================================== */
+const $id = (id) => document.getElementById(id);
+const escHtml = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+Object.assign(App, {
+  STORE_KEY: 'cam_schemes',
+  DRAFT_KEY: 'cam_draft',
+  SCHEMA: 'cylindricalcam',
+
+  EXAMPLES: [
+    { key: 'std', nameKey: 'exStd', params: {}, segLift: 20 },
+    { key: 'high', nameKey: 'exHigh', params: { p_camSpeed: 150, p_loadMass: 2, p_springForce: 30, p_pressAngleLimit: 32 }, segLift: 16 },
+    { key: 'long', nameKey: 'exLong', params: { p_baseDia: 100, p_camWidth: 90, p_rollerWidth: 22, p_loadMass: 8, p_initialHt: 25 }, segLift: 35 }
+  ],
+
+  /* ---------- 基础工具 ---------- */
+  toast(msg) {
+    const el = $id('toast');
+    if (!el) return;
+    el.textContent = msg;
+    el.classList.add('on');
+    clearTimeout(this._toastT);
+    this._toastT = setTimeout(() => el.classList.remove('on'), 1900);
+  },
+
+  download(name, content, mime) {
+    const blob = new Blob([content], { type: mime || 'application/json;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 400);
+  },
+
+  markDirty(v) {
+    this.state.dirty = !!v;
+    const d = $id('dirty');
+    if (d) d.hidden = !v;
+  },
+
+  schemeName() {
+    const el = $id('schemeName');
+    return (el && el.value || '').trim();
+  },
+
+  setSchemeName(name) {
+    const el = $id('schemeName');
+    if (el) el.value = name || '';
+  },
+
+  /* ---------- 草稿 ---------- */
+  loadDraft() {
+    try { return JSON.parse(localStorage.getItem(this.DRAFT_KEY) || 'null'); } catch (e) { return null; }
+  },
+
+  persistDraft() {
+    clearTimeout(this._draftT);
+    this._draftT = setTimeout(() => {
+      try {
+        localStorage.setItem(this.DRAFT_KEY, JSON.stringify({
+          name: this.schemeName(), data: this.payload(this.schemeName()), at: Date.now()
+        }));
+      } catch (e) { /* 忽略配额错误 */ }
+    }, 500);
+  },
+
+  clearDraft() {
+    clearTimeout(this._draftT);
+    try { localStorage.removeItem(this.DRAFT_KEY); } catch (e) {}
+  },
+
+  /* ---------- 方案数据 ---------- */
+  payload(name) {
+    const st = this.state;
+    if (st.camType === 'compound') {
+      st.layerStore[st.activeLayer] = { params: this.getParamFields(), segments: st.segments };
+    }
+    const layers = (st.camType === 'compound' && st.layerStore[0] && st.layerStore[1])
+      ? JSON.parse(JSON.stringify(st.layerStore)) : null;
+    return {
+      schema: this.SCHEMA, version: '1.1',
+      name: name || this.schemeName() || '未命名方案',
+      camType: st.camType || 'single',
+      params: JSON.parse(JSON.stringify(st.params || this.getParamFields())),
+      segments: JSON.parse(JSON.stringify(st.segments || [])),
+      layers,
+      savedAt: new Date().toISOString()
+    };
+  },
+
+  applyPayload(data) {
+    if (!data || typeof data !== 'object' || !data.params) return false;
+    const set = (id, v) => { const el = $id(id); if (el && v !== undefined && v !== null) el.value = v; };
+    const comp = data.camType === 'compound' && Array.isArray(data.layers) && data.layers[0] && data.layers[1];
+
+    if (comp) {
+      set('p_camType', 'compound');
+      this.state.camType = 'compound';
+      this.state.layerStore = JSON.parse(JSON.stringify(data.layers));
+      this.state.activeLayer = 0;
+      this.state.ptsByLayer = [null, null];
+      this.applyLayerToUI(this.state.layerStore[0]);
+      this.syncLayer2Derived();
+      this.renderLayerUI();
+      this.compute();
+      return true;
+    }
+
+    set('p_camType', 'single');
+    this.state.camType = 'single';
+    this.state.layerStore = [null, null];
+    this.state.ptsByLayer = [null, null];
+    if (Array.isArray(data.segments) && data.segments.length) {
+      this.state.segments = JSON.parse(JSON.stringify(data.segments));
+    }
+    const p = data.params || {};
+    const map = [
+      ['p_baseDia', p.baseDia], ['p_camWidth', p.camWidth], ['p_rollerDia', p.rollerDia],
+      ['p_rollerWidth', p.rollerWidth], ['p_initialHt', p.initialHt], ['p_resolution', p.resolution],
+      ['p_handedness', p.handedness], ['p_followerType', p.followerType],
+      ['p_offset', p.offset], ['p_motionDir', p.motionDir], ['p_tiltAngle', p.tiltAngle],
+      ['p_swingLen', p.swingLen], ['p_fulcrumDist', p.fulcrumDist], ['p_swingInitAngle', p.swingInitAngle],
+      ['p_camSpeed', p.camSpeed], ['p_loadMass', p.loadMass], ['p_springForce', p.springForce],
+      ['p_pressAngleLimit', p.pressAngleLimit], ['p_rollerCount', p.rollerCount]
+    ];
+    map.forEach(([id, v]) => set(id, v));
+    if (p.efficiency != null) set('p_efficiency', Math.round(p.efficiency * 100));
+    if (Array.isArray(p.rollerAngles)) set('p_rollerAngles', p.rollerAngles.join(', '));
+    const off = $id('p_offset');
+    if (off) off.dataset.userSet = '1';
+
+    this.renderSegTable();
+    this.onFollowerTypeChange();
+    this.compute();
+    return true;
+  },
+
+  onLoadFile(input) {
+    const f = input.files && input.files[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(reader.result);
+        if (!this.applyPayload(data)) throw new Error('schema');
+        this.markDirty(false);
+        this.toast(this.t('msgLoaded'));
+      } catch (e) {
+        this.toast(this.t('msgBadFile'));
+      }
+      input.value = '';
+    };
+    reader.readAsText(f);
+  },
+
+  /* ---------- 指标 / 卡片 / 状态 ---------- */
+  metrics() {
+    const pts = this.state.points || [];
+    if (!pts.length) return null;
+    let amax = 0, tmax = 0, nmax = 0, smin = Infinity, smax = -Infinity;
+    pts.forEach(q => {
+      amax = Math.max(amax, Math.abs(q.alphaDeg || 0));
+      tmax = Math.max(tmax, Math.abs(q.torqueNmm || 0));
+      nmax = Math.max(nmax, Math.abs(q.forceN || 0));
+      smin = Math.min(smin, q.s); smax = Math.max(smax, q.s);
+    });
+    const al = this.state.alerts || [];
+    return {
+      amax, tmax: tmax / 1000, nmax, stroke: smax - smin, points: pts.length,
+      e: al.filter(a => a.level === 'E').length,
+      w: al.filter(a => a.level === 'W').length,
+      limit: (this.state.params && this.state.params.pressAngleLimit) || 30
+    };
+  },
+
+  renderCards() {
+    const box = $id('cards');
+    if (!box) return;
+    const m = this.metrics();
+    if (!m) { box.innerHTML = ''; return; }
+    const cls = m.amax > m.limit ? 'bad' : (m.amax > m.limit * 0.85 ? 'warn' : 'ok');
+    const chk = m.e > 0 ? 'bad' : (m.w > 0 ? 'warn' : 'ok');
+    const card = (c, label, val, unit, sub) =>
+      `<div class="card ${c}"><div class="cl">${label}</div><div class="cv">${val}<small>${unit || ''}</small></div><div class="cs">${sub || ''}</div></div>`;
+    box.innerHTML =
+      card(cls, this.t('cardAlpha'), m.amax.toFixed(2), '°', this.t('cardLimit', { v: m.limit.toFixed(0) })) +
+      card('', this.t('cardTorque'), m.tmax.toFixed(2), 'N·m', 'T<sub>max</sub>') +
+      card('', this.t('cardForce'), m.nmax.toFixed(0), 'N', 'N<sub>max</sub>') +
+      card('', this.t('cardStroke'), m.stroke.toFixed(2), 'mm', 's<sub>max</sub> − s<sub>min</sub>') +
+      card('', this.t('cardPoints'), m.points, '', 'φ 0 – 360°') +
+      card(chk, this.t('cardChecks'), (m.e + m.w) ? ('✕' + m.e + ' !' + m.w) : '✓', '', this.t('outStatus'));
+  },
+
+  updateStatus() {
+    const pill = $id('statusSum');
+    const m = this.metrics();
+    const fatal = this.state.hasFatalInput;
+    if (pill) {
+      if (fatal) { pill.className = 'pill bad'; pill.textContent = this.t('statusBad'); }
+      else if (!m) { pill.className = 'pill'; pill.textContent = this.t('statusIdle'); }
+      else if (m.e > 0) { pill.className = 'pill bad'; pill.textContent = this.t('statusBad'); }
+      else if (m.w > 0) { pill.className = 'pill warn'; pill.textContent = this.t('statusWarn'); }
+      else { pill.className = 'pill ok'; pill.textContent = this.t('statusOk'); }
+    }
+    const at = $id('alertTag');
+    if (at) at.textContent = m ? ('E ' + m.e + ' · W ' + m.w) : '';
+    const vt = $id('vizTag');
+    if (vt) vt.textContent = m ? (m.points + ' pts') : '';
+    const ct = $id('calcTime');
+    if (ct) ct.textContent = m ? new Date().toLocaleTimeString() : '';
+    const segCnt = $id('cntSegs');
+    if (segCnt) {
+      const sum = (this.state.segments || []).reduce((a, s) => a + (+s.angle || 0), 0);
+      segCnt.textContent = (this.state.segments || []).length + ' 段 · Σ ' + sum.toFixed(0) + '°';
+    }
+  },
+
+  updateCounts() {
+    document.querySelectorAll('.left-col .grp').forEach(g => {
+      const cnt = g.querySelector('.cnt');
+      if (!cnt || cnt.id === 'cntSegs') return;
+      const n = g.querySelectorAll('.rows input, .rows select').length;
+      cnt.textContent = n ? (n + ' 项') : '';
+    });
+  },
+
+  afterCompute() {
+    this.renderCards();
+    this.updateStatus();
+    this.updateCounts();
+    if (this.state.dirty) this.persistDraft();
+  },
+
+  /* ---------- 方案存储 ---------- */
+  Store: {
+    list() {
+      try {
+        const a = JSON.parse(localStorage.getItem('cam_schemes') || '[]');
+        return Array.isArray(a) ? a : [];
+      } catch (e) { return []; }
+    },
+    saveAll(a) {
+      try { localStorage.setItem('cam_schemes', JSON.stringify(a)); }
+      catch (e) { if (App.toast) App.toast('localStorage 写入失败'); }
+    }
+  },
+
+  summaryOf() {
+    const m = this.metrics();
+    const p = this.state.params || {};
+    return m ? { base: p.baseDia, stroke: +m.stroke.toFixed(2), amax: +m.amax.toFixed(2), e: m.e, w: m.w } : null;
+  },
+
+  saveScheme(forceNew) {
+    const name0 = this.schemeName();
+    if (!name0) { this.toast(this.t('msgNoname')); return; }
+    let name = name0;
+    const list = this.Store.list();
+    let idx = list.findIndex(s => s.id === this.state.curId);
+    if (idx >= 0 && forceNew) { idx = -1; this.state.curId = null; }
+    if (idx < 0) {
+      const dup = list.findIndex(s => s.name === name);
+      if (dup >= 0) {
+        if (!forceNew && confirm(this.t('msgDup'))) idx = dup;
+        else name = name + ' (副本)';
+      }
+    }
+    const now = new Date().toISOString();
+    const o = this.payload(name);
+    o.id = idx >= 0 ? list[idx].id : ('s' + Date.now() + Math.floor(Math.random() * 100));
+    o.createdAt = idx >= 0 ? (list[idx].createdAt || now) : now;
+    o.updatedAt = now;
+    o.summary = this.summaryOf();
+    if (idx >= 0) list[idx] = o; else { list.push(o); this.state.curId = o.id; }
+    this.setSchemeName(name);
+    this.Store.saveAll(list);
+    this.markDirty(false);
+    this.clearDraft();
+    this.renderDrawer();
+    this.toast(this.t('msgSaved'));
+  },
+
+  renderDrawer() {
+    const box = $id('schList');
+    if (!box) return;
+    const list = this.Store.list();
+    if (!list.length) { box.innerHTML = '<div class="empty">' + escHtml(this.t('drawerEmpty')) + '</div>'; return; }
+    box.innerHTML = '<div style="font-size:10.5px;color:#8b95a5;margin:0 2px 6px">' +
+      escHtml(this.t('drawerCount', { n: list.length })) + '</div>' +
+      list.map(s => {
+        const sm = s.summary || {};
+        const sb = [
+          sm.base ? ('Ø' + sm.base + ' mm') : '',
+          sm.stroke != null ? ('s ' + sm.stroke + ' mm') : '',
+          sm.amax != null ? ('α ' + sm.amax + '°') : '',
+          (sm.e || sm.w) ? ('✕' + (sm.e || 0) + ' !' + (sm.w || 0)) : '✓'
+        ].filter(Boolean).join(' · ');
+        return '<div class="sch' + (s.id === this.state.curId ? ' cur' : '') + '" data-id="' + s.id + '">' +
+          '<div class="sn">' + escHtml(s.name) + (s.id === this.state.curId ? '<span class="cur">CURRENT</span>' : '') + '</div>' +
+          '<div class="sm">' + (s.updatedAt ? new Date(s.updatedAt).toLocaleString() : '') + '</div>' +
+          '<div class="sm">' + escHtml(sb) + '</div>' +
+          '<div class="sb"><button data-op="load">' + escHtml(this.t('btnLoad')) + '</button>' +
+          '<button data-op="copy">' + escHtml(this.t('btnCopy')) + '</button>' +
+          '<button data-op="rename">' + escHtml(this.t('btnRename')) + '</button>' +
+          '<button data-op="del" class="del">' + escHtml(this.t('btnDel')) + '</button></div></div>';
+      }).join('');
+  },
+
+  drawerOp(ev) {
+    const btn = ev.target.closest('button[data-op]');
+    if (!btn) return;
+    const id = btn.closest('.sch').dataset.id;
+    const list = this.Store.list();
+    const i = list.findIndex(s => s.id === id);
+    if (i < 0) { this.toast(this.t('msgNoScheme')); return; }
+    const op = btn.dataset.op;
+    if (op === 'load') {
+      if (!this.applyPayload(list[i])) { this.toast(this.t('msgBadFile')); return; }
+      this.state.curId = id;
+      this.setSchemeName(list[i].name);
+      this.markDirty(false);
+      this.clearDraft();
+      this.renderDrawer();
+      this.toast(this.t('msgLoaded'));
+    } else if (op === 'copy') {
+      const o = JSON.parse(JSON.stringify(list[i]));
+      o.id = 's' + Date.now();
+      o.name = list[i].name + ' (副本)';
+      o.updatedAt = new Date().toISOString();
+      list.push(o);
+      this.Store.saveAll(list);
+      this.renderDrawer();
+      this.toast(this.t('msgCopied'));
+    } else if (op === 'rename') {
+      const n = prompt(this.t('btnRename'), list[i].name);
+      if (!n || !n.trim()) return;
+      list[i].name = n.trim();
+      list[i].updatedAt = new Date().toISOString();
+      this.Store.saveAll(list);
+      if (this.state.curId === id) this.setSchemeName(n.trim());
+      this.renderDrawer();
+      this.toast(this.t('msgRenamed'));
+    } else if (op === 'del') {
+      if (!confirm(this.t('btnDel') + ' "' + list[i].name + '" ?')) return;
+      list.splice(i, 1);
+      this.Store.saveAll(list);
+      if (this.state.curId === id) this.state.curId = null;
+      this.renderDrawer();
+      this.toast(this.t('msgDeleted'));
+    }
+  },
+
+  /* ---------- 导入 / 导出 ---------- */
+  exportJSON(all) {
+    if (all) {
+      this.download('cam-schemes.json', JSON.stringify({
+        schema: this.SCHEMA, version: '1.1', exportedAt: new Date().toISOString(),
+        schemes: this.Store.list()
+      }, null, 2));
+    } else {
+      const o = this.payload(this.schemeName() || 'scheme');
+      o.summary = this.summaryOf();
+      this.download((o.name || 'scheme') + '.json', JSON.stringify(o, null, 2));
+    }
+    this.toast(this.t('msgExported'));
+  },
+
+  importJson(text) {
+    let data;
+    try { data = JSON.parse(text); } catch (e) { this.toast(this.t('msgBadFile')); return; }
+    // 旧版单方案文件（含 params 但无 schema）→ 直接载入
+    if (data && data.params && !data.schema && !Array.isArray(data.schemes)) {
+      if (this.applyPayload(data)) {
+        this.setSchemeName(data.name || this.schemeName());
+        this.state.curId = null;
+        this.markDirty(true);
+        this.toast(this.t('msgLoaded'));
+      } else this.toast(this.t('msgBadFile'));
+      return;
+    }
+    const arr = Array.isArray(data) ? data
+      : (data && Array.isArray(data.schemes)) ? data.schemes
+        : (data && data.params) ? [data] : null;
+    if (!arr) { this.toast(this.t('msgBadFile')); return; }
+    const list = this.Store.list();
+    let n = 0;
+    arr.forEach(o => {
+      if (!o || typeof o !== 'object' || !o.params) return;
+      const now = new Date().toISOString();
+      let name = String(o.name || '导入方案');
+      if (list.some(s => s.name === name)) name += ' ' + new Date().toLocaleTimeString();
+      const item = {
+        id: 's' + Date.now() + Math.floor(Math.random() * 1000) + n,
+        schema: this.SCHEMA, version: '1.1', name,
+        createdAt: o.createdAt || now, updatedAt: now,
+        camType: o.camType || 'single', params: o.params, segments: o.segments || [],
+        layers: o.layers || null, summary: o.summary || null
+      };
+      list.push(item);
+      n++;
+    });
+    if (!n) { this.toast(this.t('msgBadFile')); return; }
+    this.Store.saveAll(list);
+    this.renderDrawer();
+    this.toast(this.t('msgImported', { n }));
+  },
+
+  /* ---------- 示例 / 重置 ---------- */
+  loadExample(key) {
+    const ex = this.EXAMPLES.find(e => e.key === key) || this.EXAMPLES[0];
+    this.loadDefault();
+    Object.keys(ex.params || {}).forEach(id => { const el = $id(id); if (el) el.value = ex.params[id]; });
+    if (ex.segLift != null) {
+      this.state.segments.forEach(s => {
+        if (s.law !== 'dwell') s.lift = ex.segLift;
+      });
+      this.state.segments.forEach(s => { if (s.law === 'trap_cubic' || s.law === 'mod_trap') this.applyMinTransition(s); });
+    }
+    const off = $id('p_offset');
+    if (off) off.dataset.userSet = '1';
+    this.renderSegTable();
+    this.onFollowerTypeChange();
+    this.compute();
+    this.state.curId = null;
+    this.setSchemeName(this.t(ex.nameKey));
+    this.markDirty(true);
+    this.toast(this.t('msgExample', { n: this.t(ex.nameKey) }));
+  },
+
+  resetAll() {
+    this.loadDefault();
+    this.state.curId = null;
+    this.setSchemeName('未命名方案');
+    this.clearDraft();
+    this.markDirty(false);
+    this.toast(this.t('msgReset'));
+  },
+
+  /* ---------- A4 计算书 ---------- */
+  buildPrint() {
+    const root = $id('printRoot');
+    if (!root) return;
+    const p = this.state.params || this.getParamFields();
+    const m = this.metrics();
+    const name = this.schemeName() || '未命名方案';
+    const dt = new Date().toLocaleString();
+    const pct = (v) => (v * 100).toFixed(0) + ' %';
+    const row = (k, v, u) => '<tr><td class="pn">' + escHtml(k) + '</td><td class="pv">' + escHtml(v) +
+      '</td><td class="pu">' + escHtml(u || '') + '</td></tr>';
+    const rows = [
+      [this.t('baseDia'), p.baseDia, 'mm'], [this.t('camWidth'), p.camWidth, 'mm'],
+      [this.t('rollerDia'), p.rollerDia, 'mm'], [this.t('rollerWidth'), p.rollerWidth, 'mm'],
+      [this.t('initialHt'), p.initialHt, 'mm'], [this.t('divRes'), p.resolution, 'pts/rev'],
+      [this.t('handedness'), p.handedness === 'lh' ? this.t('handLH') : this.t('handRH'), ''],
+      [this.t('followerType'), p.followerType === 'swing' ? this.t('followerSwing') : this.t('followerTrans'), ''],
+      [this.t('offsetDist'), p.offset, 'mm'], [this.t('motionDir'), this.t(p.motionDir === 'horizontal' ? 'dirHoriz' : p.motionDir === 'tilted' ? 'dirTilt' : 'dirVert'), ''],
+      [this.t('tiltAngle'), p.tiltAngle, '°'],
+      [this.t('camSpeed'), p.camSpeed, 'rpm'], [this.t('loadMass'), p.loadMass, 'kg'],
+      [this.t('springForce'), p.springForce, 'N'], [this.t('camEfficiency'), pct(p.efficiency), ''],
+      [this.t('pressAngleLimit'), p.pressAngleLimit, '°'],
+      [this.t('rollerCount'), p.rollerCount, ''], [this.t('rollerAngles'), (p.rollerAngles || []).join(' / '), '°']
+    ];
+    const segs = (this.state.segments || []).map((s, i) =>
+      '<tr><td class="pv">' + (i + 1) + '</td><td>' + escHtml(s.name) + '</td><td class="pv">' + s.angle +
+      '</td><td class="pv">' + s.lift + '</td><td>' + escHtml(this.t(LAW_LABEL_KEY[s.law] || s.law)) + '</td></tr>').join('');
+    const alerts = (this.state.alerts || []).map(a => {
+      const cls = a.level === 'E' ? 'st-fail' : a.level === 'W' ? 'st-warn' : 'st-pass';
+      const st = a.level === 'E' ? '✕' : a.level === 'W' ? '!' : 'i';
+      const note = [a.impact ? this.t('impactPrefix') + a.impact : '', a.suggestion ? '→ ' + a.suggestion : ''].filter(Boolean).join(' ');
+      return '<tr class="' + cls + '"><td class="ps">' + st + '</td><td>' + escHtml(a.text) +
+        (note ? '<br><i>' + escHtml(note) + '</i>' : '') + '</td></tr>';
+    }).join('');
+    let chart = '';
+    try {
+      const cv = $id('cvCurves');
+      if (cv && cv.width) chart = '<div class="pr-charts"><img src="' + cv.toDataURL('image/png') + '" alt="curves"></div>';
+    } catch (e) {}
+    const metricLine = m ? [
+      this.t('cardAlpha') + ' ' + m.amax.toFixed(2) + '°',
+      this.t('cardTorque') + ' ' + m.tmax.toFixed(2) + ' N·m',
+      this.t('cardForce') + ' ' + m.nmax.toFixed(0) + ' N',
+      this.t('cardStroke') + ' ' + m.stroke.toFixed(2) + ' mm'
+    ].join('　|　') : '';
+
+    root.innerHTML =
+      '<div class="pr-hd"><div class="pr-t">' + escHtml(this.t('printTitle')) + '</div>' +
+      '<div class="pr-m">' + escHtml(name) + '　·　' + escHtml(this.t('printTime')) + ' ' + escHtml(dt) + '</div>' +
+      (metricLine ? '<div class="pr-m">' + escHtml(metricLine) + '</div>' : '') + '</div>' +
+      '<h2>' + escHtml(this.t('printParams')) + '</h2>' +
+      '<table class="pr-tbl"><tbody>' + rows.map(r => row(r[0], r[1], r[2])).join('') + '</tbody></table>' +
+      '<h2>' + escHtml(this.t('printSegs')) + '</h2>' +
+      '<table class="pr-tbl pr-dt"><thead><tr><th>#</th><th>' + escHtml(this.t('segName')) + '</th><th>' + escHtml(this.t('segAngle')) +
+      '</th><th>' + escHtml(this.t('segLift')) + '</th><th>' + escHtml(this.t('segLaw')) + '</th></tr></thead><tbody>' + segs + '</tbody></table>' +
+      (alerts ? '<h2>' + escHtml(this.t('printChecks')) + '</h2><table class="pr-tbl pr-chk"><tbody>' + alerts + '</tbody></table>' : '') +
+      (chart ? '<h2>' + escHtml(this.t('printCurves')) + '</h2>' + chart : '') +
+      '<div class="pr-foot">' + escHtml(this.t('printFoot')) + '</div>';
+  },
+
+  printDoc() {
+    if (!this.state.points || !this.state.points.length) { this.toast(this.t('needCompute')); return; }
+    this.buildPrint();
+    setTimeout(() => window.print(), 120);
+  },
+
+  /* ---------- 初始化外壳 ---------- */
+  initShell() {
+    if (this._shellReady) return;
+    this._shellReady = true;
+    if (this.state.curId === undefined) this.state.curId = null;
+
+    const on = (id, ev, fn) => { const el = $id(id); if (el) el.addEventListener(ev, fn); };
+
+    on('btnSave', 'click', () => this.saveScheme(false));
+    on('btnSaveAs', 'click', () => this.saveScheme(true));
+    on('btnSchemes', 'click', () => { $id('drawer').hidden = false; this.renderDrawer(); });
+    on('btnDrawerClose', 'click', () => { $id('drawer').hidden = true; });
+    on('schList', 'click', (e) => this.drawerOp(e));
+    on('btnImport', 'click', () => $id('fileIn').click());
+    on('btnImport2', 'click', () => $id('fileIn').click());
+    on('fileIn', 'change', (e) => {
+      const f = e.target.files && e.target.files[0];
+      if (!f) return;
+      const r = new FileReader();
+      r.onload = () => { this.importJson(String(r.result)); e.target.value = ''; };
+      r.readAsText(f);
+    });
+    on('btnExport', 'click', () => this.exportJSON(false));
+    on('btnExportAll', 'click', () => this.exportJSON(true));
+    on('btnCsv', 'click', () => this.exportCSV());
+    on('btnStep', 'click', () => this.exportSTEP());
+    on('btnPrint', 'click', () => this.printDoc());
+    on('btnReset', 'click', () => this.resetAll());
+    on('btnExample', 'click', () => this.loadExample(($id('exampleSel') || {}).value));
+    on('langSel', 'change', (e) => this.setLang(e.target.value));
+
+    const exSel = $id('exampleSel');
+    if (exSel) exSel.innerHTML = this.EXAMPLES.map(e => '<option value="' + e.key + '">' + escHtml(this.t(e.nameKey)) + '</option>').join('');
+
+    const nm = $id('schemeName');
+    if (nm) {
+      nm.addEventListener('input', () => this.markDirty(true));
+      nm.addEventListener('keydown', (e) => { if (e.key === 'Enter') this.saveScheme(false); });
+    }
+
+    // 顶栏 / 侧栏折叠
+    document.querySelectorAll('.blk>h3').forEach(h => {
+      h.addEventListener('click', () => h.parentNode.classList.toggle('closed'));
+    });
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); this.saveScheme(false); }
+    });
+
+    // 修改即脏 + 草稿
+    document.addEventListener('input', (e) => {
+      if (!e.target.closest) return;
+      if (e.target.closest('.left-col') || e.target.closest('.seg-list')) {
+        this.markDirty(true);
+        this.persistDraft();
+      }
+    });
+    document.addEventListener('change', (e) => {
+      if (!e.target.closest) return;
+      if (e.target.closest('.left-col') || e.target.closest('.seg-list')) {
+        this.markDirty(true);
+        this.persistDraft();
+      }
+    });
+
+    // 恢复草稿（上次未保存的编辑）
+    const d = this.loadDraft();
+    if (d && d.data) {
+      try {
+        if (this.applyPayload(d.data)) {
+          if (d.name) this.setSchemeName(d.name);
+          this.markDirty(true);
+        }
+      } catch (e) {}
+    }
+
+    this.renderCards();
+    this.updateStatus();
+    this.updateCounts();
+  }
+});
 
 window.addEventListener('DOMContentLoaded', () => App.init());
 </script>
