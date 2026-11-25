@@ -419,6 +419,7 @@ hr.section { border: none; border-top: 1px solid var(--border); margin: 14px 0; 
 
       <div id="viz-curves" class="viz-pane">
         <div class="canvas-wrap"><canvas id="cvCurves" width="900" height="1260"></canvas></div>
+        <p class="panel-hint" data-i18n="cvProbeHint">在曲线上移动或拖动鼠标，查看该角度各参数数值</p>
       </div>
 
       <div id="viz-flatten" class="viz-pane hidden">
@@ -586,6 +587,7 @@ Object.assign(I18N.zh, {
   alertLowRes: "分度分辨率偏低（{res} 点/转）",
   sugLowRes: "建议提高到 72–144 点/转以获得平滑曲线；STEP 曲面导出建议 288 点/转以上。",
   cvPhi: "凸轮转角 φ (°)", cvArc: "展开弧长 (mm)", cvAxial: "轴向位移 s (mm)",
+  cvProbeHint: "在曲线上移动或拖动鼠标，查看该角度各参数数值", cvFoldMin: "最小",
   cvTheory: "理论轮廓（随动器中心轨迹）", cvWork: "工作轮廓（槽壁）",
   cvBaseCircle: "基圆", cvPhase: "相位 φ",
   needCompute: "请先点击\"计算\"",
@@ -638,6 +640,7 @@ Object.assign(I18N.en, {
   alertLowRes: "Low angular resolution ({res} pts/rev)",
   sugLowRes: "Use 72–144 pts/rev for smooth curves; 288+ pts/rev for STEP surface export.",
   cvPhi: "Cam angle φ (°)", cvArc: "Unrolled arc (mm)", cvAxial: "Axial displacement s (mm)",
+  cvProbeHint: "Move or drag over the chart to read values at that angle", cvFoldMin: "min",
   cvTheory: "Theoretical profile (follower center)", cvWork: "Working profile (groove wall)",
   cvBaseCircle: "Base circle", cvPhase: "Phase φ",
   needCompute: "Please click \"Compute\" first",
@@ -690,6 +693,7 @@ Object.assign(I18N.ja, {
   alertLowRes: "分割分解能が低い（{res} 点/回転）",
   sugLowRes: "滑らかな曲線には 72–144 点/回転、STEP 曲面出力には 288 点/回転以上を推奨します。",
   cvPhi: "カム角度 φ (°)", cvArc: "展開弧長 (mm)", cvAxial: "軸方向変位 s (mm)",
+  cvProbeHint: "グラフ上でマウスを移動・ドラッグすると各値を表示します", cvFoldMin: "最小",
   cvTheory: "理論輪郭（フォロワ中心軌跡）", cvWork: "実作輪郭（溝壁）",
   cvBaseCircle: "基礎円", cvPhase: "位相 φ",
   needCompute: "先に「計算」を押してください",
@@ -934,6 +938,8 @@ const App = {
     lang: 'zh',
     anim: { phase: 0, playing: true, dir: 1, lastT: 0 },
     view3d: { alpha: Math.PI / 6, beta: Math.PI / 5 },
+    probePhi: null,
+    dataVersion: 0,
     dirty: false
   },
 
@@ -952,6 +958,7 @@ const App = {
       document.getElementById('p_offset').dataset.userSet = '1';
     });
     this.bind3DRotate();
+    this.bindCurveProbe();
     // 参数修改后自动重算（无需按计算按钮）
     document.addEventListener('input', (e) => {
       if (e.target.closest && e.target.closest('.left-col')) this.scheduleCompute();
@@ -1478,6 +1485,8 @@ const App = {
     }
 
     this.state.points = pts;
+    this.state.dataVersion++;
+    this._curveCache = null;
     this.runValidator(segs, p, pts);
     this.renderAllViz();
   },
@@ -1639,7 +1648,19 @@ const App = {
     const cv = document.getElementById('cvCurves');
     const ctx = cv.getContext('2d');
     const W = cv.width, H = cv.height;
+    const key = W + 'x' + H + 'x' + this.state.lang + 'x' + this.state.dataVersion;
+    if (!this._curveCache || this._curveCache.key !== key) {
+      const off = document.createElement('canvas');
+      off.width = W; off.height = H;
+      this.paintCurves(off.getContext('2d'), W, H);
+      this._curveCache = { key, canvas: off };
+    }
     ctx.clearRect(0, 0, W, H);
+    ctx.drawImage(this._curveCache.canvas, 0, 0);
+    this.drawProbe(ctx);
+  },
+
+  paintCurves(ctx, W, H) {
     const pad = { l: 108, r: 22, t: 26, b: 42 };
     const plotW = W - pad.l - pad.r, plotH = H - pad.t - pad.b;
 
@@ -1652,8 +1673,8 @@ const App = {
       { key: 'a', label: 'a', name: this.t('legA'), unit: 'mm/°²', v: '--line-a' },
       { key: 'j', label: 'j', name: this.t('legJ'), unit: 'mm/°³', v: '--line-j' },
       { key: 'alphaDeg', label: 'α', name: this.t('legAlpha'), unit: '°', v: '--line-alpha', nonNeg: true },
-      { key: 'forceAxial', label: 'F', name: this.t('legFaxial'), unit: 'N', v: '--line-force', weight: 2, nonNeg: true },
-      { key: 'forceN', label: 'N', name: this.t('legN'), unit: 'N', v: '--line-norm', weight: 2, nonNeg: true }
+      { key: 'forceAxial', label: 'F', name: this.t('legFaxial'), unit: 'N', v: '--line-force', weight: 2, nonNeg: true, fold: true },
+      { key: 'forceN', label: 'N', name: this.t('legN'), unit: 'N', v: '--line-norm', weight: 2, nonNeg: true, fold: true }
     ];
     const totalWeight = rows.reduce((a, r) => a + (r.weight || 1), 0);
     const unitH = plotH / totalWeight;
@@ -1673,11 +1694,22 @@ const App = {
 
       const vals = pts.map(p => p[row.key]);
       const vMax = Math.max(...vals.map(Math.abs), 0.01);
-      // 对称量（s/v/a/j）：曲线占满行高，零线居中；非负量（α/F/N）：零线在底部，不显示负值区
-      const yToPx = row.nonNeg
-        ? (v) => y0 + rowH - 2 - (Math.abs(v) / vMax) * (rowH - 4)
-        : (v) => y0 + rowH / 2 - (v / vMax) * (rowH / 2 - 2);
-      const zeroY = row.nonNeg ? y0 + rowH - 2 : y0 + rowH / 2;
+      const vMin = Math.min(...vals);
+      // 对称量（s/v/a/j）：零线居中；非负量（α）：零线在底部；
+      // 折叠量（F/N）：纵轴自最小值起，省去 0~min 的大片空白
+      let yToPx, zeroY;
+      if (row.fold) {
+        const span = Math.max(vMax - vMin, 1e-9);
+        yToPx = (v) => y0 + rowH - 3 - ((v - vMin) / span) * (rowH - 8);
+        zeroY = null;
+      } else if (row.nonNeg) {
+        yToPx = (v) => y0 + rowH - 2 - (Math.abs(v) / vMax) * (rowH - 4);
+        zeroY = y0 + rowH - 2;
+      } else {
+        yToPx = (v) => y0 + rowH / 2 - (v / vMax) * (rowH / 2 - 2);
+        zeroY = y0 + rowH / 2;
+      }
+      row.yToPx = yToPx; row.vMin = vMin; row.vMax = vMax;
 
       // 网格
       ctx.strokeStyle = gridC; ctx.lineWidth = 1;
@@ -1686,8 +1718,10 @@ const App = {
         ctx.beginPath(); ctx.moveTo(x, y0); ctx.lineTo(x, y1); ctx.stroke();
       }
       // 零点轴
-      ctx.beginPath(); ctx.strokeStyle = borderC;
-      ctx.moveTo(pad.l, zeroY); ctx.lineTo(pad.l + plotW, zeroY); ctx.stroke();
+      if (zeroY !== null) {
+        ctx.beginPath(); ctx.strokeStyle = borderC;
+        ctx.moveTo(pad.l, zeroY); ctx.lineTo(pad.l + plotW, zeroY); ctx.stroke();
+      }
 
       // 曲线
       ctx.strokeStyle = this.cssVar(row.v); ctx.lineWidth = 2;
@@ -1708,7 +1742,14 @@ const App = {
       ctx.font = '12px sans-serif'; ctx.fillStyle = dimC;
       ctx.fillText(row.name, lx + lw + 6, y0 + 17);
       ctx.font = '11px sans-serif'; ctx.fillStyle = mutedC;
-      ctx.fillText(row.unit + '  ' + (row.nonNeg ? '0~' : '±') + vMax.toFixed(2), lx, y0 + 34);
+      const rngTxt = row.fold ? vMin.toFixed(1) + '~' + vMax.toFixed(1)
+        : (row.nonNeg ? '0~' : '±') + vMax.toFixed(2);
+      ctx.fillText(row.unit + '  ' + rngTxt, lx, y0 + 34);
+      if (row.fold) {
+        ctx.textAlign = 'right'; ctx.font = '10px sans-serif';
+        ctx.fillText(this.t('cvFoldMin') + ' ' + vMin.toFixed(2) + ' ' + row.unit, pad.l + plotW - 4, y0 + rowH - 5);
+        ctx.textAlign = 'left';
+      }
     });
 
     // 底部轴标签 + 刻度
@@ -1717,6 +1758,86 @@ const App = {
       ctx.fillText(a + '°', xToPx(a), H - 22);
     }
     ctx.fillText(this.t('cvPhi'), W / 2, H - 5);
+
+    this._curveGeom = { pad, plotW, plotH, maxPhi };
+    this._curveRows = rows;
+  },
+
+  /* -------- 曲线取值探针：竖直游标 + 数值框 -------- */
+  fmtProbe(v) {
+    if (v === null || v === undefined || !isFinite(v)) return '—';
+    const a = Math.abs(v);
+    if (a >= 1000) return v.toFixed(0);
+    if (a >= 100) return v.toFixed(1);
+    if (a >= 1) return v.toFixed(2);
+    return v.toFixed(4);
+  },
+
+  drawProbe(ctx) {
+    const geo = this._curveGeom, rows = this._curveRows, pts = this.state.points;
+    const phi = this.state.probePhi;
+    if (!geo || !rows || !pts || phi === null || phi === undefined) return;
+    let best = pts[0], bd = Infinity;
+    for (const p of pts) {
+      const d = Math.abs(p.phi - phi);
+      if (d < bd) { bd = d; best = p; }
+    }
+    const x = geo.pad.l + (best.phi / geo.maxPhi) * geo.plotW;
+    ctx.save();
+    ctx.strokeStyle = '#e8590c'; ctx.lineWidth = 1.4; ctx.setLineDash([5, 4]);
+    ctx.beginPath(); ctx.moveTo(x, geo.pad.t); ctx.lineTo(x, geo.pad.t + geo.plotH); ctx.stroke();
+    ctx.setLineDash([]);
+    rows.forEach(r => {
+      if (!r.yToPx) return;
+      ctx.beginPath(); ctx.fillStyle = this.cssVar(r.v);
+      ctx.arc(x, r.yToPx(best[r.key]), 3.4, 0, Math.PI * 2); ctx.fill();
+    });
+    // 读数框
+    const head = best.phi.toFixed(1) + '°';
+    const lines = rows.map(r => r.label + '  ' + this.fmtProbe(best[r.key]) + ' ' + r.unit);
+    ctx.font = '12px sans-serif';
+    let bw = ctx.measureText(head).width;
+    lines.forEach(s => { bw = Math.max(bw, ctx.measureText(s).width); });
+    const boxW = bw + 22, boxH = 26 + lines.length * 17;
+    let bx = x + 14;
+    if (bx + boxW > geo.pad.l + geo.plotW) bx = x - boxW - 14;
+    if (bx < 4) bx = 4;
+    const by = geo.pad.t + 8;
+    ctx.fillStyle = 'rgba(255,255,255,0.97)';
+    ctx.strokeStyle = '#c9ccd1'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.rect(bx, by, boxW, boxH); ctx.fill(); ctx.stroke();
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.font = '600 12px sans-serif'; ctx.fillStyle = '#1f2328';
+    ctx.fillText(head, bx + 11, by + 8);
+    ctx.font = '12px sans-serif'; ctx.fillStyle = '#5c6370';
+    lines.forEach((s, i) => ctx.fillText(s, bx + 11, by + 28 + i * 17));
+    ctx.restore();
+  },
+
+  bindCurveProbe() {
+    const cv = document.getElementById('cvCurves');
+    if (!cv) return;
+    cv.style.cursor = 'crosshair';
+    const move = (e) => {
+      if (this.state.currentViz !== 'curves' || !this._curveGeom) return;
+      const r = cv.getBoundingClientRect();
+      if (!r.width) return;
+      const px = (e.clientX - r.left) * (cv.width / r.width);
+      const geo = this._curveGeom;
+      if (px < geo.pad.l - 6 || px > geo.pad.l + geo.plotW + 6) return;
+      const phi = Math.max(0, Math.min(geo.maxPhi, (px - geo.pad.l) / geo.plotW * geo.maxPhi));
+      this.state.probePhi = phi;
+      this.drawCurves();
+    };
+    cv.addEventListener('pointermove', move);
+    cv.addEventListener('pointerdown', (e) => {
+      try { cv.setPointerCapture(e.pointerId); } catch (_) {}
+      move(e);
+    });
+    cv.addEventListener('pointerleave', () => {
+      this.state.probePhi = null;
+      this.drawCurves();
+    });
   },
 
   /* -------- 轮廓展开图 -------- */
