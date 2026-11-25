@@ -34,6 +34,7 @@
   --line-j: #2f9e44;
   --line-alpha: #7048e8;
   --line-force: #0b7285;
+  --line-norm: #d6336c;
   --cam-surface: #b8c0ff;
   --cam-edge: #4158d0;
   --roller: #ff922b;
@@ -260,12 +261,12 @@ hr.section { border: none; border-top: 1px solid var(--border); margin: 14px 0; 
           <input type="number" id="p_camWidth" value="60" step="1" min="1">
         </div>
         <div class="form-row">
-          <label><span data-i18n="rollerDia">滚子直径</span><span class="unit">mm</span></label>
+          <label><span data-i18n="rollerDia">随动器直径</span><span class="unit">mm</span></label>
           <input type="number" id="p_rollerDia" value="16" step="0.5" min="1">
         </div>
         <div class="form-row">
-          <label><span data-i18n="followerLen">滚子杆长度</span><span class="unit">mm</span></label>
-          <input type="number" id="p_followerLen" value="80" step="1" min="1">
+          <label><span data-i18n="rollerWidth">随动器宽度</span><span class="unit">mm</span></label>
+          <input type="number" id="p_rollerWidth" value="20" step="1" min="1">
         </div>
         <div class="form-row">
           <label><span data-i18n="initialHt">初始高度</span><span class="unit">mm</span></label>
@@ -296,7 +297,7 @@ hr.section { border: none; border-top: 1px solid var(--border); margin: 14px 0; 
           </select>
         </div>
         <div class="form-row">
-          <label><span data-i18n="rollerCount">滚子数量</span><span class="unit" data-i18n="unitPcs">个</span></label>
+          <label><span data-i18n="rollerCount">随动器数量</span><span class="unit" data-i18n="unitPcs">个</span></label>
           <input type="number" id="p_rollerCount" value="1" step="1" min="1" max="8">
         </div>
         <div class="form-row" style="grid-column: 1 / -1;">
@@ -309,7 +310,7 @@ hr.section { border: none; border-top: 1px solid var(--border); margin: 14px 0; 
         <h3 data-i18n="subTrans">直动参数</h3>
         <div class="param-grid">
           <div class="form-row">
-            <label><span data-i18n="offsetDist">滚子中心距</span><span class="unit">mm</span></label>
+            <label><span data-i18n="offsetDist">随动器中心距</span><span class="unit">mm</span></label>
             <input type="number" id="p_offset" value="40" step="1">
           </div>
           <div class="form-row">
@@ -417,7 +418,7 @@ hr.section { border: none; border-top: 1px solid var(--border); margin: 14px 0; 
       </div>
 
       <div id="viz-curves" class="viz-pane">
-        <div class="canvas-wrap"><canvas id="cvCurves" width="900" height="470"></canvas></div>
+        <div class="canvas-wrap"><canvas id="cvCurves" width="900" height="560"></canvas></div>
       </div>
 
       <div id="viz-flatten" class="viz-pane hidden">
@@ -454,13 +455,13 @@ const I18N = {
   zh: {
     title: "圆柱凸轮设计工具", titleSub: "Cylindrical Cam Designer v1.0",
     secBasic: "基础参数", secTrans: "直动从动件参数", secSwing: "摆动从动件参数",
-    secSegments: "运动分段", secForce: "工况与受力", secMultiRoller: "多滚子参数",
+    secSegments: "运动分段", secForce: "工况与受力", secMultiRoller: "多随动器参数",
     secAlerts: "校验与提示", secViz: "可视化", secTable: "逐点数据表",
-    baseDia: "基圆直径", camWidth: "凸轮宽度", rollerDia: "滚子直径",
-    followerLen: "滚子杆长度", initialHt: "初始高度", divRes: "分度分辨率",
+    baseDia: "基圆直径", camWidth: "凸轮宽度", rollerDia: "随动器直径",
+    rollerWidth: "随动器宽度", initialHt: "初始高度", divRes: "分度分辨率",
     followerType: "从动件类型", followerTrans: "直动", followerSwing: "摆动",
     handedness: "旋向", handRH: "右旋", handLH: "左旋",
-    offsetDist: "滚子中心距", motionDir: "运动方向",
+    offsetDist: "随动器中心距", motionDir: "运动方向",
     dirVert: "竖直", dirHoriz: "水平", dirTilt: "倾斜",
     tiltAngle: "倾斜角",
     swingLen: "摆杆长度", fulcrumDist: "支点距轴线", initialAngle: "初始安装角",
@@ -469,7 +470,7 @@ const I18N = {
     loadMass: "负载质量", springForce: "最大弹簧复位力",
     followerMass: "从动件质量", camEfficiency: "凸轮传动效率",
     pressAngleLimit: "压力角限值",
-    rollerCount: "滚子数量", rollerAngles: "相对角度",
+    rollerCount: "随动器数量", rollerAngles: "相对角度",
     btnCompute: "计算", btnDefault: "默认", btnSave: "保存", btnLoad: "加载",
     alertRunCompute: "请填写参数后点击\"计算\"",
     vizCurves: "运动曲线", vizFlatten: "轮廓展开", viz3D: "3D 线框", vizIndic: "参数示意",
@@ -484,13 +485,13 @@ const I18N = {
   en: {
     title: "Cylindrical Cam Designer", titleSub: "v1.0",
     secBasic: "Basic Parameters", secTrans: "Translating Follower", secSwing: "Oscillating Follower",
-    secSegments: "Motion Segments", secForce: "Load & Force", secMultiRoller: "Multiple Rollers",
+    secSegments: "Motion Segments", secForce: "Load & Force", secMultiRoller: "Multiple Followers",
     secAlerts: "Validation", secViz: "Visualization", secTable: "Point Data Table",
-    baseDia: "Base diameter", camWidth: "Cam width", rollerDia: "Roller diameter",
-    followerLen: "Follower rod length", initialHt: "Initial height", divRes: "Divisions/rev",
+    baseDia: "Base diameter", camWidth: "Cam width", rollerDia: "Follower diameter",
+    rollerWidth: "Follower width", initialHt: "Initial height", divRes: "Divisions/rev",
     followerType: "Follower type", followerTrans: "Translating", followerSwing: "Oscillating",
     handedness: "Handedness", handRH: "Right-hand", handLH: "Left-hand",
-    offsetDist: "Roller center offset", motionDir: "Motion direction",
+    offsetDist: "Follower center offset", motionDir: "Motion direction",
     dirVert: "Vertical", dirHoriz: "Horizontal", dirTilt: "Tilted",
     tiltAngle: "Tilt angle",
     swingLen: "Oscillating length", fulcrumDist: "Fulcrum offset", initialAngle: "Initial angle",
@@ -499,7 +500,7 @@ const I18N = {
     loadMass: "Load mass", springForce: "Max spring force",
     followerMass: "Follower mass", camEfficiency: "Cam efficiency",
     pressAngleLimit: "Press. angle limit",
-    rollerCount: "Roller count", rollerAngles: "Rel. angles",
+    rollerCount: "Follower count", rollerAngles: "Rel. angles",
     btnCompute: "Compute", btnDefault: "Default", btnSave: "Save", btnLoad: "Load",
     alertRunCompute: "Fill parameters and click Compute",
     vizCurves: "s/v/a/j Curves", vizFlatten: "Flattened", viz3D: "3D Wireframe", vizIndic: "Indicators",
@@ -514,13 +515,13 @@ const I18N = {
   ja: {
     title: "円筒カム設計", titleSub: "v1.0",
     secBasic: "基本パラメータ", secTrans: "直動従節", secSwing: "揺動従節",
-    secSegments: "運動区間", secForce: "荷重・力", secMultiRoller: "複数ローラ",
+    secSegments: "運動区間", secForce: "荷重・力", secMultiRoller: "複数フォロワ",
     secAlerts: "バリデーション", secViz: "可視化", secTable: "ポイントテーブル",
-    baseDia: "基礎円径", camWidth: "カム幅", rollerDia: "ローラ径",
-    followerLen: "従節長さ", initialHt: "初期高さ", divRes: "分割/回転",
+    baseDia: "基礎円径", camWidth: "カム幅", rollerDia: "フォロワ径",
+    rollerWidth: "フォロワ幅", initialHt: "初期高さ", divRes: "分割/回転",
     followerType: "従節種類", followerTrans: "直動", followerSwing: "揺動",
     handedness: "ねじれ", handRH: "右ねじ", handLH: "左ねじ",
-    offsetDist: "ローラ中心距離", motionDir: "運動方向",
+    offsetDist: "フォロワ中心距離", motionDir: "運動方向",
     dirVert: "鉛直", dirHoriz: "水平", dirTilt: "傾斜",
     tiltAngle: "傾斜角",
     swingLen: "腕長さ", fulcrumDist: "支点距離", initialAngle: "初期角",
@@ -529,7 +530,7 @@ const I18N = {
     loadMass: "負荷質量", springForce: "ばね力最大",
     followerMass: "従節質量", camEfficiency: "カム効率",
     pressAngleLimit: "圧力角限界",
-    rollerCount: "ローラ数", rollerAngles: "相対角度",
+    rollerCount: "フォロワ数", rollerAngles: "相対角度",
     btnCompute: "計算", btnDefault: "標準", btnSave: "保存", btnLoad: "読込",
     alertRunCompute: "パラメータを入れて計算を押してください",
     vizCurves: "s/v/a/j曲線", vizFlatten: "展開図", viz3D: "3D ワイヤフレーム", vizIndic: "パラメータ指標",
@@ -547,7 +548,7 @@ const I18N = {
 Object.assign(I18N.zh, {
   titleSub: "v1.1",
   secFollower: "从动件", subTrans: "直动参数", subSwing: "摆动参数",
-  rollerCount: "滚子数量", unitPcs: "个", rollerAngles: "相对角度",
+  rollerCount: "随动器数量", unitPcs: "个", rollerAngles: "相对角度",
   camSpeed: "凸轮转速",
   followDefault: "跟随",
   segTransLbl: "过渡",
@@ -556,11 +557,12 @@ Object.assign(I18N.zh, {
   transTooShort: "过渡 {l} mm < 最小 {d} mm",
   transMin: "最小 {d} mm（≈{r}%）",
   legS: "位置", legV: "速度", legA: "加速度", legJ: "跃度", legAlpha: "压力角", legF: "受力",
+  legFaxial: "沿运动方向", legN: "法向正压力",
   view3dHint: "拖动旋转视角 · 双击复位",
-  alertTransShort: "第 {seg} 段梯形过渡长度 {l} mm 小于最小允许值 {d} mm（由滚子直径决定），当前 {cur}%，建议不小于 {r}%。",
-  sugTransShort: "将过渡比例增大到 {r}% 以上，或增大该段转角/基圆直径，或减小滚子直径。",
-  alertTransImpossible: "第 {seg} 段转角过小或滚子直径过大：最小过渡长度已超过该段弧长的 49%，无法形成有效梯形过渡（弧长 {arc} mm，滚子直径 {d} mm）。",
-  sugTransImpossible: "增大该段转角或基圆直径，或减小滚子直径，或改用其他运动规律。",
+  alertTransShort: "第 {seg} 段梯形过渡长度 {l} mm 小于最小允许值 {d} mm（由随动器直径决定），当前 {cur}%，建议不小于 {r}%。",
+  sugTransShort: "将过渡比例增大到 {r}% 以上，或增大该段转角/基圆直径，或减小随动器直径。",
+  alertTransImpossible: "第 {seg} 段转角过小或随动器直径过大：最小过渡长度已超过该段弧长的 49%，无法形成有效梯形过渡（弧长 {arc} mm，随动器直径 {d} mm）。",
+  sugTransImpossible: "增大该段转角或基圆直径，或减小随动器直径，或改用其他运动规律。",
   phRollerAngles: "留空则自动均布，例如 0, 180",
   segHint: "勾选「跟随」沿用工况与受力中的转速/负载质量；取消后可单独设置，再次勾选恢复默认。",
   segNameLbl: "段名", segAngleLbl: "转角 (°)", segLiftLbl: "升程 (mm)",
@@ -575,8 +577,8 @@ Object.assign(I18N.zh, {
   sugAlphaExceed: "① 增大基圆直径（降低 v/Rb 比值）；② 加长对应工作段（让升程在更大转角内完成）；③ 改用更平缓的运动规律（正弦 / 3-4-5）以减小速度峰值。",
   alertAlphaNear: "最大压力角 {max}° 接近限值 {lim}°",
   sugAlphaNear: "建议预留余量：轻微增大基圆直径，或调整运动规律降低速度峰值。",
-  alertCurvature: "理论轮廓最小曲率半径 {min} mm 小于滚子半径 {roller} mm，槽口会自交",
-  sugCurvature: "① 增大基圆直径（最有效）；② 减小滚子直径；③ 降低升程或改用更平滑的运动规律；④ 加长分段以减小加速度峰值。",
+  alertCurvature: "理论轮廓最小曲率半径 {min} mm 小于随动器半径 {roller} mm，槽口会自交",
+  sugCurvature: "① 增大基圆直径（最有效）；② 减小随动器直径；③ 降低升程或改用更平滑的运动规律；④ 加长分段以减小加速度峰值。",
   alertJerk: "转角 {phi}° 处跃度不连续：{prev} → {cur} mm/°³",
   sugJerk: "① 两端改用正弦加速度、3-4-5 多项式或梯形（三次过渡）等跃度连续的规律；② 增大梯形过渡区比例；③ 高速工况下必须消除跃度跳变以避免冲击。",
   alertCloseMismatch: "首尾位移不连续：s(0) = {s0} mm，s(360°) = {s1} mm",
@@ -584,7 +586,7 @@ Object.assign(I18N.zh, {
   alertLowRes: "分度分辨率偏低（{res} 点/转）",
   sugLowRes: "建议提高到 72–144 点/转以获得平滑曲线；STEP 曲面导出建议 288 点/转以上。",
   cvPhi: "凸轮转角 φ (°)", cvArc: "展开弧长 (mm)", cvAxial: "轴向位移 s (mm)",
-  cvTheory: "理论轮廓（滚子中心轨迹）", cvWork: "工作轮廓（槽壁）",
+  cvTheory: "理论轮廓（随动器中心轨迹）", cvWork: "工作轮廓（槽壁）",
   cvBaseCircle: "基圆", cvPhase: "相位 φ",
   needCompute: "请先点击\"计算\"",
   tStepRev: "步进反转", tBack: "连续反转", tStop: "停止", tFwd: "连续正转", tStepFwd: "步进正转",
@@ -598,7 +600,7 @@ Object.assign(I18N.zh, {
 Object.assign(I18N.en, {
   titleSub: "v1.1",
   secFollower: "Follower", subTrans: "Translating", subSwing: "Oscillating",
-  rollerCount: "Roller count", unitPcs: "pcs", rollerAngles: "Relative angles",
+  rollerCount: "Follower count", unitPcs: "pcs", rollerAngles: "Relative angles",
   camSpeed: "Cam speed",
   followDefault: "Follow",
   segTransLbl: "Blend",
@@ -607,11 +609,12 @@ Object.assign(I18N.en, {
   transTooShort: "Blend {l} mm < min {d} mm",
   transMin: "Min {d} mm (≈{r}%)",
   legS: "Position", legV: "Velocity", legA: "Acceleration", legJ: "Jerk", legAlpha: "Pressure angle", legF: "Force",
+  legFaxial: "Axial (motion)", legN: "Normal force",
   view3dHint: "Drag to rotate · double-click to reset",
-  alertTransShort: "Segment {seg}: trapezoid blend length {l} mm is below the minimum {d} mm (set by roller diameter); current {cur}%, recommended ≥ {r}%.",
-  sugTransShort: "Increase the blend ratio to at least {r}%, or enlarge the segment angle / base diameter, or reduce the roller diameter.",
-  alertTransImpossible: "Segment {seg}: the minimum blend length exceeds 49% of the segment arc, so a valid trapezoid cannot be formed (arc {arc} mm, roller dia {d} mm).",
-  sugTransImpossible: "Increase the segment angle or base diameter, reduce the roller diameter, or choose another motion law.",
+  alertTransShort: "Segment {seg}: trapezoid blend length {l} mm is below the minimum {d} mm (set by follower diameter); current {cur}%, recommended ≥ {r}%.",
+  sugTransShort: "Increase the blend ratio to at least {r}%, or enlarge the segment angle / base diameter, or reduce the follower diameter.",
+  alertTransImpossible: "Segment {seg}: the minimum blend length exceeds 49% of the segment arc, so a valid trapezoid cannot be formed (arc {arc} mm, follower dia {d} mm).",
+  sugTransImpossible: "Increase the segment angle or base diameter, reduce the follower diameter, or choose another motion law.",
   phRollerAngles: "Blank = auto distribute, e.g. 0, 180",
   segHint: "Check Follow to inherit speed/load mass from Load & Force; uncheck to set separately, re-check to restore the default.",
   segNameLbl: "Name", segAngleLbl: "Angle (°)", segLiftLbl: "Lift (mm)",
@@ -626,8 +629,8 @@ Object.assign(I18N.en, {
   sugAlphaExceed: "① Increase base diameter (lowers v/Rb); ② lengthen that working segment (finish the lift over more degrees); ③ switch to a gentler law (sine / 3-4-5) to reduce peak velocity.",
   alertAlphaNear: "Max pressure angle {max}° is close to limit {lim}°",
   sugAlphaNear: "Keep a margin: slightly increase the base diameter or adjust the motion law to lower peak velocity.",
-  alertCurvature: "Min profile radius {min} mm < roller radius {roller} mm, groove will self-intersect",
-  sugCurvature: "① Increase base diameter (most effective); ② reduce roller diameter; ③ lower the lift or use a smoother law; ④ lengthen the segment to reduce peak acceleration.",
+  alertCurvature: "Min profile radius {min} mm < follower radius {roller} mm, groove will self-intersect",
+  sugCurvature: "① Increase base diameter (most effective); ② reduce follower diameter; ③ lower the lift or use a smoother law; ④ lengthen the segment to reduce peak acceleration.",
   alertJerk: "Jerk discontinuity at {phi}°: {prev} → {cur} mm/°³",
   sugJerk: "① Use laws with continuous jerk (sine acceleration, 3-4-5 poly, trapezoidal with cubic transitions); ② increase the trapezoid transition ratio; ③ high-speed applications must remove jerk jumps to avoid impact.",
   alertCloseMismatch: "Displacement not closed: s(0) = {s0} mm, s(360°) = {s1} mm",
@@ -635,7 +638,7 @@ Object.assign(I18N.en, {
   alertLowRes: "Low angular resolution ({res} pts/rev)",
   sugLowRes: "Use 72–144 pts/rev for smooth curves; 288+ pts/rev for STEP surface export.",
   cvPhi: "Cam angle φ (°)", cvArc: "Unrolled arc (mm)", cvAxial: "Axial displacement s (mm)",
-  cvTheory: "Theoretical profile (roller center)", cvWork: "Working profile (groove wall)",
+  cvTheory: "Theoretical profile (follower center)", cvWork: "Working profile (groove wall)",
   cvBaseCircle: "Base circle", cvPhase: "Phase φ",
   needCompute: "Please click \"Compute\" first",
   tStepRev: "Step reverse", tBack: "Continuous reverse", tStop: "Stop", tFwd: "Continuous forward", tStepFwd: "Step forward",
@@ -649,7 +652,7 @@ Object.assign(I18N.en, {
 Object.assign(I18N.ja, {
   titleSub: "v1.1",
   secFollower: "従節", subTrans: "直動パラメータ", subSwing: "揺動パラメータ",
-  rollerCount: "ローラ数", unitPcs: "個", rollerAngles: "相対角度",
+  rollerCount: "フォロワ数", unitPcs: "個", rollerAngles: "相対角度",
   camSpeed: "カム回転数",
   followDefault: "追従",
   segTransLbl: "遷移",
@@ -658,11 +661,12 @@ Object.assign(I18N.ja, {
   transTooShort: "遷移 {l} mm < 最小 {d} mm",
   transMin: "最小 {d} mm（≈{r}%）",
   legS: "位置", legV: "速度", legA: "加速度", legJ: "躍度", legAlpha: "圧力角", legF: "荷重",
+  legFaxial: "運動方向", legN: "法線方向の荷重",
   view3dHint: "ドラッグで回転・ダブルクリックでリセット",
-  alertTransShort: "第 {seg} 区間：台形の遷移長さ {l} mm が最小値 {d} mm（ローラ径で決定）未満です。現在 {cur}%、{r}% 以上を推奨。",
-  sugTransShort: "遷移比率を {r}% 以上に増やすか、区間角度/基円径を大きくするか、ローラ径を小さくしてください。",
-  alertTransImpossible: "第 {seg} 区間：最小遷移長さが区間弧長の 49% を超え、有効な台形遷移を形成できません（弧長 {arc} mm、ローラ径 {d} mm）。",
-  sugTransImpossible: "区間角度または基円径を大きくするか、ローラ径を小さくするか、別の運動規則を選択してください。",
+  alertTransShort: "第 {seg} 区間：台形の遷移長さ {l} mm が最小値 {d} mm（フォロワ径で決定）未満です。現在 {cur}%、{r}% 以上を推奨。",
+  sugTransShort: "遷移比率を {r}% 以上に増やすか、区間角度/基円径を大きくするか、フォロワ径を小さくしてください。",
+  alertTransImpossible: "第 {seg} 区間：最小遷移長さが区間弧長の 49% を超え、有効な台形遷移を形成できません（弧長 {arc} mm、フォロワ径 {d} mm）。",
+  sugTransImpossible: "区間角度または基円径を大きくするか、フォロワ径を小さくするか、別の運動規則を選択してください。",
   phRollerAngles: "空欄なら自動等配、例：0, 180",
   segHint: "「追従」をオンにすると荷重・力の回転数/負荷質量を継承します。オフで個別設定、再度オンで既定に戻ります。",
   segNameLbl: "名前", segAngleLbl: "角度 (°)", segLiftLbl: "リフト (mm)",
@@ -677,8 +681,8 @@ Object.assign(I18N.ja, {
   sugAlphaExceed: "① 基礎円径を大きくする（v/Rb を低減）；② 該当区間を長くする（より大きな角度でリフト）；③ より滑らかな法則（正弦 / 3-4-5）に変更して速度ピークを下げる。",
   alertAlphaNear: "最大圧力角 {max}° が限界 {lim}° に接近",
   sugAlphaNear: "余裕を確保してください：基礎円径を少し大きくするか、運動法則を調整して速度ピークを下げます。",
-  alertCurvature: "理論輪郭の最小曲率半径 {min} mm がローラ半径 {roller} mm 未満、溝が自己交差します",
-  sugCurvature: "① 基礎円径を大きくする（最も効果的）；② ローラ径を小さくする；③ リフトを下げるか滑らかな法則に変更；④ 区間を長くして加速度ピークを下げる。",
+  alertCurvature: "理論輪郭の最小曲率半径 {min} mm がフォロワ半径 {roller} mm 未満、溝が自己交差します",
+  sugCurvature: "① 基礎円径を大きくする（最も効果的）；② フォロワ径を小さくする；③ リフトを下げるか滑らかな法則に変更；④ 区間を長くして加速度ピークを下げる。",
   alertJerk: "角度 {phi}° で躍度が不連続：{prev} → {cur} mm/°³",
   sugJerk: "① 躍度が連続な法則（正弦加速度、3-4-5 多項式、三次遷移付き台形）を使用；② 台形の遷移区間比を大きくする；③ 高速では躍度の跳びを必ず除去して衝撃を避ける。",
   alertCloseMismatch: "変位が閉じていません：s(0) = {s0} mm、s(360°) = {s1} mm",
@@ -686,7 +690,7 @@ Object.assign(I18N.ja, {
   alertLowRes: "分割分解能が低い（{res} 点/回転）",
   sugLowRes: "滑らかな曲線には 72–144 点/回転、STEP 曲面出力には 288 点/回転以上を推奨します。",
   cvPhi: "カム角度 φ (°)", cvArc: "展開弧長 (mm)", cvAxial: "軸方向変位 s (mm)",
-  cvTheory: "理論輪郭（ローラ中心軌跡）", cvWork: "実作輪郭（溝壁）",
+  cvTheory: "理論輪郭（フォロワ中心軌跡）", cvWork: "実作輪郭（溝壁）",
   cvBaseCircle: "基礎円", cvPhase: "位相 φ",
   needCompute: "先に「計算」を押してください",
   tStepRev: "逆ステップ", tBack: "連続逆転", tStop: "停止", tFwd: "連続正転", tStepFwd: "正ステップ",
@@ -770,7 +774,7 @@ const MotionLaws = {
   /* 修正梯形 (Modified Trapezoidal)
      在两端用 1/8 段角做正弦过渡，中间 3/4 段恒加速/恒减速
      过渡区可通过 tr 参数调整（本次默认 tr = 1/8）
-     滚子半径会限制过渡区最小值，此函数接受 tr 参数
+     随动器半径会限制过渡区最小值，此函数接受 tr 参数
   */
   mod_trap: (tau, h, phimax, tr = 0.125) => {
     // tr: 过渡区占比（每端），0 < tr < 0.25
@@ -948,11 +952,18 @@ const App = {
       document.getElementById('p_offset').dataset.userSet = '1';
     });
     this.bind3DRotate();
+    // 参数修改后自动重算（无需按计算按钮）
+    document.addEventListener('input', (e) => {
+      if (e.target.closest && e.target.closest('.left-col')) this.scheduleCompute();
+    });
+    document.addEventListener('change', (e) => {
+      if (e.target.closest && e.target.closest('.left-col')) this.scheduleCompute();
+    });
     requestAnimationFrame((t) => this.animLoop(t));
     this.refreshUI();
   },
 
-  // 滚子中心距默认跟随基圆直径的一半，人工修改后不再自动跟随
+  // 随动器中心距默认跟随基圆直径的一半，人工修改后不再自动跟随
   onBaseDiaChange() {
     const off = document.getElementById('p_offset');
     if (off.dataset.userSet === '1') return;
@@ -1049,7 +1060,7 @@ const App = {
     set('p_baseDia', 80);
     set('p_camWidth', 60);
     set('p_rollerDia', 16);
-    set('p_followerLen', 80);
+    set('p_rollerWidth', 20);
     set('p_initialHt', 20);
     set('p_resolution', 3600);
     set('p_followerType', 'trans');
@@ -1072,6 +1083,9 @@ const App = {
       { name: this.t('segDefaultDwell2'), angle: 60,  lift: 20, law: 'dwell',      speed: null, mass: null, transitionRatio: 0.125 },
       { name: this.t('segDefaultFall'),   angle: 90,  lift: 0,  law: 'trap_cubic', speed: null, mass: null, transitionRatio: 0.125 }
     ];
+    this.state.segments.forEach(s => {
+      if (s.law === 'trap_cubic' || s.law === 'mod_trap') this.applyMinTransition(s);
+    });
     this.updateRollerAnglesAuto();
     this.renderSegTable();
     this.onFollowerTypeChange();
@@ -1089,7 +1103,7 @@ const App = {
     if (parsed.length >= rollerCount) {
       rollerAngles = parsed.slice(0, rollerCount);
     } else {
-      // 第一个滚子固定在 0° 作为基准，其余为输入的相对角度，不足的自动均布补齐
+      // 第一个随动器固定在 0° 作为基准，其余为输入的相对角度，不足的自动均布补齐
       rollerAngles = [0, ...parsed];
       while (rollerAngles.length < rollerCount) rollerAngles.push((360 / rollerCount) * rollerAngles.length);
     }
@@ -1097,7 +1111,7 @@ const App = {
       baseDia: n('p_baseDia'),
       camWidth: n('p_camWidth'),
       rollerDia: n('p_rollerDia'),
-      followerLen: n('p_followerLen'),
+      rollerWidth: n('p_rollerWidth'),
       initialHt: n('p_initialHt'),
       resolution: Math.max(36, n('p_resolution') || 144),
       followerType: s('p_followerType'),
@@ -1123,6 +1137,7 @@ const App = {
     const t = document.getElementById('p_followerType').value;
     document.getElementById('groupTrans').classList.toggle('hidden', t !== 'trans');
     document.getElementById('groupSwing').classList.toggle('hidden', t !== 'swing');
+    this.scheduleCompute();
   },
 
   updateRollerAnglesAuto() {
@@ -1138,12 +1153,15 @@ const App = {
       name: this.t('segNo') + (this.state.segments.length + 1),
       angle: 60, lift: 10, law: 'trap_cubic', speed: null, mass: null, transitionRatio: 0.125
     });
+    this.applyMinTransition(this.state.segments[this.state.segments.length - 1]);
     this.renderSegTable();
+    this.scheduleCompute();
   },
 
   removeSegment(idx) {
     this.state.segments.splice(idx, 1);
     this.renderSegTable();
+    this.scheduleCompute();
   },
 
   renderSegTable(skipLawRefresh) {
@@ -1198,19 +1216,19 @@ const App = {
         </div>
         <div class="seg-fields">
           <label class="seg-field"><span>${this.t('segAngleLbl')}</span>
-            <input type="number" value="${seg.angle}" step="1" onchange="App.state.segments[${i}].angle=+this.value;App.renderSegTable()"></label>
+            <input type="number" value="${seg.angle}" step="1" onchange="App.state.segments[${i}].angle=+this.value;App.renderSegTable();App.scheduleCompute()"></label>
           <label class="seg-field"><span>${this.t('segLiftLbl')}</span>
-            <input type="number" value="${seg.lift}" step="0.5" onchange="App.state.segments[${i}].lift=+this.value"></label>
+            <input type="number" value="${seg.lift}" step="0.5" onchange="App.state.segments[${i}].lift=+this.value;App.scheduleCompute()"></label>
           <label class="seg-field"><span>${this.t('segLawLbl')}</span>
-            <select onchange="App.state.segments[${i}].law=this.value;App.renderSegTable()">${lawOpts}</select></label>
+            <select onchange="App.onSegLawChange(${i},this.value)">${lawOpts}</select></label>
           <label class="seg-field"><span class="seg-lbl">${this.t('segSpeedLbl')}
               <span class="follow"><input type="checkbox" ${speedFollow ? 'checked' : ''} onchange="App.toggleSegFollow(${i},'speed',this.checked)">${this.t('followDefault')}</span></span>
             <input type="number" value="${speedDisp}" step="10" min="1" ${speedFollow ? 'disabled' : ''}
-              onchange="App.state.segments[${i}].speed = +this.value"></label>
+              onchange="App.state.segments[${i}].speed = +this.value;App.scheduleCompute()"></label>
           <label class="seg-field"><span class="seg-lbl">${this.t('segMassLbl')}
               <span class="follow"><input type="checkbox" ${massFollow ? 'checked' : ''} onchange="App.toggleSegFollow(${i},'mass',this.checked)">${this.t('followDefault')}</span></span>
             <input type="number" value="${massDisp}" step="0.5" min="0" ${massFollow ? 'disabled' : ''}
-              onchange="App.state.segments[${i}].mass = +this.value"></label>
+              onchange="App.state.segments[${i}].mass = +this.value;App.scheduleCompute()"></label>
           <label class="seg-field"><span>${this.t('segCumLbl')}</span>
             <div class="seg-static">${i === 0 ? '—' : cum + '°'}</div></label>
           ${transRow}
@@ -1240,6 +1258,7 @@ const App = {
       seg[field] = isFinite(g) ? g : 0;
     }
     this.renderSegTable();
+    this.scheduleCompute();
   },
 
   // 有效过渡比例（每端占整段比例）：支持按比例或按弧长(mm)输入
@@ -1268,6 +1287,7 @@ const App = {
     }
     seg.transitionMode = (mode === 'length' ? 'length' : 'ratio');
     this.renderSegTable();
+    this.scheduleCompute();
   },
 
   setTransValue(i, val) {
@@ -1280,6 +1300,34 @@ const App = {
       seg.transitionRatio = v / 100;
     }
     this.renderSegTable();
+    this.scheduleCompute();
+  },
+
+  // 过渡长度取允许的最小值（由随动器直径决定）
+  applyMinTransition(seg) {
+    const Rb = (parseFloat((document.getElementById('p_baseDia') || {}).value) || 80) / 2;
+    const D = parseFloat((document.getElementById('p_rollerDia') || {}).value) || 8;
+    const arc = Rb * Math.abs(seg.angle) * Math.PI / 180;
+    seg.transitionMode = 'length';
+    seg.transitionLength = +(arc > 0 ? Math.min(D, arc * 0.49) : D).toFixed(2);
+    seg.transitionRatio = arc > 0 ? +Math.min(D / arc, 0.49).toFixed(4) : 0.125;
+  },
+
+  // 切换运动规律：选择梯形时过渡自动设为最小值
+  onSegLawChange(i, law) {
+    const seg = this.state.segments[i];
+    seg.law = law;
+    if (law === 'trap_cubic' || law === 'mod_trap') this.applyMinTransition(seg);
+    this.renderSegTable();
+    this.scheduleCompute();
+  },
+
+  // 参数修改后自动重算（防抖）
+  scheduleCompute() {
+    clearTimeout(this._autoTimer);
+    this._autoTimer = setTimeout(() => {
+      try { this.compute(); } catch (e) { console.error(e); }
+    }, 300);
   },
   compute() {
     const p = this.getParamFields();
@@ -1292,10 +1340,10 @@ const App = {
     const dR = p.rollerDia / 2;
     // 工作轮廓半径（圆柱毛坯外径 = Rb + initialHt + 最大升程 / π 展开？这里取 Rb + maxLift/π 作为展开基准）
     // 圆柱凸轮展开：圆弧长 = Rb * φ (φ in rad)，轴向位移 = s(φ)
-    // 滚子轨迹 = 理论轮廓 (Rb*φ, s(φ))，工作轮廓 = 理论轮廓 + 沿法线偏移 dR
+    // 随动器轨迹 = 理论轮廓 (Rb*φ, s(φ))，工作轮廓 = 理论轮廓 + 沿法线偏移 dR
     // 注：圆柱凸轮通常用展开坐标 (x=弧长, y=轴向) 表示
-    // 理论轮廓（滚子中心轨迹）: x_theory = Rb * φ_rad, y_theory = s(φ)  (直动情况)
-    // 工作轮廓: 理论轮廓沿法线向内偏移 dR（滚子半径）
+    // 理论轮廓（随动器中心轨迹）: x_theory = Rb * φ_rad, y_theory = s(φ)  (直动情况)
+    // 工作轮廓: 理论轮廓沿法线向内偏移 dR（随动器半径）
     // 压力角 α = arctan( |ds/d(Rb·φ)| ) = arctan( |ds/(Rb·dφ)| )
 
     let cumLift = 0; // 段间升程累积（段末作为下一段起点）
@@ -1390,6 +1438,7 @@ const App = {
           F_total = forceGravity * Math.sin((p.tiltAngle || 0) * Math.PI / 180) + forceSpring + Math.abs(forceInertia);
         }
         const N_normal = F_total / Math.cos(alphaRad);  // 正压力
+        const forceAxial = F_total;                     // 沿运动方向的力（轴向）
 
         // 输入扭矩 T = Rb * N_normal * sin(α) / η
         const T_input = Rb / 1000 * N_normal * Math.sin(alphaRad) / Math.max(p.efficiency, 0.01);
@@ -1402,6 +1451,7 @@ const App = {
           x_work, y_work,
           x3d_th: hx_hex, y3d_th: hy_hex, z3d_th: hz_hex,
           forceN: N_normal,
+          forceAxial: forceAxial,
           torqueNmm: T_input,
           segIdx,
           segName: seg.name
@@ -1460,7 +1510,7 @@ const App = {
       });
     }
 
-    // 梯形过渡长度校核（按滚子直径）
+    // 梯形过渡长度校核（按随动器直径）
     segs.forEach((seg, si) => {
       if (seg.law !== 'trap_cubic' && seg.law !== 'mod_trap') return;
       const arc = Rb * Math.abs(seg.angle) * Math.PI / 180;
@@ -1585,7 +1635,8 @@ const App = {
       { key: 'a', label: 'a', name: this.t('legA'), unit: 'mm/°²', v: '--line-a' },
       { key: 'j', label: 'j', name: this.t('legJ'), unit: 'mm/°³', v: '--line-j' },
       { key: 'alphaDeg', label: 'α', name: this.t('legAlpha'), unit: '°', v: '--line-alpha' },
-      { key: 'forceN', label: 'F', name: this.t('legF'), unit: 'N', v: '--line-force' }
+      { key: 'forceAxial', label: 'F', name: this.t('legFaxial'), unit: 'N', v: '--line-force' },
+      { key: 'forceN', label: 'N', name: this.t('legN'), unit: 'N', v: '--line-norm' }
     ];
     const nRows = rows.length;
     const rowH = plotH / nRows;
@@ -1714,7 +1765,7 @@ const App = {
     ctx.moveTo(pad.l, yToPx(0)); ctx.lineTo(pad.l + plotW, yToPx(0)); ctx.stroke();
     ctx.setLineDash([]);
 
-    // 滚子示意
+    // 随动器示意
     const mid = pts[Math.floor(pts.length / 2)];
     const rollerX = xToPx(mid.x_theory);
     const rollerY = yToPx(mid.s);
@@ -1757,7 +1808,8 @@ const App = {
     const maxLift = pts.reduce((m, pt) => Math.max(m, pt.z3d_th), 0);
     const swing = p.followerType === 'swing';
     const Rmax = Math.max(Rb + p.initialHt + 20, swing ? Rb + (p.swingLen || 100) : Rb);
-    const zTop = p.initialHt + maxLift + (swing ? 0 : (p.followerLen || 80));
+    const rodLen = Math.max(50, Rb * 1.2); // 随动器杆示意长度（非参数）
+    const zTop = p.initialHt + maxLift + (swing ? 0 : rodLen);
     const zOff = Rb * 0.3;
     const z1min = -zOff, z1max = zTop - zOff;
     const y2min = -z1max * cosB - Rmax * sinB;
@@ -1821,7 +1873,7 @@ const App = {
     drawCylinder(Rb, '#b8c0ff'); // 基圆
     drawCylinder(Rb + p.initialHt + 20, 'rgba(129,140,248,0.5)'); // 毛坯外
 
-    // 滚子中心轨迹（理论轮廓）
+    // 随动器中心轨迹（理论轮廓）
     ctx.strokeStyle = '#4158d0'; ctx.lineWidth = 2;
     ctx.beginPath();
     pts.forEach((pt, i) => {
@@ -1831,7 +1883,7 @@ const App = {
     });
     ctx.stroke();
 
-    // 随动器（滚子 + 杆/摆臂）：固定在世界角度，只做轴向直动或摆动，不随凸轮旋转
+    // 随动器（随动器 + 杆/摆臂）：固定在世界角度，只做轴向直动或摆动，不随凸轮旋转
     const nRollers = p.rollerCount;
     const NP = pts.length;
     const liftAtWorld = (worldDeg) => {
@@ -1844,10 +1896,15 @@ const App = {
       const worldDeg = (p.rollerAngles[r] != null && p.rollerAngles[r] !== '')
         ? Number(p.rollerAngles[r]) : (360 / nRollers * r);
       const th = worldDeg * Math.PI / 180;
-      // 滚子固定在世界角度 θ 上，θ 不随 phase 改变，仅轴向 z 变化
+      // 随动器固定在世界角度 θ 上，θ 不随 phase 改变，仅轴向 z 变化
       const X = Rb * Math.cos(th), Y = Rb * Math.sin(th);
       const z = liftAtWorld(worldDeg);
       const rollerCenter = project(X, Y, z);
+      // 随动器宽度（沿凸轮轴向）示意
+      const wHalf = Math.max((p.rollerWidth || 20) / 2, 1);
+      const rA = project(X, Y, z - wHalf), rB = project(X, Y, z + wHalf);
+      ctx.strokeStyle = '#d9480f'; ctx.lineWidth = 5; ctx.lineCap = 'butt';
+      ctx.beginPath(); ctx.moveTo(rA.x, rA.y); ctx.lineTo(rB.x, rB.y); ctx.stroke();
       ctx.fillStyle = '#ff922b'; ctx.beginPath();
       ctx.arc(rollerCenter.x, rollerCenter.y, 6, 0, Math.PI * 2); ctx.fill();
       ctx.strokeStyle = '#d9480f'; ctx.lineWidth = 1.5;
@@ -1861,8 +1918,8 @@ const App = {
         ctx.beginPath(); ctx.moveTo(pivot.x, pivot.y); ctx.lineTo(rollerCenter.x, rollerCenter.y); ctx.stroke();
         ctx.fillStyle = '#495057'; ctx.beginPath(); ctx.arc(pivot.x, pivot.y, 4, 0, Math.PI * 2); ctx.fill();
       } else {
-        // 直动从动件：滚子杆沿轴向 +Z 伸出，不参与凸轮旋转
-        const rodEnd = project(X, Y, z + (p.followerLen || 80));
+        // 直动从动件：随动器杆沿轴向 +Z 伸出，不参与凸轮旋转
+        const rodEnd = project(X, Y, z + rodLen);
         ctx.beginPath(); ctx.moveTo(rollerCenter.x, rollerCenter.y); ctx.lineTo(rodEnd.x, rodEnd.y); ctx.stroke();
         ctx.fillStyle = '#5c6370'; ctx.beginPath(); ctx.arc(rodEnd.x, rodEnd.y, 3, 0, Math.PI * 2); ctx.fill();
       }
@@ -1930,7 +1987,7 @@ const App = {
     const scale = Math.min(
       (W * 0.42) / Math.max(p.camWidth, 10),
       (H - 150) / Math.max(p.baseDia, 10),
-      (H - 170) / Math.max(p.followerLen + p.initialHt + 20, 20)
+      (H - 170) / Math.max(p.initialHt + 40, 20)
     );
     const w = p.camWidth * scale;
     const h = p.baseDia * scale;
@@ -1965,24 +2022,21 @@ const App = {
     // 凸轮宽度（横向）
     dimH(cy + h / 2 + 34, cx - w / 2, cx + w / 2, `${this.t('camWidth')} ${p.camWidth} mm`);
 
-    // 滚子 + 杆
+    // 随动器（宽度沿凸轮轴向，高度为直径）
     const rx = cx + w / 2 + 90;
     const rollerCy = cy;
+    const wR = Math.max(8, p.rollerWidth * scale);
     ctx.fillStyle = '#ff922b'; ctx.strokeStyle = '#d9480f'; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.arc(rx, rollerCy, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-    // 杆（朝上）
-    const rodTop = rollerCy - p.followerLen * scale;
+    ctx.beginPath(); ctx.rect(rx - wR / 2, rollerCy - r, wR, 2 * r); ctx.fill(); ctx.stroke();
+    // 杆（朝上，长度固定示意）
+    const rodTop = rollerCy - Math.max(70, 2.2 * r);
     ctx.strokeStyle = '#868e96'; ctx.lineWidth = 4; ctx.lineCap = 'round';
     ctx.beginPath(); ctx.moveTo(rx, rollerCy); ctx.lineTo(rx, rodTop); ctx.stroke();
     ctx.lineCap = 'butt';
-    // 杆长标注
-    dimV(rx + 26, rodTop, rollerCy, `${this.t('followerLen')} ${p.followerLen} mm`);
-    // 滚子直径标注
-    ctx.strokeStyle = accent; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(rx - r, rollerCy + r + 14); ctx.lineTo(rx + r, rollerCy + r + 14); ctx.stroke();
-    tick(rx - r, rollerCy + r + 14); tick(rx + r, rollerCy + r + 14);
-    ctx.fillStyle = dimC; ctx.textAlign = 'center';
-    ctx.fillText(`${this.t('rollerDia')} ${p.rollerDia} mm`, rx, rollerCy + r + 30);
+    // 宽度（横向）
+    dimH(rollerCy + r + 16, rx - wR / 2, rx + wR / 2, `${this.t('rollerWidth')} ${p.rollerWidth} mm`);
+    // 直径（竖向）
+    dimV(rx + wR / 2 + 26, rollerCy - r, rollerCy + r, `${this.t('rollerDia')} ${p.rollerDia} mm`);
 
     // 初始高度（凸轮内向上）
     const liftY = cy + h / 2 - p.initialHt * scale;
@@ -2024,7 +2078,7 @@ const App = {
           const p = data.params;
           const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
           set('p_baseDia', p.baseDia); set('p_camWidth', p.camWidth);
-          set('p_rollerDia', p.rollerDia); set('p_followerLen', p.followerLen);
+          set('p_rollerDia', p.rollerDia); set('p_rollerWidth', p.rollerWidth);
           set('p_initialHt', p.initialHt); set('p_resolution', p.resolution);
           set('p_camSpeed', p.camSpeed != null ? p.camSpeed : 60);
           set('p_followerType', p.followerType); set('p_handedness', p.handedness);
@@ -2048,10 +2102,10 @@ const App = {
   exportCSV() {
     const pts = this.state.points;
     if (!pts || pts.length === 0) { alert(this.t('needCompute')); return; }
-    const headers = ['#', 'phi_deg', 's_mm', 'v_mm_per_deg', 'a_mm_per_deg2', 'j_mm_per_deg3', 'alpha_deg', 'torque_Nmm', 'force_N', 'x_theory_mm', 'y_theory_mm', 'x_work_mm', 'y_work_mm', 'segIdx', 'segName'];
+    const headers = ['#', 'phi_deg', 's_mm', 'v_mm_per_deg', 'a_mm_per_deg2', 'j_mm_per_deg3', 'alpha_deg', 'torque_Nmm', 'force_N', 'force_axial_N', 'x_theory_mm', 'y_theory_mm', 'x_work_mm', 'y_work_mm', 'segIdx', 'segName'];
     const rows = pts.map((pt, i) => [
       i, pt.phi.toFixed(4), pt.s.toFixed(4), pt.v.toFixed(5), pt.a.toFixed(5), pt.j.toFixed(6),
-      pt.alphaDeg.toFixed(3), pt.torqueNmm.toFixed(3), pt.forceN.toFixed(3),
+      pt.alphaDeg.toFixed(3), pt.torqueNmm.toFixed(3), pt.forceN.toFixed(3), pt.forceAxial.toFixed(3),
       pt.x_theory.toFixed(4), pt.y_theory.toFixed(4), pt.x_work.toFixed(4), pt.y_work.toFixed(4),
       pt.segIdx, pt.segName
     ]);
