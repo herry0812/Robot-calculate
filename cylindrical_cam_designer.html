@@ -601,6 +601,8 @@ Object.assign(I18N.zh, {
   sugSumAngle: "调整各段转角之和至 360°，否则轮廓不闭合、曲线首尾跳变。可增加/删除一段，或在最后一段微调转角补齐差额。",
   alertAlphaExceed: "最大压力角 {max}° 超过限值 {lim}°（出现在 φ ≈ {phi}°）",
   sugAlphaExceed: "① 增大基圆直径（降低 v/Rb 比值）；② 加长对应工作段（让升程在更大转角内完成）；③ 改用更平缓的运动规律（正弦 / 3-4-5）以减小速度峰值。",
+  alertAccG: "最大加速度 {g} g（{a} m/s²）超过 1 g 限制（出现在 φ ≈ {phi}°{seg}）",
+  sugAccG: "① 降低凸轮转速；② 加长对应运动分段转角；③ 改用加速度峰值更低的运动规律（正弦 / 3-4-5 / 修正梯形）；④ 减小平缓段升程。",
   alertAlphaNear: "最大压力角 {max}° 接近限值 {lim}°",
   sugAlphaNear: "建议预留余量：轻微增大基圆直径，或调整运动规律降低速度峰值。",
   alertCurvature: "理论轮廓最小曲率半径 {min} mm 小于随动器半径 {roller} mm，槽口会自交",
@@ -654,6 +656,8 @@ Object.assign(I18N.en, {
   sugSumAngle: "Adjust the segment angles to sum to 360°, otherwise the profile will not close and the curve will jump at the seam. Add/remove a segment or tweak the last segment's angle.",
   alertAlphaExceed: "Max pressure angle {max}° exceeds limit {lim}° (at φ ≈ {phi}°)",
   sugAlphaExceed: "① Increase base diameter (lowers v/Rb); ② lengthen that working segment (finish the lift over more degrees); ③ switch to a gentler law (sine / 3-4-5) to reduce peak velocity.",
+  alertAccG: "Peak acceleration {g} g ({a} m/s²) exceeds the 1 g limit (at φ ≈ {phi}°{seg})",
+  sugAccG: "① Reduce cam speed; ② lengthen that motion segment; ③ use a law with lower peak acceleration (sine / 3-4-5 / modified trapezoid); ④ reduce the lift of that segment.",
   alertAlphaNear: "Max pressure angle {max}° is close to limit {lim}°",
   sugAlphaNear: "Keep a margin: slightly increase the base diameter or adjust the motion law to lower peak velocity.",
   alertCurvature: "Min profile radius {min} mm < follower radius {roller} mm, groove will self-intersect",
@@ -707,6 +711,8 @@ Object.assign(I18N.ja, {
   sugSumAngle: "区間角度の合計を 360° に調整してください。閉じないと輪郭が繋がらず、曲線が継ぎ目で跳びます。区間の追加/削除、または最後の区間の角度で調整します。",
   alertAlphaExceed: "最大圧力角 {max}° が限界 {lim}° を超過（φ ≈ {phi}°）",
   sugAlphaExceed: "① 基礎円径を大きくする（v/Rb を低減）；② 該当区間を長くする（より大きな角度でリフト）；③ より滑らかな法則（正弦 / 3-4-5）に変更して速度ピークを下げる。",
+  alertAccG: "最大加速度 {g} g（{a} m/s²）が 1 g 制限を超過（φ ≈ {phi}°{seg}）",
+  sugAccG: "① カム回転数を下げる；② 該当区間の角度を大きくする；③ 加速度ピークの低い法則（正弦 / 3-4-5 / 修正台形）に変更；④ リフト量を小さくする。",
   alertAlphaNear: "最大圧力角 {max}° が限界 {lim}° に接近",
   sugAlphaNear: "余裕を確保してください：基礎円径を少し大きくするか、運動法則を調整して速度ピークを下げます。",
   alertCurvature: "理論輪郭の最小曲率半径 {min} mm がフォロワ半径 {roller} mm 未満、溝が自己交差します",
@@ -1550,6 +1556,26 @@ const App = {
         level: 'W',
         text: this.t('alertAlphaNear', { max: maxAlpha.toFixed(2), lim: p.pressAngleLimit }),
         suggestion: this.t('sugAlphaNear')
+      });
+    }
+
+    // 加速度不得超过 1 g（按各段实际转速换算的 mm/s²）
+    const G_MM = 9806.65; // 1 g = 9.80665 m/s² = 9806.65 mm/s²
+    let maxAcc = 0, worstAcc = null;
+    for (const pt of pts) {
+      const aa = Math.abs(pt.a_s || 0);
+      if (aa > maxAcc) { maxAcc = aa; worstAcc = pt; }
+    }
+    if (maxAcc > G_MM) {
+      alerts.push({
+        level: 'E',
+        text: this.t('alertAccG', {
+          g: (maxAcc / G_MM).toFixed(2),
+          a: (maxAcc / 1000).toFixed(2),
+          phi: worstAcc ? worstAcc.phi.toFixed(1) : '—',
+          seg: worstAcc && worstAcc.segName ? '，' + worstAcc.segName : ''
+        }),
+        suggestion: this.t('sugAccG')
       });
     }
 
