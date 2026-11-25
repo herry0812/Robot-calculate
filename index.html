@@ -1,0 +1,1992 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>四向穿梭车整机设计计算工具 | Four-Way Shuttle Design Calculator</title>
+<style>
+:root{
+  --bg:#e9edf3; --panel:#ffffff; --panel2:#f5f7fa; --ink:#1b2430; --ink2:#5b6676; --ink3:#8b95a5;
+  --line:#d3dae4; --line2:#e6ebf2; --acc:#14568f; --acc2:#e7f0f9; --acc3:#bfd6ea;
+  --ok:#1c7a45; --okbg:#e9f6ee; --warn:#9a6b12; --warnbg:#fcf5e2; --bad:#b33326; --badbg:#fdecea;
+  --top:#0e2337; --top2:#173a58;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --r:4px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font:12px/1.55 var(--sans);-webkit-font-smoothing:antialiased}
+button,input,select{font-family:inherit;font-size:12px;color:inherit}
+button{cursor:pointer}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:#c2cbd8;border-radius:9px}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ---------- top bar ---------- */
+.topbar{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  padding:7px 14px;background:linear-gradient(180deg,var(--top2),var(--top));color:#dce7f2;
+  border-bottom:1px solid #0a1a28;box-shadow:0 1px 6px rgba(9,20,32,.25)}
+.tt{display:flex;align-items:baseline;gap:7px;white-space:nowrap}
+.tt .logo{color:#5fa8e0;font-size:14px}
+.tt .t1{font-size:13.5px;font-weight:600;letter-spacing:.3px}
+.tt .t2{font-size:10px;color:#7e99b3;font-family:var(--mono)}
+.scheme{display:flex;align-items:center;gap:6px;flex:0 0 auto}
+.name{width:190px;padding:4px 7px;background:#0a1c2c;border:1px solid #2a4b6a;color:#eaf2fa;border-radius:var(--r)}
+.name:focus{outline:none;border-color:#5fa8e0}
+.dirty{font-size:10px;padding:1px 6px;border-radius:9px;background:#7a4a05;color:#ffd98a;border:1px solid #a97516;white-space:nowrap}
+.acts{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-left:auto}
+.acts button{padding:4px 9px;background:#1b3d5c;border:1px solid #2f587c;color:#dbe8f5;border-radius:var(--r);white-space:nowrap}
+.acts button:hover{background:#28577f;border-color:#4d7ea8}
+.acts button:active{background:#0f2c45}
+.acts .sel{padding:4px 5px;background:#0a1c2c;border:1px solid #2a4b6a;color:#dbe8f5;border-radius:var(--r);max-width:130px}
+.acts .sep{width:1px;height:18px;background:#2a4b6a}
+
+/* ---------- notice ---------- */
+.notice{display:flex;gap:8px;align-items:flex-start;padding:6px 14px;background:#fff8e1;color:#7a5406;
+  border-bottom:1px solid #f0dfa8;font-size:11.5px}
+.notice b{font-weight:600}
+
+/* ---------- layout ---------- */
+main{display:grid;grid-template-columns:404px minmax(0,1fr);gap:10px;padding:10px;align-items:start}
+@media (max-width:1279px){
+  main{grid-template-columns:1fr}
+  aside{position:static!important;max-height:none!important}
+}
+aside{position:sticky;top:48px;max-height:calc(100vh - 58px);overflow:auto;padding-right:2px}
+
+/* ---------- param groups ---------- */
+.grp{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);margin-bottom:7px;overflow:hidden}
+.grp>summary{display:flex;align-items:center;gap:7px;padding:6px 9px;background:var(--panel2);
+  border-bottom:1px solid var(--line2);font-weight:600;font-size:12px;list-style:none;cursor:pointer;user-select:none}
+.grp>summary::-webkit-details-marker{display:none}
+.grp>summary .no{font-family:var(--mono);color:var(--acc);font-size:11px}
+.grp>summary .cnt{margin-left:auto;font-weight:400;font-size:10px;color:var(--ink3);font-family:var(--mono)}
+.grp>summary .car{color:var(--ink3);font-size:10px;transition:transform .15s}
+.grp[open]>summary .car{transform:rotate(90deg)}
+.grp .rows{padding:5px 8px 7px}
+.fld{display:grid;grid-template-columns:minmax(0,1fr) 86px 42px;gap:5px;align-items:center;
+  padding:2px 0;border-bottom:1px dashed #eef1f6}
+.fld:last-child{border-bottom:none}
+.fld label{display:flex;align-items:center;gap:3px;font-size:11.5px;color:var(--ink2);overflow:hidden}
+.fld label span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fld .q{flex:0 0 auto;width:12px;height:12px;line-height:11px;text-align:center;font-size:9px;
+  border-radius:50%;border:1px solid var(--acc3);color:var(--acc);background:#fff;cursor:help;font-family:var(--mono)}
+.fld .q:hover{background:var(--acc);color:#fff;border-color:var(--acc)}
+.fld input[type=number],.fld input[type=text]{width:100%;padding:3px 5px;text-align:right;font-family:var(--mono);
+  font-size:11.5px;background:#fbfcfe;border:1px solid var(--line);border-radius:3px}
+.fld input:focus{outline:none;border-color:var(--acc);background:#fff;box-shadow:0 0 0 2px var(--acc2)}
+.fld input:disabled{background:#eef1f5;color:var(--ink3);cursor:not-allowed}
+.fld input.bad{border-color:var(--bad);background:var(--badbg)}
+.fld .u{font-size:10px;color:var(--ink3);font-family:var(--mono);text-align:left}
+.fld select{grid-column:1/3;width:100%;padding:3px 4px;background:#fbfcfe;border:1px solid var(--line);border-radius:3px;font-size:11.5px}
+.fld select:focus{outline:none;border-color:var(--acc)}
+.sw{position:relative;display:inline-block;width:34px;height:18px;grid-column:2;justify-self:end}
+.sw input{opacity:0;width:0;height:0}
+.sw i{position:absolute;inset:0;background:#c3ccd8;border-radius:18px;transition:.15s;cursor:pointer}
+.sw i:before{content:"";position:absolute;width:14px;height:14px;left:2px;top:2px;background:#fff;border-radius:50%;transition:.15s}
+.sw input:checked+i{background:var(--acc)}
+.sw input:checked+i:before{transform:translateX(16px)}
+.rowline{grid-column:1/4;display:flex;gap:6px;align-items:center;font-size:10.5px;color:var(--ink3);
+  font-family:var(--mono);padding:1px 0 2px 2px}
+.rowline b{color:var(--acc);font-weight:500}
+.rowline.warnl b{color:var(--warn)}
+
+/* ---------- result area ---------- */
+#out{min-width:0}
+.outbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:5px 9px}
+.outbar .lb{font-size:11px;color:var(--ink3)}
+.outbar select{padding:2px 4px;border:1px solid var(--line);border-radius:3px;background:#fbfcfe;font-size:11px}
+.outbar .sp{margin-left:auto}
+.pill{font-size:10.5px;padding:1px 7px;border-radius:9px;border:1px solid var(--line);color:var(--ink2);background:#fbfcfe;font-family:var(--mono)}
+.pill.ok{background:var(--okbg);border-color:#b9e0c8;color:var(--ok)}
+.pill.warn{background:var(--warnbg);border-color:#eddb9f;color:var(--warn)}
+.pill.bad{background:var(--badbg);border-color:#f2c2bc;color:var(--bad)}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:7px;margin-bottom:9px}
+.card{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--ink3);border-radius:var(--r);
+  padding:6px 8px 7px;min-height:66px;position:relative}
+.card.ok{border-left-color:var(--ok)}
+.card.warn{border-left-color:var(--warn)}
+.card.bad{border-left-color:var(--bad)}
+.card .cl{font-size:10.5px;color:var(--ink2);display:flex;align-items:center;gap:4px;white-space:nowrap;overflow:hidden}
+.card .cl em{font-style:normal;color:var(--ink3);font-family:var(--mono);font-size:9.5px}
+.card .cv{font-family:var(--mono);font-size:19px;font-weight:600;letter-spacing:-.3px;line-height:1.25;
+  font-variant-numeric:tabular-nums;margin-top:2px;white-space:nowrap}
+.card .cv small{font-size:10.5px;font-weight:400;color:var(--ink3);margin-left:3px;letter-spacing:0}
+.card .cs{font-size:10px;color:var(--ink3);font-family:var(--mono);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card .cf{position:absolute;right:6px;top:5px;font-size:9px;padding:0 4px;border-radius:3px;
+  background:var(--panel2);color:var(--ink3);border:1px solid var(--line2);font-family:var(--mono)}
+.card.bad .cv{color:var(--bad)}
+.card.warn .cv{color:var(--warn)}
+
+.blk{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);margin-bottom:9px;overflow:hidden}
+.blk>h3{margin:0;padding:6px 9px;background:var(--panel2);border-bottom:1px solid var(--line2);
+  font-size:12px;font-weight:600;display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none}
+.blk>h3 .car{color:var(--ink3);font-size:10px;transition:transform .15s}
+.blk.closed>h3 .car{transform:rotate(-90deg)}
+.blk.closed>.body{display:none}
+.blk>h3 .tag{margin-left:auto;font-weight:400;font-size:10px;color:var(--ink3);font-family:var(--mono)}
+.blk .body{padding:0}
+.blk .body.pad{padding:8px 9px}
+
+table.dt{width:100%;border-collapse:collapse;font-size:11px}
+table.dt th{position:sticky;top:0;background:#eef2f7;color:var(--ink2);font-weight:600;text-align:left;
+  padding:4px 7px;border-bottom:1px solid var(--line);white-space:nowrap;font-size:10.5px}
+table.dt td{padding:3px 7px;border-bottom:1px solid #f0f3f7;vertical-align:top}
+table.dt tr.grprow td{background:#f7f9fc;color:var(--acc);font-weight:600;font-size:10.5px;
+  font-family:var(--mono);letter-spacing:.4px;border-bottom:1px solid var(--line2)}
+table.dt td.n{font-family:var(--mono);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+table.dt td.f{font-family:var(--mono);color:var(--ink2);font-size:10.5px}
+table.dt td.s{font-family:var(--mono);color:var(--ink3);font-size:10.5px;white-space:nowrap}
+table.dt td.k{color:var(--ink2);white-space:nowrap}
+table.dt td.k .side{color:var(--acc);font-family:var(--mono);font-size:9.5px;margin-right:3px}
+table.dt tbody tr:hover{background:#f9fbfe}
+table.dt td.res{font-weight:600}
+.tblwrap{max-height:520px;overflow:auto}
+
+/* ---------- checks ---------- */
+.chk{display:grid;grid-template-columns:16px 118px minmax(0,1fr) auto;gap:7px;align-items:baseline;
+  padding:4px 9px;border-bottom:1px solid #f0f3f7}
+.chk:last-child{border-bottom:none}
+.chk .dot{width:8px;height:8px;border-radius:50%;margin-top:4px}
+.chk.ok .dot{background:var(--ok)}
+.chk.warn .dot{background:var(--warn)}
+.chk.bad .dot{background:var(--bad)}
+.chk .nm{font-weight:600;font-size:11.5px}
+.chk .rs{font-size:11px;color:var(--ink2)}
+.chk .rs b{font-family:var(--mono);font-weight:600;color:var(--ink)}
+.chk .ad{font-size:10.5px;color:var(--warn);grid-column:3/5;margin-top:-2px}
+.chk.bad .ad{color:var(--bad)}
+.chk .st{font-size:10px;padding:0 6px;border-radius:8px;font-family:var(--mono);white-space:nowrap}
+.chk.ok .st{background:var(--okbg);color:var(--ok)}
+.chk.warn .st{background:var(--warnbg);color:var(--warn)}
+.chk.bad .st{background:var(--badbg);color:var(--bad)}
+
+/* ---------- charts ---------- */
+.charts{display:grid;grid-template-columns:1fr 1fr;gap:9px;padding:9px}
+@media (max-width:1100px){.charts{grid-template-columns:1fr}}
+.cb{position:relative;height:212px;border:1px solid var(--line2);border-radius:var(--r);background:#fff;padding:4px}
+.cb .fb{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  color:var(--ink3);font-size:11px;text-align:center;padding:14px;line-height:1.6}
+.cb canvas{position:relative;z-index:1}
+.charts .full{grid-column:1/-1}
+
+/* ---------- drawer ---------- */
+.drawer{position:fixed;top:0;right:0;bottom:0;width:400px;max-width:92vw;background:var(--panel);
+  border-left:1px solid var(--line);box-shadow:-6px 0 24px rgba(14,35,55,.18);z-index:60;display:flex;flex-direction:column}
+.drawer .dh{display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--top);color:#dce7f2}
+.drawer .dh b{font-size:12.5px}
+.drawer .dh button{margin-left:auto;background:#1b3d5c;border:1px solid #2f587c;color:#dbe8f5;padding:2px 8px;border-radius:3px}
+.drawer .dl{flex:1;overflow:auto;padding:8px}
+.sch{border:1px solid var(--line);border-radius:var(--r);padding:7px 9px;margin-bottom:6px;background:#fcfdff}
+.sch.cur{border-color:var(--acc);box-shadow:inset 0 0 0 1px var(--acc2)}
+.sch .sn{font-weight:600;font-size:12px;display:flex;gap:6px;align-items:center}
+.sch .sn .cur{font-size:9px;color:var(--acc);border:1px solid var(--acc3);border-radius:8px;padding:0 5px}
+.sch .sm{font-size:10.5px;color:var(--ink3);font-family:var(--mono);margin:2px 0 4px}
+.sch .sb{display:flex;gap:4px;flex-wrap:wrap}
+.sch .sb button{padding:2px 7px;font-size:10.5px;background:#eef2f7;border:1px solid var(--line);border-radius:3px}
+.sch .sb button:hover{background:var(--acc2);border-color:var(--acc3)}
+.sch .sb button.del:hover{background:var(--badbg);border-color:#e5b3ad;color:var(--bad)}
+.empty{text-align:center;color:var(--ink3);font-size:11.5px;padding:28px 10px;line-height:1.8}
+
+/* ---------- tooltip ---------- */
+.tip{position:fixed;z-index:90;max-width:300px;background:#12283d;color:#dce7f2;font-size:11px;line-height:1.6;
+  padding:6px 9px;border-radius:var(--r);box-shadow:0 4px 16px rgba(10,25,40,.3);pointer-events:none}
+.tip b{color:#8fc4ea;font-family:var(--mono);font-weight:500}
+
+/* ---------- misc ---------- */
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:100;background:#12283d;color:#e8f1f9;
+  padding:7px 15px;border-radius:16px;font-size:11.5px;box-shadow:0 6px 20px rgba(10,25,40,.35);opacity:0;transition:opacity .18s}
+.toast.on{opacity:1}
+#printRoot{display:none}
+.drawer[hidden],.cb .fb[hidden]{display:none!important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+
+/* ---------- print: A4 计算书 ---------- */
+@media print{
+  @page{size:A4;margin:12mm}
+  html,body{background:#fff}
+  .topbar,.notice,aside,#out,.drawer,.tip,.toast,.outbar{display:none!important}
+  main{display:block;padding:0}
+  #printRoot{display:block;color:#111;font-size:9pt;line-height:1.45}
+  #printRoot h2{font-size:10.5pt;margin:10px 0 4px;padding-bottom:2px;border-bottom:1px solid #999;break-after:avoid}
+  .pr-hd{border-bottom:2px solid #111;padding-bottom:6px;margin-bottom:8px}
+  .pr-hd .pr-t{font-size:15pt;font-weight:700}
+  .pr-hd .pr-m{font-size:9pt;color:#333;margin-top:2px}
+  .pr-tbl{width:100%;border-collapse:collapse;font-size:8pt;table-layout:fixed}
+  .pr-tbl th,.pr-tbl td{border:1px solid #bbb;padding:2px 4px;vertical-align:top;word-break:break-word}
+  .pr-tbl th{background:#eee;text-align:left;font-weight:600}
+  .pr-tbl tr{break-inside:avoid}
+  .pr-tbl .pn{width:19%;color:#222}
+  .pr-tbl .pv{text-align:right;font-family:ui-monospace,monospace;white-space:nowrap}
+  .pr-tbl .pu{width:9%;color:#666}
+  .pr-param td.pu{width:7%}
+  .pr-chk td{font-size:8pt}
+  .pr-chk td.ps{width:52px;font-weight:700;text-align:center}
+  .pr-chk .st-pass .ps{color:#1c7a45}
+  .pr-chk .st-warn .ps{color:#9a6b12}
+  .pr-chk .st-fail .ps{color:#b33326}
+  .pr-chk i{color:#666;font-style:normal;font-size:7.5pt}
+  .pr-dt td,.pr-dt th{font-size:7.2pt}
+  .pr-charts{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:4px}
+  .pr-charts img{width:100%;border:1px solid #ddd}
+  .pr-charts img:first-child{grid-column:1/-1}
+  .pr-foot{margin-top:10px;border-top:1px solid #999;padding-top:5px;font-size:7.5pt;color:#444}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar no-print">
+  <div class="tt"><span class="logo">▣</span><span class="t1" data-i18n="app.title">四向穿梭车整机设计计算</span><span class="t2">v1.0</span></div>
+  <div class="scheme">
+    <input id="schemeName" class="name" value="未命名方案" maxlength="40" spellcheck="false">
+    <span id="dirty" class="dirty" hidden data-i18n="app.dirty">未保存</span>
+  </div>
+  <div class="acts">
+    <select id="exampleSel" class="sel" title="内置示例"></select>
+    <button id="btnExample" data-i18n="btn.example">载入示例</button>
+    <span class="sep"></span>
+    <button id="btnSave" data-i18n="btn.save">保存</button>
+    <button id="btnSaveAs" data-i18n="btn.saveas">另存为</button>
+    <button id="btnDrawer" data-i18n="btn.schemes">方案管理</button>
+    <span class="sep"></span>
+    <button id="btnImport" data-i18n="btn.import">导入</button>
+    <button id="btnExport" data-i18n="btn.export">导出 JSON</button>
+    <button id="btnCsv" data-i18n="btn.csv">导出 CSV</button>
+    <button id="btnPrint" data-i18n="btn.print">打印 / PDF</button>
+    <span class="sep"></span>
+    <button id="btnReset" data-i18n="btn.reset">重置</button>
+    <select id="langSel" class="sel"><option value="0">中文</option><option value="1">English</option><option value="2">日本語</option></select>
+  </div>
+</header>
+
+<div class="notice no-print">
+  <b>⚠</b>
+  <span data-i18n="app.notice">本工具为工程初算辅助，最终选型须由工程师结合电机/减速机/轮子样本与实际工况实测复核；结果不替代强度校核、型式试验与安全评估。</span>
+</div>
+
+<main>
+  <aside id="params" class="no-print" aria-label="parameters"></aside>
+  <section id="out">
+    <div class="outbar no-print">
+      <span class="lb" data-i18n="out.unit">单位</span>
+      <select id="uPow"><option value="auto">功率 自动</option><option value="kw">kW</option><option value="w">W</option></select>
+      <select id="uForce"><option value="auto">力 自动</option><option value="n">N</option><option value="kn">kN</option></select>
+      <span class="sp"></span>
+      <span id="statusSum" class="pill">—</span>
+      <span id="calcTime" class="lb"></span>
+    </div>
+    <div id="cards" class="cards"></div>
+    <section class="blk" id="blkDetail">
+      <h3 data-act="toggle"><span class="car">▾</span><span data-i18n="out.detail">计算明细表</span><span class="tag" id="detailTag"></span></h3>
+      <div class="body"><div class="tblwrap"><table class="dt" id="detailTbl"></table></div></div>
+    </section>
+    <section class="blk" id="blkChecks">
+      <h3 data-act="toggle"><span class="car">▾</span><span data-i18n="out.checks">校核清单</span><span class="tag" id="checkTag"></span></h3>
+      <div class="body" id="checks"></div>
+    </section>
+    <section class="blk" id="blkCharts">
+      <h3 data-act="toggle"><span class="car">▾</span><span data-i18n="out.charts">曲线图表</span><span class="tag" id="chartTag"></span></h3>
+      <div class="body">
+        <div class="charts">
+          <div class="cb full"><div class="fb" data-i18n="chart.fb">图表库未加载（离线时可用 CSV 复核数据）</div><canvas id="cSpeed"></canvas></div>
+          <div class="cb"><div class="fb" data-i18n="chart.fb">图表库未加载（离线时可用 CSV 复核数据）</div><canvas id="cPower"></canvas></div>
+          <div class="cb"><div class="fb" data-i18n="chart.fb">图表库未加载（离线时可用 CSV 复核数据）</div><canvas id="cMotor"></canvas></div>
+        </div>
+      </div>
+    </section>
+  </section>
+</main>
+
+<div id="drawer" class="drawer no-print" hidden>
+  <div class="dh">
+    <b data-i18n="drawer.title">已保存方案</b>
+    <button id="btnDrawerClose" data-i18n="btn.close">关闭</button>
+  </div>
+  <div class="dl" id="schList"></div>
+  <div style="padding:8px 12px;border-top:1px solid var(--line2);display:flex;gap:6px">
+    <button class="acts" id="btnExportAll" style="flex:1;padding:5px;background:#eef2f7;border:1px solid var(--line);border-radius:3px" data-i18n="btn.exportAll">导出全部方案</button>
+    <button id="btnImport2" style="flex:1;padding:5px;background:#eef2f7;border:1px solid var(--line);border-radius:3px" data-i18n="btn.import">导入</button>
+  </div>
+</div>
+
+<div id="tip" class="tip" hidden></div>
+<div id="toast" class="toast"></div>
+<input type="file" id="fileIn" accept=".json,application/json" hidden>
+<div id="printRoot"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+"use strict";
+/* =========================================================================
+   四向穿梭车整机设计计算工具 — 单文件版
+   区块顺序：CONFIG → FIELDS → I18N → Calc(纯函数) → Store → UI → Charts → Export
+   Calc 不引用任何 DOM，可单独抽出做回归测试。
+   ========================================================================= */
+
+/* ===== [CONFIG:START] ===== */
+/**
+ * 全局常量与系数表。所有可调系数尽量走参数，这里只放"物理常量 + 标准序列 + 材料库"。
+ * 材料库单位：E[Pa] 用于赫兹接触；结构计算单独用 beamMats 的 E[MPa]。
+ */
+const CONFIG = {
+  version: '1.0.0',
+  g: 9.81,
+  /** 轮材质库：e 弹性模量[Pa]、nu 泊松比、f 滚动阻力系数、pAllow 许用轮压[MPa] */
+  materials: {
+    pu:     { key:'pu',     e:30e6,  nu:0.49, f:0.020, pAllow:5,   t:0 },
+    pa:     { key:'pa',     e:3.0e9, nu:0.40, f:0.015, pAllow:25,  t:0 },
+    steel:  { key:'steel',  e:206e9, nu:0.30, f:0.005, pAllow:600, t:0 },
+    rubber: { key:'rubber', e:10e6,  nu:0.49, f:0.030, pAllow:2,   t:0 }
+  },
+  /** 标准液压缸内径序列 mm（GB/T 2348 常用档） */
+  bores: [20,25,32,40,50,63,80,100,125,160,200],
+  /** 常用减速比标准档 */
+  ratios: [5,6.3,8,10,12.5,16,20,25,31.5,40,50,63,80,100],
+  /** 主梁材质：屈服强度[MPa] / 弹性模量[MPa] */
+  beamMats: { Q235:{sy:235,e:206000}, Q345:{sy:345,e:206000}, Q355:{sy:355,e:206000} },
+  liftTypes: ['hydraulic','cam','screw','rod'],
+  /** 判定阈值：余量比例低于该值时，通过项降级为"警告" */
+  warnMargin: 0.10
+};
+/* ===== [CONFIG:END] ===== */
+
+/* ===== [FIELDS:START] ===== */
+/**
+ * 参数分组（对应界面 8 张卡片）。open 控制默认展开。
+ */
+const GROUPS = [
+  { id:'basic', no:'①', open:true  },
+  { id:'geo',   no:'②', open:true  },
+  { id:'drvx',  no:'③', open:true  },
+  { id:'drvy',  no:'④', open:true  },
+  { id:'lift',  no:'⑤', open:true  },
+  { id:'batt',  no:'⑥', open:true  },
+  { id:'cond',  no:'⑦', open:true  },
+  { id:'adv',   no:'⑧', open:false }
+];
+
+/**
+ * 字段定义：[key, group, unit, default, min, max, step, type, options]
+ * type: num | sel | bool
+ * 标签与提示文案走 I18N 的 f.* / t.* 键，避免与计算逻辑耦合。
+ */
+const FIELDS = [
+  // ① 基本与载荷
+  ['m_load','basic','kg',1000,100,3000,10],
+  ['m_pallet','basic','kg',30,0,500,5],
+  ['m_self','basic','kg',350,150,1500,10],
+  ['h_cg','basic','mm',600,100,2500,10],
+  ['e_off','basic','mm',50,0,200,5],
+  // ② 外形与轮系
+  ['L','geo','mm',1200,800,2500,10],
+  ['W','geo','mm',1100,700,1600,10],
+  ['H','geo','mm',280,150,800,5],
+  ['l_fork','geo','mm',1150,600,2400,10],
+  ['w_fork','geo','mm',1050,600,1500,10],
+  ['t_fork','geo','mm',60,20,200,5],
+  ['D','geo','mm',125,80,250,5],
+  ['b','geo','mm',50,25,120,5],
+  ['wheel_mat','geo','',  'pu',0,0,0,'sel',['pu','pa','steel','rubber']],
+  ['n_w','geo','',4,4,8,2,'sel',[4,6,8]],
+  ['B','geo','mm',900,500,1500,10],
+  ['A','geo','mm',950,500,2000,10],
+  ['dh','geo','mm',8,0,30,1],
+  // ③ 行走驱动 X 向
+  ['x_v','drvx','m/s',1.5,0.1,3,0.05],
+  ['x_a','drvx','m/s²',0.5,0.05,2,0.05],
+  ['x_ab','drvx','m/s²',0.8,0.1,3,0.05],
+  ['x_alpha','drvx','°',0,0,5,0.5],
+  ['x_f','drvx','',0.02,0.005,0.1,0.005],
+  ['x_eta','drvx','',0.9,0.5,0.98,0.01],
+  ['x_iauto','drvx','',true,0,0,0,'bool'],
+  ['x_i','drvx','',13.09,3,100,0.01],
+  ['x_nm','drvx','rpm',3000,500,6000,50],
+  ['x_k','drvx','',1,1,2,1,'sel',[1,2]],
+  ['x_ks','drvx','',1.3,1,2.5,0.05],
+  ['x_p_rated','drvx','kW',2.2,0.2,15,0.1],
+  // ④ 行走驱动 Y 向
+  ['y_v','drvy','m/s',1.2,0.1,3,0.05],
+  ['y_a','drvy','m/s²',0.4,0.05,2,0.05],
+  ['y_ab','drvy','m/s²',0.6,0.1,3,0.05],
+  ['y_alpha','drvy','°',0,0,5,0.5],
+  ['y_f','drvy','',0.02,0.005,0.1,0.005],
+  ['y_eta','drvy','',0.9,0.5,0.98,0.01],
+  ['y_iauto','drvy','',true,0,0,0,'bool'],
+  ['y_i','drvy','',16.36,3,100,0.01],
+  ['y_nm','drvy','rpm',3000,500,6000,50],
+  ['y_k','drvy','',1,1,2,1,'sel',[1,2]],
+  ['y_ks','drvy','',1.3,1,2.5,0.05],
+  ['y_p_rated','drvy','kW',2.2,0.2,15,0.1],
+  // ⑤ 顶升机构
+  ['lift_type','lift','','hydraulic',0,0,0,'sel',['hydraulic','cam','screw','rod']],
+  ['h_lift','lift','mm',150,20,400,5],
+  ['t_lift','lift','s',2,0.5,10,0.1],
+  ['lift_mode','lift','','auto',0,0,0,'sel',['auto','manual']],
+  ['m_lift','lift','kg',1205,100,5000,10],
+  ['k_imp','lift','',1.2,1,2,0.05],
+  ['p_sys','lift','MPa',16,5,31.5,1],
+  ['eta_lift','lift','',0.85,0.4,0.98,0.01],
+  ['p_lead','lift','mm',5,1,20,1],
+  ['clr_lift','lift','mm',5,5,50,1],
+  // ⑥ 电池与续航
+  ['U','batt','V',48,24,80,2],
+  ['Q','batt','Ah',100,20,400,5],
+  ['dod','batt','',0.8,0.5,1,0.05],
+  ['eta_bat','batt','',0.95,0.8,1,0.01],
+  ['s_cycle','batt','m',60,10,300,5],
+  ['n_lift_cycle','batt','次',2,0,10,1],
+  ['n_day','batt','次',200,10,2000,10],
+  ['t_day','batt','h',8,1,24,0.5],
+  ['eta_ch','batt','',0.9,0.7,1,0.01],
+  ['i_ch','batt','A',30,5,200,5],
+  // ⑦ 工况与尺寸链
+  ['mu','cond','',0.3,0.05,0.8,0.01],
+  ['K_d','cond','',1.2,1,2,0.05],
+  ['h_layer','cond','mm',1800,800,12000,50],
+  ['h_cargo','cond','mm',1200,100,3000,50],
+  ['w_slot','cond','mm',1200,700,2000,10],
+  ['c_side','cond','mm',40,5,200,5],
+  ['clr_wheel','cond','mm',3,3,20,1],
+  ['t_delay','cond','s',1,0.2,5,0.1],
+  // ⑧ 高级系数
+  ['defl_div','adv','',500,200,1000,50],
+  ['kst_min','adv','',1.5,1,3,0.1],
+  ['p_allow','adv','MPa',5,0.5,800,0.5],
+  ['p_margin','adv','%',10,0,50,1],
+  ['ks_struct','adv','',1.5,1,3,0.1],
+  ['n_beam','adv','',2,1,4,1,'sel',[1,2,3,4]],
+  ['beam_mat','adv','','Q235',0,0,0,'sel',['Q235','Q345','Q355']],
+  ['beam_h','adv','mm',60,20,200,5],
+  ['beam_b','adv','mm',60,20,200,5],
+  ['beam_t','adv','mm',4,2,20,1],
+  ['h_cg_self','adv','mm',250,50,800,10],
+  ['stab_basis','adv','','dir',0,0,0,'sel',['dir','b']],
+  ['energy_basis','adv','','steady',0,0,0,'sel',['steady','profile']],
+  ['sb_limit','adv','mm',1500,100,10000,50]
+].map(a=>({ k:a[0], g:a[1], u:a[2], def:a[3], min:a[4], max:a[5], step:a[6], type:a[7]||'num', opts:a[8] }));
+const FIELD_MAP = {};
+FIELDS.forEach(f=>{ FIELD_MAP[f.k]=f; });
+/* ===== [FIELDS:END] ===== */
+
+/* ===== [I18N:START] ===== */
+/**
+ * 三语词条：[简体中文, English, 日本語]。索引 L ∈ {0,1,2}。
+ * 技术符号与单位（N·m、rpm、mm、MPa…）按工程惯例保持拉丁写法，不做本地化。
+ */
+const T = {
+  'app.title':['四向穿梭车整机设计计算','Four-Way Shuttle Design Calc','四方向シャトル設計計算'],
+  'app.dirty':['未保存','Unsaved','未保存'],
+  'app.notice':['本工具为工程初算辅助，最终选型须由工程师结合电机/减速机/轮子样本与实际工况实测复核；结果不替代强度校核、型式试验与安全评估。',
+    'Preliminary engineering aid only. Final selection must be verified by an engineer against motor / gearbox / wheel datasheets and measured duty. Not a substitute for strength verification, type tests or safety assessment.',
+    '本ツールは概算設計の補助です。最終選定はエンジニアがモータ・減速機・ホイールのカタログ値と実測条件で確認してください。強度検討・形式試験・安全評価の代替にはなりません。'],
+  'btn.example':['载入示例','Load example','サンプル読込'],
+  'btn.save':['保存','Save','保存'],
+  'btn.saveas':['另存为','Save as','別名保存'],
+  'btn.schemes':['方案管理','Schemes','方案管理'],
+  'btn.import':['导入','Import','読込'],
+  'btn.export':['导出 JSON','Export JSON','JSON 出力'],
+  'btn.csv':['导出 CSV','Export CSV','CSV 出力'],
+  'btn.print':['打印 / PDF','Print / PDF','印刷 / PDF'],
+  'btn.reset':['重置','Reset','初期化'],
+  'btn.close':['关闭','Close','閉じる'],
+  'btn.exportAll':['导出全部方案','Export all','全方案出力'],
+  'btn.load':['载入','Load','読込'],
+  'btn.copy':['复制','Copy','複製'],
+  'btn.rename':['重命名','Rename','名前変更'],
+  'btn.del':['删除','Delete','削除'],
+  'btn.overwrite':['覆盖','Overwrite','上書き'],
+  'btn.savecopy':['另存为副本','Save copy','複製保存'],
+  'out.unit':['单位','Units','単位'],
+  'out.detail':['计算明细表','Calculation detail','計算明細'],
+  'out.checks':['校核清单','Design checks','検証項目'],
+  'out.charts':['曲线图表','Charts','グラフ'],
+  'out.unitPow':['功率','Power','出力'],
+  'out.unitForce':['力','Force','力'],
+  'drawer.title':['已保存方案','Saved schemes','保存済み方案'],
+  'drawer.empty':['暂无已保存方案。修改参数后点「保存」即可创建；也可从示例载入后另存。',
+    'No saved schemes yet. Adjust parameters and press Save, or load an example then Save as.',
+    '保存済み方案はありません。パラメータ調整後に「保存」、またはサンプルを読み込んで別名保存してください。'],
+  'drawer.count':['共 {n} 个方案','{n} schemes','{n} 件'],
+  'chart.fb':['图表库未加载（离线时请用 CSV 导出复核数据）','Chart library not loaded (export CSV to cross-check offline)','グラフライブラリ未読込（CSV 出力で確認してください）'],
+  'chart.speed':['速度-时间曲线（单循环）','Velocity vs time (one cycle)','速度-時間（1 サイクル）'],
+  'chart.power':['功率-时间曲线（单循环）','Power vs time (one cycle)','出力-時間（1 サイクル）'],
+  'chart.motor':['电机功率-转速工作点','Motor torque vs speed','モータトルク-回転数'],
+  'chart.t':['时间 (s)','Time (s)','時間 (s)'],
+  'chart.v':['速度 (m/s)','Velocity (m/s)','速度 (m/s)'],
+  'chart.p':['功率 (kW)','Power (kW)','出力 (kW)'],
+  'chart.n':['转速 (rpm)','Speed (rpm)','回転数 (rpm)'],
+  'chart.tq':['扭矩 (N·m)','Torque (N·m)','トルク (N·m)'],
+  'chart.s1':['整车输入功率','Total input power','入力合計'],
+  'chart.s2':['顶升功率','Lift power','昇降出力'],
+  'chart.s3':['工作点','Operating point','動作点'],
+  'chart.s4':['额定功率包络','Rated power envelope','定格出力包絡'],
+  'tbl.item':['项目','Item','項目'],
+  'tbl.sym':['符号','Symbol','記号'],
+  'tbl.formula':['公式','Formula','式'],
+  'tbl.subst':['代入值','Substitution','代入値'],
+  'tbl.result':['结果','Result','結果'],
+  'tbl.unit':['单位','Unit','単位'],
+  'st.pass':['通过','PASS','合格'],
+  'st.warn':['警告','WARN','注意'],
+  'st.fail':['不通过','FAIL','不合格'],
+  'sum.tpl':['{p} 通过 / {w} 警告 / {f} 不通过','{p} pass / {w} warn / {f} fail','{p} 合格 / {w} 注意 / {f} 不合格'],
+  'g.basic':['基本与载荷','Basics & payload','基本・荷重'],
+  'g.geo':['外形与轮系','Geometry & wheels','外形・車輪系'],
+  'g.drvx':['行走驱动 X 向','Travel drive X','走行駆動 X'],
+  'g.drvy':['行走驱动 Y 向 / 换向','Travel drive Y','走行駆動 Y'],
+  'g.lift':['顶升机构','Lift mechanism','昇降機構'],
+  'g.batt':['电池与续航','Battery & endurance','バッテリ・航続'],
+  'g.cond':['工况与尺寸链','Duty & tolerance chain','稼働条件・寸法連鎖'],
+  'g.adv':['高级系数','Advanced factors','上級係数'],
+
+  'f.m_load':['额定载重','Rated load','定格積載'], 'f.m_pallet':['托盘/货箱自重','Pallet tare','パレット自重'],
+  'f.m_self':['整车自重','Vehicle mass','車体質量'], 'f.h_cg':['货物重心高度','Cargo CG height','荷重重心高さ'],
+  'f.e_off':['允许偏心距','Allowed offset','許容偏心'],
+  'f.L':['车身长','Body length','車体長'], 'f.W':['车身宽','Body width','車体幅'], 'f.H':['车身高','Body height','車体高'],
+  'f.l_fork':['货叉长','Fork length','フォーク長'], 'f.w_fork':['货叉宽','Fork width','フォーク幅'],
+  'f.t_fork':['货叉厚','Fork thickness','フォーク厚'], 'f.D':['行走轮直径','Wheel diameter','車輪径'],
+  'f.b':['轮宽','Wheel width','車輪幅'], 'f.wheel_mat':['轮材质','Wheel material','車輪材質'],
+  'f.n_w':['每向轮数','Wheels per direction','方向当たり車輪数'], 'f.B':['轮距','Track','輪距'],
+  'f.A':['轴距','Wheelbase','軸距'], 'f.dh':['两向轮组高度差','Wheel-set height diff','車輪群高低差'],
+  'f.v':['最高速度','Max speed','最高速度'], 'f.a':['加速度','Acceleration','加速度'],
+  'f.ab':['减速度','Deceleration','減速度'], 'f.alpha':['轨道坡度','Track slope','軌道勾配'],
+  'f.f':['滚动阻力系数','Rolling resistance','転がり抵抗係数'], 'f.eta':['传动效率','Drive efficiency','伝達効率'],
+  'f.iauto':['自动求解减速比','Auto gear ratio','減速比自動計算'], 'f.i':['减速比','Gear ratio','減速比'],
+  'f.nm':['电机额定转速','Motor rated speed','モータ定格回転数'], 'f.k':['驱动电机数量','Motor count','モータ数'],
+  'f.ks':['安全系数 K_s','Safety factor K_s','安全率 K_s'], 'f.p_rated':['电机样本额定功率','Motor rated power','モータ定格出力'],
+  'f.lift_type':['顶升形式','Lift type','昇降方式'], 'f.h_lift':['顶升行程','Lift stroke','昇降ストローク'],
+  'f.t_lift':['顶升时间','Lift time','昇降時間'], 'f.lift_mode':['顶升质量模式','Lift mass mode','昇降質量モード'],
+  'f.m_lift':['顶升质量','Lifted mass','昇降質量'], 'f.k_imp':['冲击系数','Impact factor','衝撃係数'],
+  'f.p_sys':['系统压力','System pressure','系統圧力'], 'f.eta_lift':['机构效率','Mechanism efficiency','機構効率'],
+  'f.p_lead':['丝杠导程','Screw lead','ボールねじリード'], 'f.clr_lift':['顶升安全余量','Stroke margin','ストローク余裕'],
+  'f.U':['电压平台','Voltage','電圧'], 'f.Q':['电池容量','Battery capacity','バッテリ容量'],
+  'f.dod':['放电深度 DOD','Depth of discharge','放電深度'], 'f.eta_bat':['放电效率','Discharge efficiency','放電効率'],
+  'f.s_cycle':['单次循环行走距离','Travel per cycle','1 サイクル走行距離'],
+  'f.n_lift_cycle':['单次循环顶升次数','Lifts per cycle','1 サイクル昇降回数'],
+  'f.n_day':['每日循环次数','Cycles per day','1 日サイクル数'], 'f.t_day':['每日工作时长','Shift hours','1 日稼働時間'],
+  'f.eta_ch':['充电效率','Charge efficiency','充電効率'], 'f.i_ch':['充电电流','Charge current','充電電流'],
+  'f.mu':['附着系数','Friction coefficient','付着係数'], 'f.K_d':['动载系数','Dynamic factor','動荷重係数'],
+  'f.h_layer':['货架层高','Rack level height','ラック段高さ'], 'f.h_cargo':['货物总高','Cargo height','荷高さ'],
+  'f.w_slot':['货位净宽','Slot clear width','棚口内幅'], 'f.c_side':['侧间隙要求','Side clearance req.','側面余裕要求'],
+  'f.clr_wheel':['非承载轮离地间隙','Idle wheel clearance','非接地車輪クリアランス'],
+  'f.t_delay':['换向延时','Shift delay','切替遅延'],
+  'f.defl_div':['挠度限值 1/n','Deflection limit 1/n','たわみ限界 1/n'],
+  'f.kst_min':['稳定系数要求','Stability factor req.','安定率要求'], 'f.p_allow':['许用轮压','Allowable pressure','許容面圧'],
+  'f.p_margin':['轮压安全余量','Pressure margin','面圧余裕'], 'f.ks_struct':['结构安全系数','Structural safety factor','構造安全率'],
+  'f.n_beam':['主梁数量','Main beams','主桁本数'], 'f.beam_mat':['主梁材质','Beam material','主桁材質'],
+  'f.beam_h':['主梁外高','Beam outer height','主桁外高'], 'f.beam_b':['主梁外宽','Beam outer width','主桁外幅'],
+  'f.beam_t':['主梁壁厚','Beam wall thickness','主桁肉厚'], 'f.h_cg_self':['车体重心高','Body CG height','車体重心高さ'],
+  'f.stab_basis':['稳定支距口径','Stability base basis','安定支距基準'],
+  'f.energy_basis':['能耗计算口径','Energy model','消費電力モデル'], 'f.sb_limit':['允许制动距离','Allowed braking dist.','許容制動距離'],
+
+  't.m_load':['F_f、ΣF 与轮压的起点。按单托盘最大净重取值，含超载工况时另加余量。','Drives F_f, ΣF and wheel load. Use the heaviest single pallet; add margin for overload cases.','F_f・ΣF・面圧の起点。1 パレットの最大積載で入力。'],
+  't.m_pallet':['托盘或货箱自重，计入总质量 M。','Pallet or bin tare mass, included in M.','パレット等の自重。M に加算。'],
+  't.m_self':['含车架、轮系、电池、电机减速机。可按同类机型类比或点估算。','Frame, wheel sets, battery, drives. Estimate from a similar machine.','フレーム・車輪・電池・駆動系を含む。類似機で概算可。'],
+  't.h_cg':['M 的合成重心与临界加速度 a_crit = g·(支距/2)/H_cg 直接相关，取载货后重心。','Feeds H_cg,act → a_crit = g·(base/2)/H_cg. Use the loaded CG.','H_cg,act → a_crit = g·(支距/2)/H_cg に影響。積載時重心。'],
+  't.e_off':['偏心使单侧轮压放大：N_max = N·(1+2e/B)。货叉偏载或托盘变形时取实测值。','Off-centre load amplifies wheel load: N_max = N·(1+2e/B). Use measured values.','偏心で片側面圧が増加：N_max = N·(1+2e/B)。'],
+  't.L':['主梁简支梁跨距，δ = 5qL⁴/(384EI) 对 L 极敏感。','Simply-supported span for the beam check; δ scales with L⁴.','主桁の支間。δ は L⁴ に比例。'],
+  't.W':['与货位净宽一起校核侧向间隙：(w_slot-W)/2。','Used with slot width for side clearance.','棚口内幅との側面余裕に使用。'],
+  't.H':['车架高，承载面高 H_deck = H + 货叉厚。','Frame height; deck height H_deck = H + fork thickness.','車体高。デッキ高 = H + フォーク厚。'],
+  't.l_fork':['承载面纵向尺寸，影响整车长度与货位匹配。','Fork length for slot matching.','フォーク長。棚口との整合に使用。'],
+  't.w_fork':['侧向尺寸链基准：(w_slot - w_fork)/2。','Side tolerance basis: (w_slot - w_fork)/2.','側面寸法連鎖の基準。'],
+  't.t_fork':['承载面厚度，进入 H_deck 与垂直尺寸链。','Deck thickness, part of H_deck.','デッキ厚。H_deck に加算。'],
+  't.D':['n_w = 60v/(πD/1000)；T_w = ΣF·D/2000。径小则转速高、扭矩小。','n_w = 60v/(πD/1000); T_w = ΣF·D/2000. Smaller D → higher speed, lower torque.','n_w = 60v/(πD/1000)、T_w = ΣF·D/2000。'],
+  't.b':['赫兹接触宽度与轮压：A = 2a_h·b。轮宽越大 p_w 越低。','Hertz contact area A = 2a_h·b; wider wheel → lower pressure.','ヘルツ接触幅 A = 2a_h·b。'],
+  't.wheel_mat':['切换材质会联动写入滚动阻力系数 f 与许用轮压 p_allow（可在高级系数改回）。','Switching material writes f and p_allow; override in Advanced.','材質変更で f と p_allow を自動設定（上級係数で変更可）。'],
+  't.n_w':['单轮法向载荷 N = M·g·K_d/n_w，同时决定附着校核的 k/4 项。','N = M·g·K_d/n_w; also sets the k/4 term in the adhesion check.','N = M·g·K_d/n_w。'],
+  't.B':['横倾支距：a_crit,Y = g·(B/2)/H_cg；偏心轮压也用它。','Rollover base in Y: a_crit,Y = g·(B/2)/H_cg. Also used for eccentric load.','横転支距：a_crit,Y = g·(B/2)/H_cg。'],
+  't.A':['纵倾支距：a_crit,X = g·(A/2)/H_cg。','Pitch base in X: a_crit,X = g·(A/2)/H_cg.','前後支距：a_crit,X = g·(A/2)/H_cg。'],
+  't.dh':['顶升换向时非承载轮离地间隙来源，要求 ≥ 3 mm（工况页可改）。','Idle wheel lift-off gap; must be ≥ 3 mm.','非接地車輪の浮上量。3 mm 以上。'],
+  't.v':['n_w = 60v/(πD/1000)，P_pk = ΣF·v/η。两向可不同，取严者定功率。','n_w = 60v/(πD/1000), P_pk = ΣF·v/η. Use the stricter direction for rating.','n_w = 60v/(πD/1000)、P_pk = ΣF·v/η。'],
+  't.a':['F_a = M·a，占 ΣF 大头；同时受稳定系数 K_st = a_crit/a 约束。','F_a = M·a dominates ΣF; also limited by K_st = a_crit/a.','F_a = M·a。K_st = a_crit/a で制約。'],
+  't.ab':['制动距离 s_b = v²/(2a_b)，制动力 F_b = M·a_b。','s_b = v²/(2a_b), F_b = M·a_b.','s_b = v²/(2a_b)、F_b = M·a_b。'],
+  't.alpha':['F_g = M·g·sinα；有坡道时按最大坡度取。','F_g = M·g·sinα; use the steepest ramp.','F_g = M·g·sinα。最大勾配で入力。'],
+  't.f':['PU 0.015–0.03，尼龙 0.012–0.02，钢轮 0.003–0.008。轨道清洁度差时取上限。','PU 0.015–0.03, nylon 0.012–0.02, steel 0.003–0.008. Use upper bound for dirty track.','PU 0.015–0.03、ナイロン 0.012–0.02、鋼 0.003–0.008。'],
+  't.eta':['齿轮减速机 0.90–0.95，蜗轮蜗杆 0.6–0.8。','Planetary 0.90–0.95; worm 0.6–0.8.','遊星 0.90–0.95、ウォーム 0.6–0.8。'],
+  't.iauto':['开：i = n_m/n_w 由计算得出；关：i 变输入，反解 v = πD·n_m/(60i) 并回填全链。','On: i = n_m/n_w computed. Off: i is input, v is back-solved.','ON：i を計算。OFF：i 入力、v を逆算。'],
+  't.i':['自动模式下只读。关闭后可手填样本速比，实际速度随之下调。','Read-only in auto mode. When off, enter the datasheet ratio.','自動時は読取専用。'],
+  't.nm':['伺服 3000 rpm 常见，异步 1500/3000 rpm。额定点扭矩决定选型。','Servo 3000 rpm typical. Rated-point torque drives selection.','サーボ 3000 rpm が一般的。'],
+  't.k':['k=1 单驱，k=2 双驱分担。注意 K_s 只作用在总功率上一次。','k=1 single drive, k=2 dual. K_s is applied once to total power.','k=1 単駆動、k=2 両駆動。K_s は総出力に 1 回。'],
+  't.ks':['工程初算取 1.2–1.5；包含启停冲击与电压波动。','Use 1.2–1.5 for preliminary design.','概算では 1.2–1.5。'],
+  't.p_rated':['仅用于"电机功率"校核对照，不参与功率需求计算。','Only for the motor-power check; not used in the demand calculation.','モータ出力検証の比較用。'],
+  't.lift_type':['液压输出缸径/压力/流量；凸轮与丝杠输出扭矩；推杆按丝杠等效导程。','Hydraulic → bore/pressure/flow; cam & screw → torque; rod uses screw formula.','油圧はボア径・圧力・流量、カム・ねじはトルク。'],
+  't.h_lift':['校核 h ≥ Δh + 余量；同时进入垂直尺寸链。','Check h ≥ Δh + margin; also part of the vertical chain.','h ≥ Δh + 余裕を検証。'],
+  't.t_lift':['决定顶升功率 P = F·(h/1000)/t/η 与换向节拍。','Sets P_lift and the shift cycle time.','P_lift と切替サイクルを決定。'],
+  't.lift_mode':['自动 = 载重 + 托盘 + 0.5×车重；手动用于特殊夹具。','Auto = load + pallet + 0.5×body. Manual for special fixtures.','自動 = 積載+パレット+0.5×車重。'],
+  't.m_lift':['自动模式只读。顶升力 F_lift = m_lift·g·K_imp。','Read-only in auto mode. F_lift = m_lift·g·K_imp.','自動時は読取専用。'],
+  't.k_imp':['取放货冲击 1.1–1.4，硬限位取上限。','1.1–1.4; use the upper bound for hard stops.','1.1–1.4。ハードストップは上限。'],
+  't.p_sys':['液压系统常用 12–20 MPa；缸径按 d = √(4F/(πp)) 反算后圆整。','Typical 12–20 MPa. Bore is solved then rounded to standard.','油圧は 12–20 MPa が一般的。'],
+  't.eta_lift':['液压缸 0.85–0.95，丝杠 0.6–0.9，凸轮 0.5–0.8。','Cylinder 0.85–0.95; screw 0.6–0.9; cam 0.5–0.8.','油圧 0.85–0.95、ねじ 0.6–0.9、カム 0.5–0.8。'],
+  't.p_lead':['T = F·P_lead/(2π·η)。导程越大扭矩越大、转速越低。','T = F·P_lead/(2π·η).','T = F·P_lead/(2π·η)。'],
+  't.clr_lift':['行程校核的安全余量，一般 ≥ 5 mm。','Stroke margin, normally ≥ 5 mm.','ストローク余裕。通常 5 mm 以上。'],
+  't.U':['48 V 为主流；重载可 80 V。Q_req = E_day/(U·DOD·η_b)。','48 V typical; 80 V for heavy duty.','48 V が主流、重載は 80 V。'],
+  't.Q':['与 Q_req 比较判定容量是否足够；实际续航 N_ok = E_use/E_c。','Compared with Q_req; endurance N_ok = E_use/E_c.','Q_req と比較。'],
+  't.dod':['磷酸铁锂取 0.8，铅酸取 0.5–0.6。','LiFePO4 0.8; lead-acid 0.5–0.6.','LFP 0.8、鉛 0.5–0.6。'],
+  't.eta_bat':['含 DC/DC 与线损，0.92–0.97。','Includes DC/DC and cable loss, 0.92–0.97.','DC/DC・配線損失込み 0.92–0.97。'],
+  't.s_cycle':['一个存取循环的总行走距离，图表按 s/2 作单程。','Total travel per cycle; charts use s/2 per leg.','1 サイクルの総走行距離。グラフは s/2 を片道。'],
+  't.n_lift_cycle':['每循环顶升次数，进入 E_c = P_v·t + n·P_lift·t_lift。','Lifts per cycle in E_c.','1 サイクルの昇降回数。'],
+  't.n_day':['日能耗 E_day = E_c·N_day，直接决定容量与充电次数。','E_day = E_c·N_day drives capacity and charging.','E_day = E_c·N_day。'],
+  't.t_day':['用于判断续航是否覆盖班次，不足则需机会充电。','Used to judge whether endurance covers the shift.','航続が勤務時間を満たすか判定。'],
+  't.eta_ch':['充电机效率 0.85–0.93。','Charger efficiency 0.85–0.93.','充電器効率 0.85–0.93。'],
+  't.i_ch':['单次充电时长 t = Q·DOD/I_ch。','t = Q·DOD/I_ch.','t = Q·DOD/I_ch。'],
+  't.mu':['聚氨酯轮对钢轨 0.2–0.5，潮湿或油污取低值。','PU on steel 0.2–0.5; lower when oily.','PU-鋼 0.2–0.5。'],
+  't.K_d':['轮压动载放大，1.1–1.4。','Wheel-load dynamic factor 1.1–1.4.','面圧動的係数 1.1–1.4。'],
+  't.h_layer':['垂直尺寸链基准：c_v = h_layer − (H_deck + h_cargo + h_lift + Δh)。','Vertical chain basis.','上下寸法連鎖の基準。'],
+  't.h_cargo':['含托盘高度的货物外形高。','Cargo height including the pallet.','パレット込みの荷高さ。'],
+  't.w_slot':['侧向尺寸链基准：单侧间隙 = (w_slot − w_fork)/2。','Side chain basis.','側面寸法連鎖の基準。'],
+  't.c_side':['设计要求的单侧最小间隙，一般 30–50 mm。','Required one-side clearance, usually 30–50 mm.','片側最小余裕。通常 30–50 mm。'],
+  't.clr_wheel':['换向时非承载轮必须离地，一般 ≥ 3 mm。','Idle wheels must lift off during shifting, ≥ 3 mm.','切替時に非接地車輪を浮かせる。3 mm 以上。'],
+  't.t_delay':['PLC 换向确认与延时，0.5–2 s。','PLC confirmation delay, 0.5–2 s.','PLC 切替確認の遅延。'],
+  't.defl_div':['主梁挠度限值 L/n，500 为常规，精密定位取 800。','Deflection limit L/n; 500 typical.','たわみ限界 L/n。'],
+  't.kst_min':['稳定系数 K_st = a_crit/a ≥ 1.5（保守可取 1.8）。','K_st ≥ 1.5; 1.8 for conservative design.','K_st ≥ 1.5。'],
+  't.p_allow':['聚氨酯 3–8，尼龙 20–30，钢轮按赫兹另算。切换材质会自动联动。','PU 3–8 MPa, nylon 20–30 MPa. Auto-linked with material.','PU 3–8 MPa、ナイロン 20–30 MPa。'],
+  't.p_margin':['轮压余量低于该比例时判"警告"。','Below this margin the wheel check turns to WARN.','この余裕を下回ると注意判定。'],
+  't.ks_struct':['σ ≤ σ_s/n，一般 1.5。','σ ≤ σ_s/n, normally 1.5.','σ ≤ σ_s/n。'],
+  't.n_beam':['载荷按主梁数量均分：q = M·g·K_d/(n_b·L)。','Load shared by beam count.','荷重を主桁本数で分担。'],
+  't.beam_mat':['决定 σ_s 与 E（Q235/Q345/Q355）。','Sets σ_s and E.','σ_s と E を決定。'],
+  't.beam_h':['方管外高，W_x = 2I/H，对强度最敏感。','Outer height; W_x = 2I/H.','外高。W_x = 2I/H。'],
+  't.beam_b':['方管外宽。','Outer width.','外幅。'],
+  't.beam_t':['壁厚，进入 I 与 W_x 计算。','Wall thickness for I and W_x.','肉厚。'],
+  't.h_cg_self':['只算车体部分的重心高，用于合成 H_cg,act。','Body-only CG height for H_cg,act.','車体のみの重心高。'],
+  't.stab_basis':['按行驶方向：X 用轴距 A、Y 用轮距 B（推荐）；严格按 B/2 则两向都用轮距。','By direction (X→A, Y→B), or strictly B/2 for both.','方向別（X→A、Y→B）または B/2 固定。'],
+  't.energy_basis':['匀速近似 = P_v·t（原文口径）；曲线积分 = 按加减速曲线逐段积分。','Steady = P_v·t (spec formula); Profile = integrate the accel profile.','定速近似 = P_v·t、曲線積分 = 加減速を積分。'],
+  't.sb_limit':['制动距离上限，用于与 s_b 比较。','Upper bound for the braking distance.','制動距離の上限。'],
+
+  'o.wheel_mat.pu':['聚氨酯 95A','PU 95A','ポリウレタン 95A'],
+  'o.wheel_mat.pa':['尼龙','Nylon','ナイロン'],
+  'o.wheel_mat.steel':['钢','Steel','鋼'],
+  'o.wheel_mat.rubber':['橡胶','Rubber','ゴム'],
+  'o.lift_type.hydraulic':['液压','Hydraulic','油圧'],
+  'o.lift_type.cam':['凸轮','Cam','カム'],
+  'o.lift_type.screw':['丝杠','Ball screw','ボールねじ'],
+  'o.lift_type.rod':['电动推杆','Electric rod','電動シリンダ'],
+  'o.lift_mode.auto':['自动估算','Auto','自動概算'],
+  'o.lift_mode.manual':['手动输入','Manual','手動入力'],
+  'o.stab_basis.dir':['按行驶方向（推荐）','By direction (recommended)','方向別（推奨）'],
+  'o.stab_basis.b':['严格按 B/2','Strictly B/2','B/2 固定'],
+  'o.energy_basis.steady':['匀速近似（原文）','Steady (spec)','定速近似（原文）'],
+  'o.energy_basis.profile':['加减速曲线积分','Accel profile','加減速積分'],
+
+  'c.pm':['单机功率','Motor power','モータ出力'],
+  'c.tm':['电机扭矩','Motor torque','モータトルク'],
+  'c.ratio':['减速比','Gear ratio','減速比'],
+  'c.wheel':['单轮压','Wheel pressure','車輪面圧'],
+  'c.liftf':['顶升力','Lift force','昇降力'],
+  'c.bore':['缸径 / 顶升扭矩','Bore / lift torque','ボア径 / トルク'],
+  'c.battcap':['所需电池容量','Required capacity','必要容量'],
+  'c.endurance':['续航','Endurance','航続'],
+  'c.kst':['稳定系数','Stability factor','安定率'],
+  'c.brake':['制动距离','Braking distance','制動距離'],
+  'c.swrate':['换向节拍','Shift rate','切替能力'],
+  'c.mass':['整车总重','Total mass','総質量'],
+
+  'd.M':['总质量','Total mass','総質量'],
+  'd.Ff':['滚动阻力','Rolling resistance','転がり抵抗'],
+  'd.Fg':['坡度阻力','Slope resistance','勾配抵抗'],
+  'd.Fa':['加速阻力','Acceleration resistance','加速抵抗'],
+  'd.SF':['总阻力','Total resistance','総抵抗'],
+  'd.Pv':['匀速功率','Steady power','定速出力'],
+  'd.Ppk':['峰值功率','Peak power','ピーク出力'],
+  'd.Pm':['电机总功率需求','Total motor power','必要総出力'],
+  'd.Pm1':['单机功率需求','Per-motor power','1 台当たり出力'],
+  'd.nw':['轮转速','Wheel speed','車輪回転数'],
+  'd.i':['减速比','Gear ratio','減速比'],
+  'd.istd':['最近标准速比','Nearest std ratio','最近標準比'],
+  'd.Tw':['轮上扭矩','Wheel torque','車輪トルク'],
+  'd.Tm':['电机扭矩','Motor torque','モータトルク'],
+  'd.Fadh':['可用附着力','Available traction','利用可能付着力'],
+  'd.vreal':['反算实际速度','Back-solved speed','逆算実速度'],
+  'd.Tb':['制动电机扭矩','Brake motor torque','制動トルク'],
+  'd.Nw':['单轮法向载荷','Normal wheel load','車輪荷重'],
+  'd.Estr':['等效弹性模量 E*','Equivalent modulus','等価弾性係数'],
+  'd.Ah':['赫兹接触半宽','Hertz half-width','ヘルツ半幅'],
+  'd.Ac':['接触面积','Contact area','接触面積'],
+  'd.Pav':['平均轮压','Mean pressure','平均面圧'],
+  'd.Pmx':['峰值轮压','Peak pressure','ピーク面圧'],
+  'd.Nmx':['偏心最大轮压','Eccentric max load','偏心最大荷重'],
+  'd.Fl':['顶升力','Lift force','昇降力'],
+  'd.Vl':['顶升速度','Lift speed','昇降速度'],
+  'd.Pl':['顶升功率','Lift power','昇降出力'],
+  'd.Dreq':['理论缸径','Required bore','必要ボア径'],
+  'd.Dstd':['标准缸径','Standard bore','標準ボア径'],
+  'd.Pact':['实际工作压力','Actual pressure','実圧力'],
+  'd.Acyl':['活塞面积','Piston area','ピストン面積'],
+  'd.Qh':['所需流量','Required flow','必要流量'],
+  'd.Tq':['所需输出扭矩','Required torque','必要トルク'],
+  'd.Ec':['单循环能耗','Energy per cycle','1 サイクル消費'],
+  'd.Eday':['日能耗','Daily energy','日消費'],
+  'd.Qreq':['所需电池容量','Required capacity','必要容量'],
+  'd.Euse':['单次可用能量','Usable energy','利用可能エネルギー'],
+  'd.Nok':['可循环次数','Cycles available','可能サイクル数'],
+  'd.Thr':['续航小时数','Endurance hours','航続時間'],
+  'd.Nchg':['每日充电次数','Charges per day','1 日充電回数'],
+  'd.Tchg':['单次充电时长','Charge time','充電時間'],
+  'd.Hcg':['合成重心高度','Combined CG height','合成重心高さ'],
+  'd.Acx':['纵向临界加速度','Critical accel X','前後臨界加速度'],
+  'd.Kx':['纵向稳定系数','Stability X','前後安定率'],
+  'd.Acy':['横向临界加速度','Critical accel Y','左右臨界加速度'],
+  'd.Ky':['横向稳定系数','Stability Y','左右安定率'],
+  'd.Sb':['制动距离','Braking distance','制動距離'],
+  'd.Fb':['所需制动力','Braking force','制動力'],
+  'd.Tbk':['轮上制动扭矩','Wheel brake torque','車輪制動トルク'],
+  'd.Tt':['单程行走时间','Leg travel time','片道走行時間'],
+  'd.Tcyc':['单循环时间','Cycle time','サイクル時間'],
+  'd.Q':['主梁均布线载','Distributed load','等分布荷重'],
+  'd.Mm':['最大弯矩','Max bending moment','最大曲げモーメント'],
+  'd.Ix':['截面惯性矩','Second moment','断面二次モーメント'],
+  'd.Wx':['抗弯截面系数','Section modulus','断面係数'],
+  'd.Sig':['弯曲应力','Bending stress','曲げ応力'],
+  'd.Dlt':['最大挠度','Max deflection','最大たわみ'],
+  'd.Dlim':['挠度限值','Deflection limit','たわみ限界'],
+  'd.Hdk':['承载面高','Deck height','デッキ高'],
+  'd.Gv':['垂直最小间隙','Vertical clearance','上下余裕'],
+  'd.Gs':['侧向间隙（货叉）','Side clearance (fork)','側面余裕（フォーク）'],
+  'd.Gc':['侧向间隙（车身）','Side clearance (body)','側面余裕（車体）'],
+  'd.Gmin':['最小间隙','Min clearance','最小余裕'],
+  'd.Tsw':['换向时间','Shift time','切替時間'],
+  'd.Tswc':['含上升的完整周期','Full shift cycle','上昇込み周期'],
+  'd.Rate':['换向节拍','Shift rate','切替能力'],
+
+  'k.motor.n':['电机功率','Motor power','モータ出力'],
+  'k.motor.r':['单机需求 <b>{v}</b> ≤ 样本 <b>{l}</b>（余量 {p}%）','Demand <b>{v}</b> ≤ rated <b>{l}</b> (margin {p}%)','必要 <b>{v}</b> ≤ 定格 <b>{l}</b>（余裕 {p}%）'],
+  'k.motor.a':['提档电机功率、增大 k 或降低 v/a。','Step up motor power, raise k, or reduce v/a.','モータ容量増、k 増、v/a 低減。'],
+  'k.adhesion.n':['附着力','Traction','付着力'],
+  'k.adhesion.r':['可用 <b>{v}</b> vs 总阻力 <b>{l}</b>（余量 {p}%）；并行参考 μ·M·g·k/n_w = {ref}','Available <b>{v}</b> vs <b>{l}</b> (margin {p}%); ref μ·M·g·k/n_w = {ref}','利用 <b>{v}</b> vs 抵抗 <b>{l}</b>（余裕 {p}%）；参考 {ref}'],
+  'k.adhesion.a':['降低加速度、提高轮轨摩擦或增加驱动轮压。','Lower acceleration, raise friction, or increase drive-wheel load.','加速度低減、摩擦増、駆動輪荷重増。'],
+  'k.wheel.n':['轮压','Wheel pressure','車輪面圧'],
+  'k.wheel.r':['峰值 <b>{v}</b> vs 许用 <b>{l}</b>（余量 {p}%）','Peak <b>{v}</b> vs allowable <b>{l}</b> (margin {p}%)','ピーク <b>{v}</b> vs 許容 <b>{l}</b>（余裕 {p}%）'],
+  'k.wheel.a':['加宽轮面、增大轮径、提高轮数或换高承载材质。','Widen the wheel, increase D or n_w, or use a harder material.','車輪幅・径・本数を増やす。'],
+  'k.defl.n':['主梁挠度','Beam deflection','主桁たわみ'],
+  'k.defl.r':['最大挠度 <b>{v}</b> vs 限值 <b>{l}</b>','Deflection <b>{v}</b> vs limit <b>{l}</b>','たわみ <b>{v}</b> vs 限界 <b>{l}</b>'],
+  'k.defl.a':['加高主梁截面、增加主梁数量或缩短跨距。','Deepen the section, add beams, or shorten the span.','断面高さ増、本数増、支間短縮。'],
+  'k.stab.n':['运行稳定','Running stability','走行安定性'],
+  'k.stab.r':['稳定系数 <b>{v}</b> vs 要求 <b>{l}</b>','Stability <b>{v}</b> vs required <b>{l}</b>','安定率 <b>{v}</b> vs 要求 <b>{l}</b>'],
+  'k.stab.a':['降低加速度、降低重心或加大轴距/轮距。','Reduce acceleration or CG height, or enlarge A/B.','加速度・重心を下げる、A/B を広げる。'],
+  'k.liftstroke.n':['顶升行程','Lift stroke','昇降ストローク'],
+  'k.liftstroke.r':['行程 <b>{v}</b> vs 需求 Δh+余量 <b>{l}</b>','Stroke <b>{v}</b> vs required <b>{l}</b>','ストローク <b>{v}</b> vs 必要 <b>{l}</b>'],
+  'k.liftstroke.a':['加大顶升行程或减小两向轮组高度差。','Increase stroke or reduce Δh.','ストローク増または Δh 低減。'],
+  'k.battcap.n':['电池容量','Battery capacity','バッテリ容量'],
+  'k.battcap.r':['配置 <b>{v}</b> vs 需求 <b>{l}</b>','Installed <b>{v}</b> vs required <b>{l}</b>','搭載 <b>{v}</b> vs 必要 <b>{l}</b>'],
+  'k.battcap.a':['加大容量、提高电压平台、减少日循环数或压缩单循环能耗。','Increase capacity, raise voltage, cut cycles or energy per cycle.','容量増、電圧増、サイクル低減。'],
+  'k.endurance.n':['续航覆盖班次','Endurance covers shift','勤務時間の航続'],
+  'k.endurance.r':['续航 <b>{v}</b> vs 班次 <b>{l}</b>；每日约需充电 {n} 次','Endurance <b>{v}</b> vs shift <b>{l}</b>; ≈{n} charges/day','航続 <b>{v}</b> vs 勤務 <b>{l}</b>；1 日約 {n} 回充電'],
+  'k.endurance.a':['安排机会充电/换电，或加大容量、减少日循环数。','Add opportunity charging / battery swap, or increase capacity.','機会充電・交換を計画、または容量増。'],
+  'k.strength.n':['主梁强度','Beam strength','主桁強度'],
+  'k.strength.r':['弯曲应力 <b>{v}</b> vs 许用 <b>{l}</b>','Bending <b>{v}</b> vs allowable <b>{l}</b>','曲げ <b>{v}</b> vs 許容 <b>{l}</b>'],
+  'k.strength.a':['换 Q345/Q355、加高截面或增加主梁。','Use Q345/Q355, deepen the section, or add beams.','Q345/Q355 へ変更、断面増。'],
+  'k.brake.n':['制动距离','Braking distance','制動距離'],
+  'k.brake.r':['制动距离 <b>{v}</b> vs 允许 <b>{l}</b>','Distance <b>{v}</b> vs allowed <b>{l}</b>','制動距離 <b>{v}</b> vs 許容 <b>{l}</b>'],
+  'k.brake.a':['提高减速度或降低最高速度。','Raise deceleration or reduce top speed.','減速度増または最高速度低減。'],
+  'k.swgap.n':['换向离地间隙','Shift lift-off gap','切替浮上量'],
+  'k.swgap.r':['轮组高度差 <b>{v}</b> vs 要求 <b>{l}</b>','Height diff <b>{v}</b> vs required <b>{l}</b>','高低差 <b>{v}</b> vs 要求 <b>{l}</b>'],
+  'k.swgap.a':['提高两向轮组高度差或增加顶升预压量。','Increase Δh or add pre-lift.','Δh 増または予備昇降を追加。'],
+  'k.gap.n':['尺寸链间隙','Tolerance clearance','寸法余裕'],
+  'k.gap.r':['最小间隙 <b>{v}</b> vs 要求 <b>{l}</b>','Min clearance <b>{v}</b> vs required <b>{l}</b>','最小余裕 <b>{v}</b> vs 要求 <b>{l}</b>'],
+  'k.gap.a':['降低货物高度/顶升行程，或加大货位净宽与层高。','Reduce cargo height/stroke, or enlarge slot and level height.','荷高・ストローク低減、棚口拡大。'],
+  'k.ecc.n':['偏心轮压放大','Eccentric amplification','偏心増幅'],
+  'k.ecc.r':['最大 <b>{v}</b> vs 平均 <b>{l}</b>（系数 {p}）','Max <b>{v}</b> vs mean <b>{l}</b> (factor {p})','最大 <b>{v}</b> vs 平均 <b>{l}</b>'],
+  'k.ecc.a':['控制托盘偏载，或提高轮压余量与轮宽。','Limit off-centre loading or add wheel-width margin.','偏載を抑制、面圧余裕を確保。'],
+
+  'msg.saved':['方案已保存','Scheme saved','方案を保存しました'],
+  'msg.deleted':['方案已删除','Scheme deleted','方案を削除しました'],
+  'msg.copied':['已复制为新方案','Copied to a new scheme','複製しました'],
+  'msg.imported':['已导入 {n} 个方案','Imported {n} scheme(s)','{n} 件読み込みました'],
+  'msg.exported':['已导出文件','File exported','ファイルを出力しました'],
+  'msg.reset':['已恢复默认参数','Defaults restored','初期値に戻しました'],
+  'msg.example':['已载入示例：{n}','Example loaded: {n}','サンプル読込：{n}'],
+  'msg.badfile':['文件解析失败或字段不合法','Invalid file or schema','ファイル不正'],
+  'msg.noname':['请输入方案名称','Please enter a scheme name','方案名を入力してください'],
+  'msg.leave':['有未保存的参数修改，确定离开？','Unsaved changes. Leave anyway?','未保存の変更があります。移動しますか？'],
+  'msg.invalid':['{n} 项参数越界已标红（沿用上次有效值计算）','{n} field(s) out of range (using last valid value)','{n} 項目が範囲外（前回値を沿用）'],
+  'msg.dup':['同名方案已存在。确定 = 覆盖，取消 = 另存为副本。','A scheme with this name exists. OK = overwrite, Cancel = save a copy.','同名方案があります。OK=上書き、キャンセル=複製保存。'],
+  'msg.selectone':['请先选择方案','Select a scheme first','方案を選択してください'],
+  'msg.loaded':['已载入方案','Scheme loaded','方案を読み込みました'],
+  'msg.rename':['请输入新名称','Enter a new name','新しい名前を入力'],
+  'msg.autocalc':['自动求解已开启：减速比由 n_m/n_w 计算','Auto mode: ratio computed from n_m/n_w','自動計算：n_m/n_w から算出'],
+  'msg.autooff':['已切入手动减速比，速度将按 i 反算','Manual ratio: speed back-solved from i','手動減速比：i から速度逆算'],
+  'out.params':['参数表','Parameter table','パラメータ表'],
+  'grp.wheel':['轮压与地面','Wheel load & floor','車輪面圧・床'],
+  'grp.stab':['稳定与制动','Stability & braking','安定・制動'],
+  'grp.struct':['结构强度','Structural strength','構造強度'],
+  'grp.geo2':['尺寸链','Tolerance chain','寸法連鎖'],
+  'grp.sw':['换向','Direction shift','切替']
+};
+/* ===== [I18N:END] ===== */
+
+/* ===== [CALC:START] ===== */
+/**
+ * 纯函数计算引擎。输入 params 对象，输出 results 对象，不触碰 DOM。
+ *
+ * 公式来源（与需求书一致）：
+ *   行走：F_f=M·g·f·cosα、F_g=M·g·sinα、F_a=M·a、ΣF=Σ、P_v=(F_f+F_g)·v/η、P_pk=ΣF·v/η
+ *   扭矩：T_w=ΣF·D/2000、T_m=T_w/(i·η)
+ *   轮压：N=M·g·K_d/n_w；赫兹线接触 A=2a_h·b，a_h=√(4NR/(πbE*))
+ *   顶升：F_lift=m_lift·g·K_imp、P=F·(h/1000)/t/η、d=√(4F/(πp))
+ *   电池：E_c=P_v·t_travel+n·P_lift·t_lift、Q_req=E_day/(U·DOD·η_b)
+ *   稳定：a_crit=g·(支距/2)/H_cg、K_st=a_crit/a、s_b=v²/(2a_b)
+ *   结构：q=M·g·K_d/(n_b·L)、M_max=qL²/8、σ=M_max/W_x、δ=5qL⁴/(384EI)
+ */
+const Calc = (function(){
+  const G = CONFIG.g;
+  const PI = Math.PI;
+  const clamp = (v,a,b)=>Math.min(b,Math.max(a,v));
+  const nearest = (arr,x)=>arr.reduce((a,b)=>Math.abs(b-x)<Math.abs(a-x)?b:a,arr[0]);
+  const ceilBore = mm=>{ for(const d of CONFIG.bores){ if(d>=mm) return d; } return CONFIG.bores[CONFIG.bores.length-1]; };
+  const f1 = x=>(isFinite(x)?x:0).toFixed(1);
+  const f2 = x=>(isFinite(x)?x:0).toFixed(2);
+  const f3 = x=>(isFinite(x)?x:0).toFixed(3);
+  const f4 = x=>(isFinite(x)?x:0).toFixed(4);
+
+  /** 读取并夹紧参数；非法时回落默认值，保证引擎不会输出 NaN。 */
+  function rp(p,k){
+    const f = FIELD_MAP[k];
+    if(!f) return 0;
+    let v = p[k];
+    if(v===null||v===undefined||v==='') v = f.def;
+    if(f.type==='bool') return v===true||v==='true';
+    if(f.type==='sel') return v;
+    const n = Number(v);
+    v = isFinite(n)?n:Number(f.def);
+    return clamp(v,f.min,f.max);
+  }
+
+  /** 梯形/三角形速度曲线。返回加速段结束 t1、匀速段结束 t2、总时长 t3、峰值速度 vp。 */
+  function profile(v,a,ab,s){
+    if(!(s>0)||!(v>0)||!(a>0)||!(ab>0)) return {t1:0,t2:0,t3:0,vp:0,tri:true};
+    const dA = v*v/(2*a), dD = v*v/(2*ab);
+    if(dA+dD<=s){
+      const t1 = v/a, tc = (s-dA-dD)/v;
+      return {t1, t2:t1+tc, t3:t1+tc+v/ab, vp:v, tri:false};
+    }
+    const vp = Math.sqrt(2*s/(1/a+1/ab));
+    const t1 = vp/a;
+    return {t1, t2:t1, t3:t1+vp/ab, vp, tri:true};
+  }
+
+  /** 按曲线积分单程能耗（Wh），用于 energy_basis = profile 的口径。 */
+  function profileEnergy(Fconst,M,a,ab,v,s,eta){
+    const pr = profile(v,a,ab,s), N = 48, dt = pr.t3/N;
+    let E = 0;
+    for(let i=0;i<N;i++){
+      const t = (i+0.5)*dt;
+      let acc, sp;
+      if(t<pr.t1){ acc = a;  sp = a*t; }
+      else if(t<pr.t2){ acc = 0; sp = v; }
+      else { acc = -ab; sp = Math.max(0, v-ab*(t-pr.t2)); }
+      const F = Math.max(0, Fconst + M*acc);
+      E += F*sp/eta*dt;
+    }
+    return E/3600; // Wh
+  }
+
+  function run(p){
+    const p2 = p || {};
+    const R = { meta:{ valid:true }, checks:[], cards:[], detail:[], chart:{} };
+
+    /* ---------- 派生量 ---------- */
+    const mLoad = rp(p2,'m_load'), mPallet = rp(p2,'m_pallet'), mSelf = rp(p2,'m_self');
+    const M = mLoad + mPallet + mSelf;
+    const hCg = rp(p2,'h_cg'), hCgSelf = rp(p2,'h_cg_self');
+    const HcgAct = ((mLoad+mPallet)*hCg + mSelf*hCgSelf)/M;
+    const D = rp(p2,'D'), bW = rp(p2,'b'), nW = rp(p2,'n_w'), B = rp(p2,'B'), A = rp(p2,'A'), dh = rp(p2,'dh');
+    const L = rp(p2,'L'), W = rp(p2,'W'), H = rp(p2,'H'), tFork = rp(p2,'t_fork');
+    const wFork = rp(p2,'w_fork');
+    const matKey = rp(p2,'wheel_mat'); const mat = CONFIG.materials[matKey] || CONFIG.materials.pu;
+    const mu = rp(p2,'mu'), Kd = rp(p2,'K_d');
+    const liftMode = rp(p2,'lift_mode');
+    const mLift = liftMode==='auto' ? (mLoad+mPallet+0.5*mSelf) : rp(p2,'m_lift');
+    const Hdeck = H + tFork;
+    const sCycle = rp(p2,'s_cycle');
+
+    /* ---------- 行走（X / Y 独立） ---------- */
+    function travel(side){
+      const vRaw = rp(p2,side+'_v'), a = rp(p2,side+'_a'), ab = rp(p2,side+'_ab');
+      const al = rp(p2,side+'_alpha')*PI/180;
+      const fRes = rp(p2,side+'_f'), eta = rp(p2,side+'_eta');
+      const nm = rp(p2,side+'_nm'), k = rp(p2,side+'_k'), Ks = rp(p2,side+'_ks');
+      const iauto = rp(p2,side+'_iauto')===true;
+      const iIn = rp(p2,side+'_i');
+      const vEff = iauto ? vRaw : (PI*(D/1000)*nm/(60*iIn));
+      const nw = 60*vEff/(PI*D/1000);
+      const i = iauto ? nm/nw : iIn;
+      const iStd = nearest(CONFIG.ratios,i);
+      const Ff = M*G*fRes*Math.cos(al);
+      const Fg = M*G*Math.sin(al);
+      const Fa = M*a;
+      const SF = Ff+Fg+Fa;
+      const Pv = (Ff+Fg)*vEff/eta;
+      const Ppk = SF*vEff/eta;
+      const Pm = Ppk*Ks;
+      const PmOne = Pm/k;
+      const Tw = SF*(D/2000);
+      const Tm = Tw/(i*eta);
+      const Tcruise = (Ff+Fg)*(D/2000)/(i*eta);
+      const Fadh = mu*M*G*(k/4);
+      const FadhRef = mu*M*G*k/nW;
+      const sb = vEff*vEff/(2*ab);
+      const Fb = M*ab;
+      const Tb = Fb*(D/2000)/(i*eta);
+      return {side, vRaw, vEff, a, ab, al, fRes, eta, nm, k, Ks, iauto, iIn, i, iStd, nw,
+              Ff, Fg, Fa, SF, Pv, Ppk, Pm, PmOne, Tw, Tm, Tcruise, Fadh, FadhRef, sb, Fb, Tb,
+              prof: profile(vEff,a,ab,sCycle/2)};
+    }
+    const TX = travel('x'), TY = travel('y');
+    R.travel = { x:TX, y:TY, vEff:TX.vEff };
+    R.load = { M, HcgAct, mLift, Hdeck };
+
+    /* ---------- 轮压（赫兹线接触） ---------- */
+    const N = M*G*Kd/nW;
+    const Estr = mat.e/(1-mat.nu*mat.nu);
+    const aH = Math.sqrt(4*N*(D/2000)/(PI*(bW/1000)*Estr));
+    const Acont = 2*aH*(bW/1000);
+    const pAvg = N/Acont/1e6;
+    const pMax = 4*pAvg/PI;
+    const Nmax = N*(1+2*rp(p2,'e_off')/B);
+    const pAllow = rp(p2,'p_allow');
+    const eccFactor = Nmax/N;
+    R.wheel = { N, Estr, aH, Acont, pAvg, pMax, Nmax, pAllow, mat, eccFactor };
+
+    /* ---------- 顶升 ---------- */
+    const liftType = rp(p2,'lift_type');
+    const hLift = rp(p2,'h_lift'), tLift = rp(p2,'t_lift');
+    const kImp = rp(p2,'k_imp'), pSys = rp(p2,'p_sys'), etaLift = rp(p2,'eta_lift');
+    const pLead = rp(p2,'p_lead'), clrLift = rp(p2,'clr_lift');
+    const Fl = mLift*G*kImp;
+    const vLift = (hLift/1000)/tLift;
+    const Pl = Fl*vLift/etaLift;
+    let dReq=null, dStd=null, pAct=null, Acyl=null, Qhyd=null, Tq=null;
+    if(liftType==='hydraulic'){
+      dReq = Math.sqrt(4*Fl/(PI*pSys*1e6))*1000;
+      dStd = ceilBore(dReq);
+      pAct = 4*Fl/(PI*Math.pow(dStd/1000,2))/1e6;
+      Acyl = PI/4*Math.pow(dStd/1000,2)*1e6;
+      Qhyd = (PI/4*Math.pow(dStd/1000,2))*vLift*60000;
+    }else{
+      const lead = (liftType==='cam' ? hLift : pLead)/1000;
+      Tq = Fl*lead/(2*PI*etaLift);
+    }
+    R.lift = { F:Fl, v:vLift, P:Pl, type:liftType, dReq, dStd, pAct, Acyl, Qhyd, Tq, pSys, hLift, tLift, clrLift, mLift };
+
+    /* ---------- 电池与续航 ---------- */
+    const U = rp(p2,'U'), Q = rp(p2,'Q'), dod = rp(p2,'dod'), etaBat = rp(p2,'eta_bat');
+    const nLiftCycle = rp(p2,'n_lift_cycle'), nDay = rp(p2,'n_day'), tDay = rp(p2,'t_day');
+    const etaCh = rp(p2,'eta_ch'), iCh = rp(p2,'i_ch');
+    const eBasis = rp(p2,'energy_basis');
+    const tTravel = sCycle/TX.vEff;
+    let Etravel;
+    if(eBasis==='profile'){
+      Etravel = profileEnergy(TX.Ff+TX.Fg, M, TX.a, TX.ab, TX.vEff, sCycle, TX.eta);
+    }else{
+      Etravel = TX.Pv*tTravel/3600;
+    }
+    const Elift = nLiftCycle*Pl*tLift/3600;
+    const Ec = Etravel + Elift;
+    const Eday = Ec*nDay/1000;
+    const Qreq = Eday*1000/(U*dod*etaBat);
+    const Euse = U*Q*dod*etaBat;
+    const Nok = Ec>0 ? Euse/Ec : 0;
+    const tCycle = tTravel + nLiftCycle*tLift;
+    const hours = Nok*tCycle/3600;
+    const nChg = Math.max(1, Math.ceil(Eday*1000/(Euse*etaCh)));
+    const tChg = Q*dod/iCh;
+    const needCharge = hours < tDay;
+    R.batt = { Ec, Eday, Qreq, Euse, Nok, hours, nChg, tChg, needCharge, tTravel, tCycle, Elift, Etravel };
+
+    /* ---------- 稳定与制动 ---------- */
+    const basis = rp(p2,'stab_basis');
+    const baseX = (basis==='b' ? B : A)/1000;
+    const aCritX = G*(baseX/2)/(HcgAct/1000);
+    const aCritY = G*((B/1000)/2)/(HcgAct/1000);
+    const KstX = aCritX/TX.a, KstY = aCritY/TY.a;
+    const Kst = Math.min(KstX,KstY);
+    R.stab = { HcgAct, aCritX, aCritY, KstX, KstY, Kst, basis, sb:TX.sb, sbmm:TX.sb*1000, Fb:TX.Fb, Tb:TX.Tb };
+
+    /* ---------- 结构与尺寸链 ---------- */
+    const nBeam = rp(p2,'n_beam'), bMat = rp(p2,'beam_mat');
+    const bH = rp(p2,'beam_h'), bB = rp(p2,'beam_b'), bT = rp(p2,'beam_t');
+    const bm = CONFIG.beamMats[bMat] || CONFIG.beamMats.Q235;
+    const q = M*G*Kd/(nBeam*L);
+    const Mmax = q*L*L/8;
+    const bIn = Math.max(bB-2*bT,1), hIn = Math.max(bH-2*bT,1);
+    const Ix = (bB*Math.pow(bH,3) - bIn*Math.pow(hIn,3))/12;
+    const Wx = 2*Ix/bH;
+    const sigma = Mmax/Wx;
+    const delta = 5*q*Math.pow(L,4)/(384*bm.e*Ix);
+    const dLim = L/rp(p2,'defl_div');
+    const sigAllow = bm.sy/rp(p2,'ks_struct');
+    const gapV = rp(p2,'h_layer') - (Hdeck + rp(p2,'h_cargo') + hLift + dh);
+    const gapSide = (rp(p2,'w_slot') - wFork)/2;
+    const gapCart = (rp(p2,'w_slot') - W)/2;
+    const gapMin = Math.min(gapV, gapSide, gapCart);
+    R.struct = { q, Mmax, Ix, Wx, sigma, delta, dLim, sigAllow, bm, gapV, gapSide, gapCart, gapMin, Hdeck };
+
+    /* ---------- 换向 ---------- */
+    const tDelay = rp(p2,'t_delay'), clrWheel = rp(p2,'clr_wheel');
+    const tSw = tLift + tDelay;
+    const tSwCycle = 2*tLift + tDelay;
+    const swRate = 3600/tSw;
+    R.shuttle = { gapWheel:dh, clrWheel, tSw, tSwCycle, swRate, tDelay };
+
+    /* ---------- 校核 ---------- */
+    const WM = CONFIG.warnMargin;
+    const chk = (id, ok, margin, v, l, u, extra)=>{
+      let st = ok ? (margin < WM ? 'warn' : 'pass') : 'fail';
+      const c = { id, status:st, v, l, u, pct: isFinite(margin)?margin*100:0 };
+      if(extra) Object.assign(c, extra);
+      R.checks.push(c);
+      return st;
+    };
+    const pRatedX = rp(p2,'x_p_rated')*1000, pRatedY = rp(p2,'y_p_rated')*1000;
+    const worse = TX.PmOne >= TY.PmOne ? 'x' : 'y';
+    const TW = worse==='x'?TX:TY, pRatedW = worse==='x'?pRatedX:pRatedY;
+    chk('motor', pRatedW>=TW.PmOne, (pRatedW-TW.PmOne)/Math.max(TW.PmOne,1e-9), TW.PmOne, pRatedW, 'W');
+    chk('adhesion', TW.Fadh>=TW.SF, (TW.Fadh-TW.SF)/Math.max(TW.SF,1e-9), TW.Fadh, TW.SF, 'N', { ref:TW.FadhRef });
+    chk('wheel', pMax<=pAllow, (pAllow-pMax)/Math.max(pAllow,1e-9), pMax, pAllow, 'MPa');
+    chk('defl', delta<=dLim, (dLim-delta)/Math.max(dLim,1e-9), delta, dLim, 'mm');
+    chk('stab', Kst>=rp(p2,'kst_min'), (Kst-rp(p2,'kst_min'))/Math.max(rp(p2,'kst_min'),1e-9), Kst, rp(p2,'kst_min'), '');
+    chk('liftstroke', hLift>=dh+clrLift, (hLift-(dh+clrLift))/Math.max(dh+clrLift,1e-9), hLift, dh+clrLift, 'mm');
+    chk('battcap', Q>=Qreq, (Q-Qreq)/Math.max(Qreq,1e-9), Q, Qreq, 'Ah');
+    chk('endurance', hours>=tDay, (hours-tDay)/Math.max(tDay,1e-9), hours, tDay, 'h', { n:nChg });
+    chk('strength', sigma<=sigAllow, (sigAllow-sigma)/Math.max(sigAllow,1e-9), sigma, sigAllow, 'MPa');
+    chk('brake', R.stab.sbmm<=rp(p2,'sb_limit'), (rp(p2,'sb_limit')-R.stab.sbmm)/Math.max(rp(p2,'sb_limit'),1e-9), R.stab.sbmm, rp(p2,'sb_limit'), 'mm');
+    chk('swgap', dh>=clrWheel, (dh-clrWheel)/Math.max(clrWheel,1e-9), dh, clrWheel, 'mm');
+    const gapOk = gapMin>=0;
+    const gapSt = chk('gap', gapOk, gapMin>=5?1:(gapMin/5), gapMin, 0, 'mm');
+    if(gapSt==='pass' && gapMin<5) R.checks[R.checks.length-1].status = 'warn';
+    chk('ecc', Nmax<=1.25*N, (1.25*N-Nmax)/(1.25*N), Nmax, N, 'N', { ref:eccFactor });
+
+    const statusOf = id=>{ const c = R.checks.find(x=>x.id===id); return c?c.status:'pass'; };
+    R.status = {
+      pass: R.checks.filter(c=>c.status==='pass').length,
+      warn: R.checks.filter(c=>c.status==='warn').length,
+      fail: R.checks.filter(c=>c.status==='fail').length
+    };
+
+    /* ---------- 关键指标卡片 ---------- */
+    R.cards = [
+      { id:'pm', val:TW.PmOne, u:'W', sub:(worse==='x'?'X':'Y'), st:statusOf('motor') },
+      { id:'tm', val:TW.Tm, u:'N·m', sub:'i='+f2(TW.i), st:statusOf('motor') },
+      { id:'ratio', val:TW.i, u:'', sub:'i_std '+TW.iStd, st:'pass' },
+      { id:'wheel', val:pMax, u:'MPa', sub:f1(N)+' N / '+f2(Nmax)+' N max', st:statusOf('wheel') },
+      { id:'liftf', val:Fl, u:'N', sub:'m='+f1(mLift)+' kg', st:'pass' },
+      { id:'bore', val:(liftType==='hydraulic'?dStd:Tq), u:(liftType==='hydraulic'?'mm':'N·m'),
+        sub:(liftType==='hydraulic'?('p='+f2(pAct)+' MPa'):'T_out'), st:'pass' },
+      { id:'battcap', val:Qreq, u:'Ah', sub:'installed '+f1(Q)+' Ah', st:statusOf('battcap') },
+      { id:'endurance', val:hours, u:'h', sub:'N_ok='+f1(Nok), st:statusOf('endurance') },
+      { id:'kst', val:Kst, u:'', sub:'X '+f2(KstX)+' / Y '+f2(KstY), st:statusOf('stab') },
+      { id:'brake', val:R.stab.sbmm, u:'mm', sub:'a_b='+f2(TX.ab)+' m/s²', st:statusOf('brake') },
+      { id:'swrate', val:swRate, u:'次/h', sub:'t_sw='+f2(tSw)+' s', st:statusOf('swgap') },
+      { id:'mass', val:M, u:'kg', sub:'m_self '+f1(mSelf), st:'pass' }
+    ];
+
+    /* ---------- 明细表 ---------- */
+    const DR = [];
+    const row = (g,id,sym,formula,subst,val,u,side)=>DR.push({g,id,sym,formula,subst,val,u,side:side||''});
+    const RX = TX, RY = TY;
+    // 行走 X
+    row('drvx','M','M','m_load+m_pallet+m_self', f1(mLoad)+'+'+f1(mPallet)+'+'+f1(mSelf), M, 'kg','X');
+    row('drvx','Ff','F_f','M·g·f·cosα', f1(M)+'×9.81×'+f3(RX.fRes)+'×cos'+f1(rp(p2,'x_alpha')), RX.Ff, 'N','X');
+    row('drvx','Fg','F_g','M·g·sinα', f1(M)+'×9.81×sin'+f1(rp(p2,'x_alpha')), RX.Fg, 'N','X');
+    row('drvx','Fa','F_a','M·a', f1(M)+'×'+f2(RX.a), RX.Fa, 'N','X');
+    row('drvx','SF','ΣF','F_f+F_g+F_a', f1(RX.Ff)+'+'+f1(RX.Fg)+'+'+f1(RX.Fa), RX.SF, 'N','X');
+    row('drvx','Pv','P_v','(F_f+F_g)·v/η', '('+f1(RX.Ff+RX.Fg)+')×'+f2(RX.vEff)+'/0.9', RX.Pv, 'W','X');
+    row('drvx','Ppk','P_pk','ΣF·v/η', f1(RX.SF)+'×'+f2(RX.vEff)+'/'+f2(RX.eta), RX.Ppk, 'W','X');
+    row('drvx','Pm','P_m','P_pk·K_s', f1(RX.Ppk)+'×'+f2(RX.Ks), RX.Pm, 'W','X');
+    row('drvx','Pm1','P_m1','P_m/k', f1(RX.Pm)+'/'+RX.k, RX.PmOne, 'W','X');
+    row('drvx','nw','n_w','60v/(πD/1000)', '60×'+f2(RX.vEff)+'/(π×'+f1(D)+'/1000)', RX.nw, 'rpm','X');
+    row('drvx','i','i','n_m/n_w', f1(RX.nm)+'/'+f2(RX.nw), RX.i, '','X');
+    row('drvx','istd','i_std','最近标准档', '取 '+RX.iStd, RX.iStd, '','X');
+    row('drvx','Tw','T_w','ΣF·D/2000', f1(RX.SF)+'×'+f1(D)+'/2000', RX.Tw, 'N·m','X');
+    row('drvx','Tm','T_m','T_w/(i·η)', f1(RX.Tw)+'/('+f2(RX.i)+'×'+f2(RX.eta)+')', RX.Tm, 'N·m','X');
+    row('drvx','Fadh','F_μ','μ·M·g·(k/4)', f2(mu)+'×'+f1(M)+'×9.81×('+RX.k+'/4)', RX.Fadh, 'N','X');
+    if(!RX.iauto) row('drvx','vreal',"v'",'πD·n_m/(60i)', 'π×'+f3(D/1000)+'×'+f1(RX.nm)+'/(60×'+f2(RX.i)+')', RX.vEff, 'm/s','X');
+    // 行走 Y
+    row('drvy','SF','ΣF','F_f+F_g+F_a', f1(RY.Ff)+'+'+f1(RY.Fg)+'+'+f1(RY.Fa), RY.SF, 'N','Y');
+    row('drvy','Pv','P_v','(F_f+F_g)·v/η', '('+f1(RY.Ff+RY.Fg)+')×'+f2(RY.vEff)+'/'+f2(RY.eta), RY.Pv, 'W','Y');
+    row('drvy','Ppk','P_pk','ΣF·v/η', f1(RY.SF)+'×'+f2(RY.vEff)+'/'+f2(RY.eta), RY.Ppk, 'W','Y');
+    row('drvy','Pm1','P_m1','P_m/k', f1(RY.Pm)+'/'+RY.k, RY.PmOne, 'W','Y');
+    row('drvy','nw','n_w','60v/(πD/1000)', '60×'+f2(RY.vEff)+'/(π×'+f1(D)+'/1000)', RY.nw, 'rpm','Y');
+    row('drvy','i','i','n_m/n_w', f1(RY.nm)+'/'+f2(RY.nw), RY.i, '','Y');
+    row('drvy','Tm','T_m','T_w/(i·η)', f1(RY.Tw)+'/('+f2(RY.i)+'×'+f2(RY.eta)+')', RY.Tm, 'N·m','Y');
+    row('drvy','Fadh','F_μ','μ·M·g·(k/4)', f2(mu)+'×'+f1(M)+'×9.81×('+RY.k+'/4)', RY.Fadh, 'N','Y');
+    // 轮压
+    row('wheel','Nw','N','M·g·K_d/n_w', f1(M)+'×9.81×'+f2(Kd)+'/'+nW, N, 'N');
+    row('wheel','Estr','E*','E/(1-ν²)', f1(mat.e/1e6)+'/(1-'+f2(mat.nu)+'²)', Estr/1e6, 'MPa');
+    row('wheel','Ah','a_h','√(4NR/(πbE*))', '√(4×'+f1(N)+'×'+f4(D/2000)+'/(π×'+f3(bW/1000)+'×'+f1(Estr/1e6)+'e6))', aH*1000, 'mm');
+    row('wheel','Ac','A','2a_h·b', '2×'+f2(aH*1000)+'×'+f1(bW), Acont*1e6, 'mm²');
+    row('wheel','Pav','p_avg','N/A', f1(N)+'/'+f2(Acont*1e6), pAvg, 'MPa');
+    row('wheel','Pmx','p_max','4p_avg/π', '4×'+f2(pAvg)+'/π', pMax, 'MPa');
+    row('wheel','Nmx','N_max','N·(1+2e/B)', f1(N)+'×(1+2×'+f1(rp(p2,'e_off'))+'/'+f1(B)+')', Nmax, 'N');
+    // 顶升
+    row('lift','Fl','F_lift','m_lift·g·K_imp', f1(mLift)+'×9.81×'+f2(kImp), Fl, 'N');
+    row('lift','Vl','v_lift','h/t_lift', f1(hLift)+'/'+f1(tLift), vLift*1000, 'mm/s');
+    row('lift','Pl','P_lift','F·v/η_lift', f1(Fl)+'×'+f3(vLift)+'/'+f2(etaLift), Pl, 'W');
+    if(liftType==='hydraulic'){
+      row('lift','Dreq','d_req','√(4F/(πp))', '√(4×'+f1(Fl)+'/(π×'+f1(pSys)+'e6))', dReq, 'mm');
+      row('lift','Dstd','d_std','标准缸径圆整', '≥'+f1(dReq)+' → '+dStd, dStd, 'mm');
+      row('lift','Pact','p_act','4F/(πd²)', '4×'+f1(Fl)+'/(π×'+f1(dStd)+'²)', pAct, 'MPa');
+      row('lift','Acyl','A_cyl','πd²/4', 'π×'+f1(dStd)+'²/4', Acyl, 'mm²');
+      row('lift','Qh','Q_hyd','A·v·60000', f1(Acyl)+'e-6×'+f3(vLift)+'×60000', Qhyd, 'L/min');
+    }else{
+      const lead = (liftType==='cam'? hLift : pLead);
+      row('lift','Tq','T','F·P/(2πη)', f1(Fl)+'×'+f1(lead)+'/(2π×'+f2(etaLift)+')', Tq, 'N·m');
+    }
+    // 电池
+    row('batt','Ec','E_c','P_v·t + n·P_lift·t_lift', f1(RX.Pv)+'×'+f1(tTravel)+'/3600+'+nLiftCycle+'×'+f1(Pl)+'×'+f1(tLift)+'/3600', Ec, 'Wh');
+    row('batt','Eday','E_day','E_c·N_day', f1(Ec)+'×'+nDay+'/1000', Eday, 'kWh');
+    row('batt','Qreq','Q_req','E_day/(U·DOD·η_b)', f1(Eday*1000)+'/('+f1(U)+'×'+f2(dod)+'×'+f2(etaBat)+')', Qreq, 'Ah');
+    row('batt','Euse','E_use','Q·U·DOD·η_b', f1(Q)+'×'+f1(U)+'×'+f2(dod)+'×'+f2(etaBat), Euse, 'Wh');
+    row('batt','Nok','N_ok','E_use/E_c', f1(Euse)+'/'+f1(Ec), Nok, '次');
+    row('batt','Tt','t_travel','s_c/v', f1(sCycle)+'/'+f2(RX.vEff), tTravel, 's');
+    row('batt','Thr','T_end','N_ok·t_cycle/3600', f1(Nok)+'×'+f1(tCycle)+'/3600', hours, 'h');
+    row('batt','Nchg','N_chg','⌈E_day/(E_use·η_ch)⌉', '⌈'+f1(Eday*1000)+'/('+f1(Euse)+'×'+f2(etaCh)+')⌉', nChg, '次');
+    row('batt','Tchg','t_chg','Q·DOD/I_ch', f1(Q)+'×'+f2(dod)+'/'+f1(iCh), tChg, 'h');
+    // 稳定
+    row('stab','Hcg','H_cg,act','Σ(m_i·h_i)/M', '(('+f1(mLoad)+'+'+f1(mPallet)+')×'+f1(hCg)+'+'+f1(mSelf)+'×'+f1(hCgSelf)+')/'+f1(M), HcgAct, 'mm');
+    row('stab','Acx','a_crit,X','g·(A/2)/H_cg', '9.81×('+f1(A)+'/2)/'+f1(HcgAct), aCritX, 'm/s²');
+    row('stab','Kx','K_st,X','a_crit/a', f2(aCritX)+'/'+f2(RX.a), KstX, '');
+    row('stab','Acy','a_crit,Y','g·(B/2)/H_cg', '9.81×('+f1(B)+'/2)/'+f1(HcgAct), aCritY, 'm/s²');
+    row('stab','Ky','K_st,Y','a_crit/a', f2(aCritY)+'/'+f2(RY.a), KstY, '');
+    row('stab','Sb','s_b','v²/(2a_b)', f2(RX.vEff)+'²/(2×'+f2(RX.ab)+')', RX.sb, 'm');
+    row('stab','Fb','F_b','M·a_b', f1(M)+'×'+f2(RX.ab), RX.Fb, 'N');
+    row('stab','Tbk','T_b','F_b·D/2000/(i·η)', f1(RX.Fb)+'×'+f1(D)+'/2000/('+f2(RX.i)+'×'+f2(RX.eta)+')', RX.Tb, 'N·m');
+    // 结构
+    row('struct','Q','q','M·g·K_d/(n_b·L)', f1(M)+'×9.81×'+f2(Kd)+'/('+nBeam+'×'+f1(L)+')', q, 'N/mm');
+    row('struct','Mm','M_max','qL²/8', f2(q)+'×'+f1(L)+'²/8', Mmax, 'N·mm');
+    row('struct','Ix','I','(BH³-bh³)/12', '('+f1(bB)+'×'+f1(bH)+'³-'+f1(bIn)+'×'+f1(hIn)+'³)/12', Ix, 'mm⁴');
+    row('struct','Wx','W_x','2I/H', '2×'+f1(Ix)+'/'+f1(bH), Wx, 'mm³');
+    row('struct','Sig','σ','M_max/W_x', f1(Mmax)+'/'+f1(Wx), sigma, 'MPa');
+    row('struct','Dlt','δ','5qL⁴/(384EI)', '5×'+f2(q)+'×'+f1(L)+'⁴/(384×'+f1(bm.e)+'×'+f1(Ix)+')', delta, 'mm');
+    row('struct','Dlim','δ_lim','L/'+rp(p2,'defl_div'), f1(L)+'/'+rp(p2,'defl_div'), dLim, 'mm');
+    // 尺寸链
+    row('geo','Hdk','H_deck','H+t_fork', f1(H)+'+'+f1(tFork), Hdeck, 'mm');
+    row('geo','Gv','c_v','h_layer-(H_deck+h_cargo+h_lift+Δh)',
+      f1(rp(p2,'h_layer'))+'-('+f1(Hdeck)+'+'+f1(rp(p2,'h_cargo'))+'+'+f1(hLift)+'+'+f1(dh)+')', gapV, 'mm');
+    row('geo','Gs','c_side','(w_slot-w_fork)/2', '('+f1(rp(p2,'w_slot'))+'-'+f1(wFork)+')/2', gapSide, 'mm');
+    row('geo','Gc','c_cart','(w_slot-W)/2', '('+f1(rp(p2,'w_slot'))+'-'+f1(W)+')/2', gapCart, 'mm');
+    row('geo','Gmin','c_min','min(c_v,c_side,c_cart)', 'min('+f1(gapV)+','+f1(gapSide)+','+f1(gapCart)+')', gapMin, 'mm');
+    // 换向
+    row('sw','Tsw','t_sw','t_down+t_delay', f1(tLift)+'+'+f1(tDelay), tSw, 's');
+    row('sw','Tswc','t_cycle,sw','2t_lift+t_delay', '2×'+f1(tLift)+'+'+f1(tDelay), tSwCycle, 's');
+    row('sw','Rate','N_sw','3600/t_sw', '3600/'+f2(tSw), swRate, '次/h');
+    R.detail = DR;
+
+    /* ---------- 图表数据 ---------- */
+    const pxs = RX.prof, pys = RY.prof;
+    const vt = [], pt = [], ptLift = [];
+    let t = 0;
+    vt.push([0,0]); pt.push([0,0]); ptLift.push([0,0]);
+    const pushLeg = (T,pr)=>{
+      const t0 = t;
+      const seg = (tt,vv)=>{ vt.push([t0+tt,vv]); };
+      seg(pr.t1, pr.vp); seg(pr.t2, pr.vp); seg(pr.t3, 0);
+      // 功率：加速段峰值、匀速段匀速功率、减速段 0（回馈不计入）
+      const accP = (T.Ff+T.Fg+M*T.a)*T.vEff/T.eta/1000;
+      const cruP = (T.Ff+T.Fg)*T.vEff/T.eta/1000;
+      pt.push([t0,0]); pt.push([t0+pr.t1, accP]); pt.push([t0+pr.t2, cruP]); pt.push([t0+pr.t3, 0]);
+      ptLift.push([t0,0]); ptLift.push([t0+pr.t1,0]); ptLift.push([t0+pr.t2,0]); ptLift.push([t0+pr.t3,0]);
+      t = t0 + pr.t3;
+    };
+    pushLeg(RX, pxs);
+    // 顶升 1
+    vt.push([t,0]); pt.push([t,Pl/1000]); ptLift.push([t,Pl/1000]);
+    t += tLift;
+    vt.push([t,0]); pt.push([t,0]); ptLift.push([t,0]);
+    pushLeg(RY, pys);
+    vt.push([t,0]); pt.push([t,Pl/1000]); ptLift.push([t,Pl/1000]);
+    t += tLift;
+    vt.push([t,0]); pt.push([t,0]); ptLift.push([t,0]);
+
+    R.chart = {
+      vt, pt, ptLift, tEnd:t,
+      motor:{
+        nmX:RX.nm, nmY:RY.nm,
+        tAccX:RX.SF*(D/2000)/(RX.i*RX.eta), tAccY:RY.SF*(D/2000)/(RY.i*RY.eta),
+        pRatedX:pRatedX/1000, pRatedY:pRatedY/1000,
+        kX:RX.SF*(D/2000)/(RX.i*RX.eta)*RX.nm/9550/1000,
+        kY:RY.SF*(D/2000)/(RY.i*RY.eta)*RY.nm/9550/1000
+      }
+    };
+    R.meta.ok = R.status.fail===0;
+    return R;
+  }
+
+  /**
+   * 验收算例自检：m_load=1000 / m_pallet=30 / m_self=350 / v=1.5 / a=0.5 / D=125
+   * f=0.02 / α=0 / η=0.9 / n_m=3000 / k=1 / K_s=1.3
+   * 期望：M=1380、ΣF≈961、P_pk≈1.60kW、P_m≥2.08kW、n_w≈229、i≈13.1、T_w≈60、T_m≈5.1
+   */
+  function selfTest(){
+    const p = {};
+    FIELDS.forEach(f=>p[f.k]=f.def);
+    Object.assign(p,{ m_load:1000, m_pallet:30, m_self:350, x_v:1.5, x_a:0.5, D:125, x_f:0.02,
+      x_alpha:0, x_eta:0.9, x_nm:3000, x_k:1, x_ks:1.3, x_iauto:true });
+    const R = run(p), X = R.travel.x;
+    const exp = { M:1380, SF:961, Ppk:1601, Pm:2082, nw:229, i:13.1, Tw:60, Tm:5.1 };
+    const got = { M:R.load.M, SF:X.SF, Ppk:X.Ppk, Pm:X.Pm, nw:X.nw, i:X.i, Tw:X.Tw, Tm:X.Tm };
+    return Object.keys(exp).map(k=>({
+      k, exp:exp[k], got:got[k], dev:Math.abs(got[k]-exp[k])/exp[k]*100, ok:Math.abs(got[k]-exp[k])/exp[k]<0.02
+    }));
+  }
+
+  return { run, selfTest, profile, nearest };
+})();
+/* ===== [CALC:END] ===== */
+
+/* ===== [APP:START] ===== */
+/* ------------------------------------------------------------------ 状态 */
+const S = {
+  params:{}, lang:0, dirty:false, curId:null, res:null,
+  uPow:'auto', uForce:'auto', bad:new Set(), timer:0, draftTimer:0
+};
+const ONOFF = [['开','ON','ON'],['关','OFF','OFF']];
+const SEL_LABEL = {};
+
+function t(k, vars){
+  const a = T[k];
+  let s = a ? (a[S.lang] || a[0]) : k;
+  if(vars) Object.keys(vars).forEach(v=>{ s = String(s).split('{'+v+'}').join(vars[v]); });
+  return s;
+}
+const $ = id=>document.getElementById(id);
+const esc = s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function grpNum(n,d){
+  if(n===null||n===undefined||!isFinite(n)) return '—';
+  const s = Math.abs(n).toFixed(d);
+  const p = s.split('.');
+  p[0] = p[0].replace(/\B(?=(\d{3})+(?!\d))/g,',');
+  return (n<0?'-':'')+p.join('.');
+}
+function smart(n){
+  const a = Math.abs(n);
+  if(!isFinite(n)) return '—';
+  if(a>=10000) return grpNum(n,0);
+  if(a>=1000) return grpNum(n,0);
+  if(a>=100) return grpNum(n,1);
+  if(a>=10) return grpNum(n,2);
+  if(a>=1) return grpNum(n,3);
+  if(a>=0.01) return grpNum(n,3);
+  return grpNum(n,5);
+}
+function fmtPow(w){
+  if(S.uPow==='w' || (S.uPow==='auto' && Math.abs(w)<1000)) return {v:smart(w),u:'W'};
+  return {v:smart(w/1000),u:'kW'};
+}
+function fmtForce(n){
+  if(S.uForce==='kn' || (S.uForce==='auto' && Math.abs(n)>=10000)) return {v:smart(n/1000),u:'kN'};
+  return {v:smart(n),u:'N'};
+}
+function fmtVal(v,u){
+  if(u==='W') return fmtPow(v);
+  if(u==='N') return fmtForce(v);
+  if(u==='MPa') return {v:grpNum(v, Math.abs(v)<10?2:1), u:'MPa'};
+  return {v:smart(v), u:u||''};
+}
+
+/* ------------------------------------------------------------------ 存储 */
+const Store = {
+  KEY:'fourshuttle.schemes', LANG:'fourshuttle.lang', DRAFT:'fourshuttle.draft',
+  list(){
+    try{ const a = JSON.parse(localStorage.getItem(this.KEY)||'[]'); return Array.isArray(a)?a:[]; }catch(e){ return []; }
+  },
+  saveAll(a){ try{ localStorage.setItem(this.KEY, JSON.stringify(a)); }catch(e){ toast('localStorage 写入失败'); } },
+  get draft(){ try{ return JSON.parse(localStorage.getItem(this.DRAFT)||'null'); }catch(e){ return null; } },
+  set draft(o){ try{ o ? localStorage.setItem(this.DRAFT, JSON.stringify(o)) : localStorage.removeItem(this.DRAFT); }catch(e){} }
+};
+
+const DEFAULTS = ()=>{ const o={}; FIELDS.forEach(f=>o[f.k]=f.def); return o; };
+
+/* ------------------------------------------------------------------ 提示 */
+let tipEl, toastTimer;
+function toast(msg){
+  const el = $('toast'); el.textContent = msg; el.classList.add('on');
+  clearTimeout(toastTimer); toastTimer = setTimeout(()=>el.classList.remove('on'), 2200);
+}
+function markDirty(){
+  S.dirty = true; $('dirty').hidden = false;
+}
+
+/* ------------------------------------------------------------------ 参数区 */
+function fieldRow(f){
+  const wrap = document.createElement('div');
+  wrap.className = 'fld' + (f.type==='sel'?' sel':'');
+  wrap.dataset.k = f.k;
+
+  const lab = document.createElement('label');
+  const tipTxt = t('t.'+shortKey(f.k));
+  lab.innerHTML = '<span>'+esc(t('f.'+shortKey(f.k)))+'</span>'+
+    (tipTxt && tipTxt!=='t.'+shortKey(f.k) ? '<i class="q" data-tip="'+esc(tipTxt)+'">?</i>' : '');
+  wrap.appendChild(lab);
+
+  if(f.type==='sel'){
+    const sel = document.createElement('select');
+    f.opts.forEach(o=>{
+      const op = document.createElement('option');
+      op.value = String(o);
+      op.textContent = t('o.'+f.k+'.'+o) === 'o.'+f.k+'.'+o ? String(o) : t('o.'+f.k+'.'+o);
+      sel.appendChild(op);
+    });
+    sel.value = String(S.params[f.k]);
+    sel.addEventListener('change', ()=>{
+      S.params[f.k] = f.k==='n_w'||f.k==='n_beam' ? Number(sel.value) : sel.value;
+      if(f.k==='wheel_mat') applyMaterial(sel.value);
+      if(f.k==='lift_mode' || f.k==='x_iauto' || f.k==='y_iauto') syncMode(f.k);
+      markDirty(); schedule();
+    });
+    wrap.appendChild(sel);
+    const u = document.createElement('span'); u.className='u'; u.textContent = f.u||''; wrap.appendChild(u);
+    return wrap;
+  }
+
+  if(f.type==='bool'){
+    const sw = document.createElement('label'); sw.className='sw';
+    const inp = document.createElement('input'); inp.type='checkbox'; inp.checked = S.params[f.k]===true;
+    const i = document.createElement('i');
+    sw.appendChild(inp); sw.appendChild(i);
+    inp.addEventListener('change', ()=>{
+      S.params[f.k] = inp.checked; syncMode(f.k); markDirty(); schedule();
+    });
+    wrap.appendChild(sw);
+    const u = document.createElement('span'); u.className='u'; u.textContent = f.u||''; wrap.appendChild(u);
+    return wrap;
+  }
+
+  const inp = document.createElement('input');
+  inp.type='number'; inp.step = f.step; inp.min = f.min; inp.max = f.max;
+  inp.value = S.params[f.k];
+  inp.id = 'in_'+f.k;
+  inp.addEventListener('input', ()=>{
+    const raw = inp.value.trim();
+    const v = Number(raw);
+    if(raw==='' || !isFinite(v) || v<f.min || v>f.max){
+      inp.classList.add('bad'); S.bad.add(f.k);
+    }else{
+      inp.classList.remove('bad'); S.bad.delete(f.k);
+      S.params[f.k] = v; markDirty(); schedule();
+    }
+    updateBadPill();
+  });
+  inp.addEventListener('blur', ()=>{
+    if(!inp.classList.contains('bad')) inp.value = S.params[f.k];
+  });
+  wrap.appendChild(inp);
+  const u = document.createElement('span'); u.className='u'; u.textContent = f.u||''; wrap.appendChild(u);
+  return wrap;
+}
+
+function shortKey(k){
+  if(k.startsWith('x_')||k.startsWith('y_')) return k.slice(2);
+  return k;
+}
+
+function applyMaterial(key){
+  const m = CONFIG.materials[key]; if(!m) return;
+  S.params.x_f = m.f; S.params.y_f = m.f; S.params.p_allow = m.pAllow;
+  ['x_f','y_f','p_allow'].forEach(k=>{ const el = $('in_'+k); if(el) el.value = S.params[k]; });
+  toast(t('o.wheel_mat.'+key)+' → f='+m.f+' / p_allow='+m.pAllow+' MPa');
+}
+
+function syncMode(which){
+  const R = S.res; if(!R) return;
+  if(which==='x_iauto'||which==='y_iauto'){
+    const side = which[0];
+    if(S.params[side+'_iauto']){
+      S.params[side+'_i'] = Math.round(R.travel[side].i*1000)/1000;
+    }else{
+      S.params[side+'_v'] = Math.round(R.travel[side].vEff*1000)/1000;
+    }
+  }
+  if(which==='lift_mode'){
+    S.params.m_lift = Math.round(R.lift.mLift*10)/10;
+  }
+}
+
+/** 只读/回填字段：自动减速比 → i 只读；自动顶升质量 → m_lift 只读 */
+function syncComputed(){
+  const R = S.res; if(!R) return;
+  [['x','x_i','x_v'],['y','y_i','y_v']].forEach(([side,ik,vk])=>{
+    const iEl = $('in_'+ik), vEl = $('in_'+vk);
+    if(!iEl||!vEl) return;
+    if(S.params[side+'_iauto']){
+      iEl.disabled = true; iEl.value = R.travel[side].i.toFixed(3);
+      vEl.disabled = false; vEl.value = S.params[vk];
+    }else{
+      iEl.disabled = false; iEl.value = S.params[ik];
+      vEl.disabled = true; vEl.value = R.travel[side].vEff.toFixed(3);
+    }
+  });
+  const ml = $('in_m_lift');
+  if(ml){
+    if(S.params.lift_mode==='auto'){ ml.disabled = true; ml.value = R.lift.mLift.toFixed(0); }
+    else { ml.disabled = false; ml.value = S.params.m_lift; }
+  }
+}
+
+function buildParams(){
+  const root = $('params'); root.innerHTML='';
+  GROUPS.forEach(gr=>{
+    const det = document.createElement('details');
+    det.className='grp'; det.open = gr.open;
+    const fs = FIELDS.filter(f=>f.g===gr.id);
+    det.innerHTML = '<summary><span class="no">'+gr.no+'</span><span>'+esc(t('g.'+gr.id))+
+      '</span><span class="car">▶</span><span class="cnt">'+fs.length+'</span></summary>';
+    const rows = document.createElement('div'); rows.className='rows';
+    fs.forEach(f=>rows.appendChild(fieldRow(f)));
+    det.appendChild(rows);
+    root.appendChild(det);
+  });
+  syncComputed();
+}
+
+/* ------------------------------------------------------------------ 渲染 */
+function renderCards(R){
+  const box = $('cards'); box.innerHTML='';
+  R.cards.forEach(c=>{
+    let v,u;
+    if(c.u==='W'){ const x=fmtPow(c.val); v=x.v; u=x.u; }
+    else if(c.u==='N'){ const x=fmtForce(c.val); v=x.v; u=x.u; }
+    else if(c.u===''){ v=smart(c.val); u=''; }
+    else if(c.u==='MPa'){ v=grpNum(c.val,2); u='MPa'; }
+    else { v=smart(c.val); u=c.u; }
+    const div = document.createElement('div');
+    div.className='card '+(c.st||'');
+    div.innerHTML = '<div class="cl">'+esc(t('c.'+c.id))+'<em>'+esc(u)+'</em></div>'+
+      '<div class="cv">'+esc(v)+'<small>'+esc(u)+'</small></div>'+
+      '<div class="cs">'+esc(c.sub)+'</div>'+
+      (c.st==='fail'?'<span class="cf">FAIL</span>':(c.st==='warn'?'<span class="cf">WARN</span>':'' ));
+    box.appendChild(div);
+  });
+}
+
+function renderDetail(R){
+  const tb = $('detailTbl');
+  const gHead = { drvx:'g.drvx', drvy:'g.drvy', wheel:'grp.wheel', lift:'g.lift', batt:'g.batt',
+    stab:'grp.stab', struct:'grp.struct', geo:'grp.geo2', sw:'grp.sw' };
+  let h = '<thead><tr>'+
+    ['tbl.item','tbl.sym','tbl.formula','tbl.subst','tbl.result','tbl.unit']
+      .map(k=>'<th>'+esc(t(k))+'</th>').join('')+'</tr></thead><tbody>';
+  let last = '';
+  R.detail.forEach(d=>{
+    if(d.g!==last){
+      h += '<tr class="grprow"><td colspan="6">'+esc(t(gHead[d.g]||d.g))+'</td></tr>';
+      last = d.g;
+    }
+    const fv = fmtVal(d.val, d.u);
+    h += '<tr><td class="k">'+(d.side?'<span class="side">'+d.side+'</span>':'')+esc(t('d.'+d.id))+'</td>'+
+      '<td class="s">'+esc(d.sym)+'</td>'+
+      '<td class="f">'+esc(d.formula)+'</td>'+
+      '<td class="f">'+esc(d.subst)+'</td>'+
+      '<td class="n res">'+esc(fv.v)+'</td>'+
+      '<td class="s">'+esc(fv.u)+'</td></tr>';
+  });
+  tb.innerHTML = h+'</tbody>';
+  $('detailTag').textContent = R.detail.length+' 行';
+}
+
+function renderChecks(R){
+  const box = $('checks'); box.innerHTML='';
+  R.checks.forEach(c=>{
+    const fv = fmtVal(c.v,c.u), fl = fmtVal(c.l,c.u);
+    let reason = t('k.'+c.id+'.r', { v:fv.v+(fv.u?' '+fv.u:''), l:fl.v+(fl.u?' '+fl.u:''), p:c.pct.toFixed(1), n:(c.n!==undefined?c.n:'') });
+    if(c.ref!==undefined) reason = reason.replace('{ref}', smart(c.ref));
+    const div = document.createElement('div');
+    div.className='chk '+c.status;
+    div.innerHTML = '<span class="dot"></span>'+
+      '<span class="nm">'+esc(t('k.'+c.id+'.n'))+'</span>'+
+      '<span class="rs">'+reason+'</span>'+
+      '<span class="st">'+esc(t('st.'+c.status))+'</span>'+
+      (c.status!=='pass'?'<span class="ad">↳ '+esc(t('k.'+c.id+'.a'))+'</span>':'');
+    box.appendChild(div);
+  });
+  $('checkTag').textContent = t('sum.tpl',{p:R.status.pass,w:R.status.warn,f:R.status.fail});
+  const sum = $('statusSum');
+  sum.className = 'pill '+(R.status.fail?'bad':(R.status.warn?'warn':'ok'));
+  sum.textContent = t('sum.tpl',{p:R.status.pass,w:R.status.warn,f:R.status.fail});
+}
+
+function updateBadPill(){
+  const el = $('badPill');
+  if(!el) return;
+  if(S.bad.size){ el.hidden=false; el.textContent = t('msg.invalid',{n:S.bad.size}); }
+  else el.hidden = true;
+}
+
+/* ------------------------------------------------------------------ 图表 */
+const Charts = {
+  inst:{},
+  draw(R){
+    if(!window.Chart){
+      document.querySelectorAll('.cb .fb').forEach(f=>f.hidden=false);
+      return;
+    }
+    const C = window.Chart;
+    C.defaults.font.family = '"PingFang SC","Microsoft YaHei",system-ui,sans-serif';
+    C.defaults.font.size = 10;
+    C.defaults.color = '#5b6676';
+    C.defaults.animation = false;
+    C.defaults.plugins.legend.labels.boxWidth = 10;
+    C.defaults.plugins.legend.labels.boxHeight = 10;
+    const mk = (id,cfg)=>{
+      const el = document.querySelector('#'+id);
+      if(!el) return;
+      if(this.inst[id]){ this.inst[id].destroy(); delete this.inst[id]; }
+      this.inst[id] = new C(el.getContext('2d'), cfg);
+      const fb = el.parentNode.querySelector('.fb'); if(fb) fb.hidden = true;
+    };
+    const axis = (title)=>({ grid:{color:'#e6ebf2',drawBorder:false}, ticks:{maxTicksLimit:6},
+      title:{display:true,text:title,color:'#8b95a5',font:{size:10}} });
+
+    // 1. 速度-时间
+    mk('cSpeed',{
+      type:'line',
+      data:{ datasets:[{ label:t('chart.speed'), data:R.chart.vt.map(p=>({x:p[0],y:p[1]})),
+        borderColor:'#14568f', backgroundColor:'rgba(20,86,143,.10)', borderWidth:1.6, fill:true,
+        pointRadius:0, tension:0, stepped:false }] },
+      options:{ responsive:true, maintainAspectRatio:false, animation:false,
+        plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:c=>c.parsed.y.toFixed(2)+' m/s @ '+c.parsed.x.toFixed(2)+' s' } } },
+        scales:{ x:{ type:'linear', title:{display:true,text:t('chart.t'),color:'#8b95a5',font:{size:10}},
+          grid:{color:'#e6ebf2'}, ticks:{maxTicksLimit:8} },
+          y:{ beginAtZero:true, grid:{color:'#e6ebf2'}, title:{display:true,text:t('chart.v'),color:'#8b95a5',font:{size:10}} } } }
+    });
+
+    // 2. 功率-时间
+    mk('cPower',{
+      type:'line',
+      data:{ datasets:[
+        { label:t('chart.s1'), data:R.chart.pt.map(p=>({x:p[0],y:p[1]})), borderColor:'#14568f',
+          backgroundColor:'rgba(20,86,143,.09)', borderWidth:1.6, fill:true, pointRadius:0, tension:0 },
+        { label:t('chart.s2'), data:R.chart.ptLift.map(p=>({x:p[0],y:p[1]})), borderColor:'#b7791f',
+          borderWidth:1.4, borderDash:[4,3], fill:false, pointRadius:0, tension:0 }
+      ] },
+      options:{ responsive:true, maintainAspectRatio:false, animation:false,
+        plugins:{ legend:{position:'bottom',labels:{boxWidth:10,boxHeight:10,font:{size:10}}},
+          tooltip:{ callbacks:{ label:c=>c.dataset.label+': '+c.parsed.y.toFixed(2)+' kW' } } },
+        scales:{ x:{ type:'linear', title:{display:true,text:t('chart.t'),color:'#8b95a5',font:{size:10}},
+          grid:{color:'#e6ebf2'}, ticks:{maxTicksLimit:8} },
+          y:{ beginAtZero:true, grid:{color:'#e6ebf2'}, title:{display:true,text:t('chart.p'),color:'#8b95a5',font:{size:10}} } } }
+    });
+
+    // 3. 电机功率-转速工作点
+    const m = R.chart.motor;
+    const lineX = [{x:0,y:0},{x:m.nmX,y:m.tAccX*m.nmX/9550}];
+    const lineY = [{x:0,y:0},{x:m.nmY,y:m.tAccY*m.nmY/9550}];
+    const maxN = Math.max(m.nmX,m.nmY)*1.15;
+    mk('cMotor',{
+      type:'line',
+      data:{ datasets:[
+        { label:'X · '+t('chart.s3'), data:lineX, borderColor:'#14568f', borderWidth:1.6,
+          pointRadius:[0,4], pointBackgroundColor:'#14568f', fill:false, tension:0 },
+        { label:'Y · '+t('chart.s3'), data:lineY, borderColor:'#7c9cbf', borderWidth:1.6,
+          pointRadius:[0,4], pointBackgroundColor:'#7c9cbf', fill:false, tension:0 },
+        { label:t('chart.s4'), data:[{x:0,y:m.pRatedX},{x:maxN,y:m.pRatedX}], borderColor:'#8b95a5',
+          borderWidth:1.2, borderDash:[5,4], pointRadius:0, fill:false, tension:0 }
+      ] },
+      options:{ responsive:true, maintainAspectRatio:false, animation:false,
+        plugins:{ legend:{position:'bottom',labels:{boxWidth:10,boxHeight:10,font:{size:10}}},
+          tooltip:{ callbacks:{ label:c=>c.dataset.label+': '+c.parsed.y.toFixed(2)+' kW @ '+c.parsed.x.toFixed(0)+' rpm' } } },
+        scales:{ x:{ type:'linear', beginAtZero:true, max:maxN, title:{display:true,text:t('chart.n'),color:'#8b95a5',font:{size:10}},
+          grid:{color:'#e6ebf2'}, ticks:{maxTicksLimit:6} },
+          y:{ beginAtZero:true, title:{display:true,text:t('chart.p'),color:'#8b95a5',font:{size:10}},
+            grid:{color:'#e6ebf2'} } } }
+    });
+  }
+};
+
+/* ------------------------------------------------------------------ 计算调度 */
+function compute(){
+  const t0 = performance.now();
+  S.res = Calc.run(S.params);
+  renderCards(S.res);
+  renderDetail(S.res);
+  renderChecks(S.res);
+  Charts.draw(S.res);
+  syncComputed();
+  $('calcTime').textContent = (performance.now()-t0).toFixed(1)+' ms';
+  const blk = (S.res.status.fail?'bad':(S.res.status.warn?'warn':'ok'));
+  $('chartTag').textContent = blk==='ok'?'✓':'!';
+}
+function schedule(){
+  clearTimeout(S.timer);
+  S.timer = setTimeout(()=>{ compute(); persistDraft(); }, 250);
+}
+function persistDraft(){
+  clearTimeout(S.draftTimer);
+  S.draftTimer = setTimeout(()=>{
+    Store.draft = { name:$('schemeName').value, params:S.params, lang:S.lang, at:Date.now() };
+  }, 400);
+}
+
+/* ------------------------------------------------------------------ 打印 */
+function buildPrint(R){
+  const name = $('schemeName').value || '—';
+  const dt = new Date().toLocaleString();
+  const pv = (v,u)=>{ const x=fmtVal(v,u); return esc(x.v)+(x.u?' '+esc(x.u):''); };
+  let h = '<div class="pr-hd"><div class="pr-t">'+esc(t('app.title'))+'</div>'+
+    '<div class="pr-m">'+esc(name)+' · '+esc(dt)+'</div></div>';
+
+  h += '<h2>1. '+esc(t('out.params'))+'</h2>';
+  h += '<table class="pr-tbl pr-param"><tbody>';
+  const rows = FIELDS.map(f=>{
+    const side = f.k.startsWith('x_')?'X ':f.k.startsWith('y_')?'Y ':'';
+    let v;
+    if(f.type==='bool') v = ONOFF[S.params[f.k]===true?0:1][S.lang];
+    else if(f.type==='sel') v = t('o.'+f.k+'.'+S.params[f.k]);
+    else v = esc(S.params[f.k]);
+    return { n:side+t('f.'+shortKey(f.k)), v:String(v), u:f.u||'' };
+  });
+  for(let i=0;i<rows.length;i+=2){
+    const a = rows[i], b = rows[i+1];
+    h += '<tr><td class="pn">'+esc(a.n)+'</td><td class="pv">'+a.v+'</td><td class="pu">'+esc(a.u)+'</td>'+
+      (b?'<td class="pn">'+esc(b.n)+'</td><td class="pv">'+b.v+'</td><td class="pu">'+esc(b.u)+'</td>':'<td></td><td></td><td></td>')+'</tr>';
+  }
+  h += '</tbody></table>';
+
+  h += '<h2>2. 关键指标</h2><table class="pr-tbl"><tbody>';
+  for(let i=0;i<R.cards.length;i+=2){
+    const a=R.cards[i], b=R.cards[i+1];
+    const cell = c=>{
+      if(!c) return '<td></td><td></td>';
+      let v,u;
+      if(c.u==='W'){ const x=fmtPow(c.val); v=x.v;u=x.u; } else if(c.u==='N'){ const x=fmtForce(c.val); v=x.v;u=x.u; } else { v=smart(c.val); u=c.u; }
+      return '<td class="pn">'+esc(t('c.'+c.id))+'</td><td class="pv">'+esc(v)+(u?' <span class="pu">'+esc(u)+'</span>':'')+
+        (c.st&&c.st!=='pass'?' <span class="ps">'+esc(t('st.'+c.st))+'</span>':'')+'</td>';
+    };
+    h += '<tr>'+cell(a)+cell(b)+'</tr>';
+  }
+  h += '</tbody></table>';
+
+  h += '<h2>3. '+esc(t('out.checks'))+'</h2><table class="pr-tbl pr-chk"><tbody>';
+  R.checks.forEach(c=>{
+    const fv=fmtVal(c.v,c.u), fl=fmtVal(c.l,c.u);
+    let reason = t('k.'+c.id+'.r',{v:fv.v+' '+(fv.u||''),l:fl.v+' '+(fl.u||''),p:c.pct.toFixed(1),n:(c.n!==undefined?c.n:'')});
+    if(c.ref!==undefined) reason = reason.replace('{ref}', smart(c.ref));
+    h += '<tr class="st-'+c.status+'"><td class="pn">'+esc(t('k.'+c.id+'.n'))+'</td>'+
+      '<td class="ps">'+esc(t('st.'+c.status))+'</td>'+
+      '<td>'+reason+(c.status!=='pass'?'<br><i>'+esc(t('k.'+c.id+'.a'))+'</i>':'')+'</td></tr>';
+  });
+  h += '</tbody></table>';
+
+  h += '<h2>4. '+esc(t('out.detail'))+'</h2><table class="pr-tbl pr-dt"><thead><tr>'+
+    ['tbl.item','tbl.sym','tbl.formula','tbl.subst','tbl.result','tbl.unit'].map(k=>'<th>'+esc(t(k))+'</th>').join('')+
+    '</tr></thead><tbody>';
+  R.detail.forEach(d=>{
+    const fv = fmtVal(d.val,d.u);
+    h += '<tr><td>'+(d.side?d.side+' ':'')+esc(t('d.'+d.id))+'</td><td>'+esc(d.sym)+'</td><td>'+esc(d.formula)+'</td>'+
+      '<td>'+esc(d.subst)+'</td><td class="pv">'+esc(fv.v)+'</td><td>'+esc(fv.u)+'</td></tr>';
+  });
+  h += '</tbody></table>';
+
+  h += '<h2>5. '+esc(t('chart.speed'))+' / '+esc(t('chart.power'))+'</h2><div class="pr-charts">';
+  ['cSpeed','cPower','cMotor'].forEach(id=>{
+    const cv = $(id);
+    try{ if(cv && window.Chart){ h += '<img src="'+cv.toDataURL('image/png')+'" alt="">'; } }catch(e){}
+  });
+  h += '</div>';
+
+  h += '<div class="pr-foot">'+esc(t('app.notice'))+'</div>';
+  $('printRoot').innerHTML = h;
+}
+
+/* ------------------------------------------------------------------ 导出 */
+function download(name, content, mime){
+  const blob = new Blob([content], {type:mime||'application/json;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 500);
+}
+function summaryOf(R){
+  const c = {}; R.cards.forEach(x=>c[x.id]=x.val);
+  return { mass:c.mass, pm:c.pm, tm:c.tm, ratio:c.ratio, pmax:R.wheel.pMax, qreq:c.battcap,
+    hours:c.endurance, kst:c.kst, sbmm:c.brake, status:R.status };
+}
+function schemeObj(){
+  const R = S.res;
+  return { id:S.curId||('s'+Date.now()), schema:'fourshuttle', version:CONFIG.version,
+    name:$('schemeName').value||'未命名方案', createdAt:new Date().toISOString(),
+    updatedAt:new Date().toISOString(), params:JSON.parse(JSON.stringify(S.params)), summary:summaryOf(R) };
+}
+function saveScheme(forceNew){
+  let name = ($('schemeName').value||'').trim();
+  if(!name){ toast(t('msg.noname')); return; }
+  const list = Store.list();
+  let idx = list.findIndex(s=>s.id===S.curId);
+  if(idx>=0 && forceNew){ idx = -1; S.curId = null; }              // 另存为 → 新建条目
+  if(idx<0){
+    const dup = list.findIndex(s=>s.name===name);
+    if(dup>=0){
+      if(!forceNew && confirm(t('msg.dup'))){ idx = dup; }          // 覆盖同名
+      else { name = name+' (副本)'; }
+    }
+  }
+  if(idx>=0){
+    const o = schemeObj(); o.id = list[idx].id; o.createdAt = list[idx].createdAt; o.name = name;
+    list[idx] = o;
+  }else{
+    const o = schemeObj(); o.id = 's'+Date.now()+Math.floor(Math.random()*100); o.name = name;
+    list.push(o); S.curId = o.id;
+  }
+  $('schemeName').value = name;
+  Store.saveAll(list);
+  S.dirty = false; $('dirty').hidden = true;
+  Store.draft = null;
+  renderDrawer();
+  toast(t('msg.saved'));
+}
+function exportCsv(){
+  const R = S.res; const rows = [];
+  rows.push(['#', 'group','item','symbol','formula','substitution','value','unit']);
+  R.detail.forEach((d,i)=>rows.push([i+1, d.g, t('d.'+d.id), d.sym, d.formula, d.subst, d.val.toFixed(4), d.u]));
+  rows.push([]);
+  rows.push(['#','check','status','value','limit','margin %']);
+  R.checks.forEach((c,i)=>rows.push([i+1, t('k.'+c.id+'.n'), c.status, c.v.toFixed(3), c.l.toFixed(3), c.pct.toFixed(1)]));
+  const csv = '\uFEFF'+rows.map(r=>r.map(x=>{
+    const s = String(x===undefined?'':x);
+    return /[",\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s;
+  }).join(',')).join('\r\n');
+  download(($('schemeName').value||'scheme')+'.csv', csv, 'text/csv;charset=utf-8');
+  toast(t('msg.exported'));
+}
+function importJson(text){
+  let data;
+  try{ data = JSON.parse(text); }catch(e){ toast(t('msg.badfile')); return; }
+  let arr;
+  if(Array.isArray(data)) arr = data;
+  else if(data && Array.isArray(data.schemes)) arr = data.schemes;
+  else if(data && data.params) arr = [data];
+  else { toast(t('msg.badfile')); return; }
+  const list = Store.list(); let n = 0;
+  arr.forEach(o=>{
+    if(!o || typeof o!=='object' || !o.params || typeof o.params!=='object') return;
+    const p = DEFAULTS();
+    FIELDS.forEach(f=>{
+      const v = o.params[f.k];
+      if(v===undefined) return;
+      if(f.type==='bool') p[f.k] = v===true||v==='true';
+      else if(f.type==='sel') p[f.k] = String(v);
+      else { const num = Number(v); if(isFinite(num)) p[f.k] = Math.min(f.max,Math.max(f.min,num)); }
+    });
+    let name = String(o.name||'导入方案');
+    if(list.some(s=>s.name===name)){
+      name = confirm(t('msg.dup')) ? name : name+' (副本)';
+      if(list.some(s=>s.name===name)) name = name+' '+new Date().toLocaleTimeString();
+    }
+    const item = { id:'s'+Date.now()+Math.floor(Math.random()*1000), schema:'fourshuttle',
+      version:CONFIG.version, name, createdAt:o.createdAt||new Date().toISOString(),
+      updatedAt:new Date().toISOString(), params:p, summary:o.summary||null };
+    const i = list.findIndex(s=>s.name===name);
+    if(i>=0) list[i] = item; else list.push(item);
+    n++;
+  });
+  if(!n){ toast(t('msg.badfile')); return; }
+  Store.saveAll(list); renderDrawer(); toast(t('msg.imported',{n}));
+}
+
+/* ------------------------------------------------------------------ 方案抽屉 */
+function renderDrawer(){
+  const list = Store.list();
+  const box = $('schList');
+  if(!list.length){ box.innerHTML = '<div class="empty">'+esc(t('drawer.empty'))+'</div>'; return; }
+  box.innerHTML = '<div style="font-size:10.5px;color:#8b95a5;margin:0 2px 6px">'+esc(t('drawer.count',{n:list.length}))+'</div>'+
+    list.map(s=>{
+      const sm = s.summary||{};
+      const sb = [
+        sm.mass?('M '+smart(sm.mass)+' kg'):'',
+        sm.pm?('P '+(sm.pm/1000).toFixed(2)+' kW'):'',
+        sm.pmax?('p '+(sm.pmax).toFixed(1)+' MPa'):'',
+        sm.status?('✓'+(sm.status.pass||0)+' !'+(sm.status.warn||0)+' ✕'+(sm.status.fail||0)):''
+      ].filter(Boolean).join(' · ');
+      return '<div class="sch'+(s.id===S.curId?' cur':'')+'" data-id="'+s.id+'">'+
+        '<div class="sn">'+esc(s.name)+(s.id===S.curId?'<span class="cur">CURRENT</span>':'')+'</div>'+
+        '<div class="sm">'+(s.updatedAt?new Date(s.updatedAt).toLocaleString():'')+'</div>'+
+        '<div class="sm">'+esc(sb)+'</div>'+
+        '<div class="sb"><button data-op="load">'+esc(t('btn.load'))+'</button>'+
+        '<button data-op="copy">'+esc(t('btn.copy'))+'</button>'+
+        '<button data-op="rename">'+esc(t('btn.rename'))+'</button>'+
+        '<button data-op="del" class="del">'+esc(t('btn.del'))+'</button></div></div>';
+    }).join('');
+}
+function drawerOp(ev){
+  const btn = ev.target.closest('button[data-op]'); if(!btn) return;
+  const card = btn.closest('.sch'); const id = card.dataset.id;
+  const list = Store.list(); const i = list.findIndex(s=>s.id===id); if(i<0) return;
+  const op = btn.dataset.op;
+  if(op==='load'){
+    S.params = Object.assign(DEFAULTS(), list[i].params||{});
+    S.curId = id; $('schemeName').value = list[i].name;
+    S.dirty = false; $('dirty').hidden = true;
+    buildParams(); compute(); renderDrawer(); persistDraft();
+    toast(t('msg.loaded'));
+  }else if(op==='copy'){
+    const o = JSON.parse(JSON.stringify(list[i]));
+    o.id = 's'+Date.now(); o.name = list[i].name+' (副本)'; o.updatedAt = new Date().toISOString();
+    list.push(o); Store.saveAll(list); renderDrawer(); toast(t('msg.copied'));
+  }else if(op==='rename'){
+    const n = prompt(t('msg.rename'), list[i].name);
+    if(!n || !n.trim()) return;
+    list[i].name = n.trim(); Store.saveAll(list); renderDrawer();
+    if(S.curId===id) $('schemeName').value = n.trim();
+  }else if(op==='del'){
+    if(!confirm(t('btn.del')+' "'+list[i].name+'" ?')) return;
+    list.splice(i,1); Store.saveAll(list);
+    if(S.curId===id){ S.curId=null; }
+    renderDrawer(); toast(t('msg.deleted'));
+  }
+}
+
+/* ------------------------------------------------------------------ 示例 */
+const EXAMPLES = [
+  { key:'light', name:['1000 kg 轻载型','1000 kg light duty','1000 kg 軽載型'],
+    over:{} },
+  { key:'heavy', name:['1500 kg 重载型','1500 kg heavy duty','1500 kg 重載型'],
+    over:{ m_load:1500, m_self:520, D:150, b:60, B:950, A:1050, wheel_mat:'steel',
+      x_v:1.2, x_a:0.4, x_ab:0.7, y_v:1.0, y_a:0.35, y_ab:0.6,
+      x_k:2, y_k:2, x_p_rated:2.2, y_p_rated:2.2,
+      h_lift:200, t_lift:2.5, m_lift:2300, lift_mode:'manual',
+      U:80, Q:160, s_cycle:80, h_cargo:1400, h_layer:2000, h_cg:700,
+      p_allow:600, beam_mat:'Q345', beam_h:80, beam_b:80, beam_t:5 } }
+];
+
+/* ------------------------------------------------------------------ 初始化 */
+function bindEvents(){
+  $('langSel').addEventListener('change', e=>{
+    S.lang = Number(e.target.value);
+    localStorage.setItem(Store.LANG, String(S.lang));
+    document.documentElement.lang = ['zh-CN','en','ja'][S.lang];
+    applyStaticLang(); buildParams(); renderCards(S.res); renderDetail(S.res); renderChecks(S.res);
+    renderDrawer(); buildPrint(S.res);
+  });
+  $('uPow').addEventListener('change', e=>{ S.uPow=e.target.value; renderCards(S.res); renderDetail(S.res); renderChecks(S.res); buildPrint(S.res); });
+  $('uForce').addEventListener('change', e=>{ S.uForce=e.target.value; renderCards(S.res); renderDetail(S.res); renderChecks(S.res); buildPrint(S.res); });
+
+  $('btnSave').addEventListener('click', ()=>saveScheme(false));
+  $('btnSaveAs').addEventListener('click', ()=>{ S.curId=null; saveScheme(true); });
+  $('btnDrawer').addEventListener('click', ()=>{ $('drawer').hidden=false; renderDrawer(); });
+  $('btnDrawerClose').addEventListener('click', ()=>{ $('drawer').hidden=true; });
+  $('schList').addEventListener('click', drawerOp);
+  $('btnImport').addEventListener('click', ()=>$('fileIn').click());
+  $('btnImport2').addEventListener('click', ()=>$('fileIn').click());
+  $('fileIn').addEventListener('change', e=>{
+    const f = e.target.files[0]; if(!f) return;
+    const rd = new FileReader();
+    rd.onload = ()=>{ importJson(String(rd.result)); e.target.value=''; };
+    rd.readAsText(f);
+  });
+  $('btnExport').addEventListener('click', ()=>{
+    const o = schemeObj();
+    download((o.name||'scheme')+'.json', JSON.stringify({schema:'fourshuttle',version:CONFIG.version,schemes:[o]}, null, 2));
+    toast(t('msg.exported'));
+  });
+  $('btnExportAll').addEventListener('click', ()=>{
+    download('fourshuttle-all.json', JSON.stringify({schema:'fourshuttle',version:CONFIG.version,schemes:Store.list()}, null, 2));
+    toast(t('msg.exported'));
+  });
+  $('btnCsv').addEventListener('click', exportCsv);
+  $('btnPrint').addEventListener('click', ()=>{ buildPrint(S.res); setTimeout(()=>window.print(), 80); });
+  $('btnReset').addEventListener('click', ()=>{
+    if(!confirm(t('btn.reset')+' ?')) return;
+    S.params = DEFAULTS(); S.curId = null; S.bad.clear();
+    $('schemeName').value = '未命名方案';
+    buildParams(); compute(); markDirty(); persistDraft(); toast(t('msg.reset'));
+  });
+  $('btnExample').addEventListener('click', ()=>{
+    const k = $('exampleSel').value;
+    const ex = EXAMPLES.find(e=>e.key===k) || EXAMPLES[0];
+    S.params = Object.assign(DEFAULTS(), ex.over);
+    S.curId = null; $('schemeName').value = ex.name[S.lang];
+    S.bad.clear();
+    buildParams(); compute(); markDirty(); persistDraft();
+    toast(t('msg.example',{n:ex.name[S.lang]}));
+  });
+  $('exampleSel').addEventListener('change', ()=>{});
+  document.querySelectorAll('.blk>h3').forEach(h=>{
+    h.addEventListener('click', ()=>h.parentNode.classList.toggle('closed'));
+  });
+  // 悬浮提示
+  tipEl = $('tip');
+  document.addEventListener('mouseover', e=>{
+    const q = e.target.closest('.q');
+    if(!q){ return; }
+    tipEl.innerHTML = q.dataset.tip||'';
+    tipEl.hidden = false;
+    const r = q.getBoundingClientRect();
+    tipEl.style.left = Math.min(window.innerWidth-310, Math.max(8, r.left-10))+'px';
+    tipEl.style.top = Math.min(window.innerHeight-120, r.bottom+6)+'px';
+  });
+  document.addEventListener('mouseout', e=>{
+    if(e.target.closest && e.target.closest('.q')) tipEl.hidden = true;
+  });
+  window.addEventListener('beforeunload', e=>{
+    if(S.dirty){ e.preventDefault(); e.returnValue = t('msg.leave'); return t('msg.leave'); }
+  });
+}
+
+function applyStaticLang(){
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    const k = el.dataset.i18n;
+    const a = T[k]; if(a) el.textContent = a[S.lang]||a[0];
+  });
+  $('uPow').options[0].text = '功率 '+['自动','auto','自動'][S.lang];
+  $('uPow').options[1].text = ['kW','kW','kW'][S.lang];
+  $('uPow').options[2].text = ['W','W','W'][S.lang];
+  $('uForce').options[0].text = '力 '+['自动','auto','自動'][S.lang];
+  $('uForce').options[1].text = 'N'; $('uForce').options[2].text = 'kN';
+  $('btnExportAll').textContent = t('btn.exportAll');
+  $('btnImport2').textContent = t('btn.import');
+  $('btnDrawerClose').textContent = t('btn.close');
+}
+
+function init(){
+  S.lang = Number(localStorage.getItem(Store.LANG)||0);
+  if(![0,1,2].includes(S.lang)) S.lang = 0;
+  $('langSel').value = String(S.lang);
+  document.documentElement.lang = ['zh-CN','en','ja'][S.lang];
+
+  const draft = Store.draft;
+  if(draft && draft.params){
+    S.params = Object.assign(DEFAULTS(), draft.params);
+    $('schemeName').value = draft.name || '未命名方案';
+    S.dirty = true; $('dirty').hidden = false;
+  }else{
+    S.params = DEFAULTS();
+  }
+
+  // 示例下拉
+  const sel = $('exampleSel');
+  EXAMPLES.forEach(e=>{
+    const o = document.createElement('option'); o.value = e.key; o.textContent = e.name[S.lang];
+    sel.appendChild(o);
+  });
+
+  // 参数区下方补一个非法值提示位
+  const bp = document.createElement('span');
+  bp.id='badPill'; bp.className='pill bad'; bp.hidden=true;
+  document.querySelector('.outbar').insertBefore(bp, $('statusSum'));
+
+  applyStaticLang();
+  buildParams();
+  bindEvents();
+  compute();
+  renderDrawer();
+  buildPrint(S.res);
+
+  // 控制台自检（验收算例）
+  const st = Calc.selfTest();
+  const bad = st.filter(x=>!x.ok);
+  if(bad.length){ console.warn('[selfTest] 验收算例偏差超限', bad); }
+  else { console.info('[selfTest] 验收算例全部通过（偏差<2%）', st.map(x=>x.k+'='+x.got.toFixed(2))); }
+  window.__selfTest = st;
+}
+
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init);
+else init();
+/* ===== [APP:END] ===== */
+</script>
+</body>
+</html>
