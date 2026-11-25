@@ -133,6 +133,17 @@ input.inp-sm { width: 80px; }
 .seg-field .follow { display: inline-flex; align-items: center; gap: 2px; font-size: 0.95em; color: var(--text-muted); cursor: pointer; white-space: nowrap; }
 .seg-field .follow input[type="checkbox"] { margin: 0; width: 11px; height: 11px; accent-color: var(--primary); }
 .seg-field input[disabled] { background: var(--bg); color: var(--text-muted); cursor: not-allowed; }
+.seg-trans {
+  grid-column: 1 / -1; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  padding: 5px 7px; border-radius: 5px; background: var(--panel);
+  border: 1px dashed var(--border);
+}
+.seg-trans.trans-bad { border-color: #ffc9c9; background: var(--err-bg); }
+.seg-trans .trans-lbl { font-size: 0.72em; color: var(--text-muted); font-weight: 600; }
+.seg-trans select { width: auto; padding: 2px 4px; font-size: 0.78em; }
+.seg-trans input { width: 76px; padding: 2px 5px; font-size: 0.78em; }
+.seg-trans .trans-unit, .seg-trans .trans-eq { font-size: 0.72em; color: var(--text-muted); }
+.seg-trans .trans-warn { font-size: 0.72em; color: var(--warn); font-weight: 600; }
 .seg-field input, .seg-field select {
   width: 100%; min-width: 0; padding: 3px 5px; font-size: 0.8em;
   border: 1px solid var(--border); border-radius: 5px; background: var(--panel); color: var(--text);
@@ -578,6 +589,14 @@ Object.assign(I18N.zh, {
   rollerCount: "滚子数量", unitPcs: "个", rollerAngles: "相对角度",
   camSpeed: "凸轮转速",
   followDefault: "跟随",
+  segTransLbl: "过渡",
+  transByRatio: "比例",
+  transByLength: "长度",
+  transTooShort: "过渡 {l} mm < 最小 {d} mm",
+  alertTransShort: "第 {seg} 段梯形过渡长度 {l} mm 小于最小允许值 {d} mm（由滚子直径决定），当前 {cur}%，建议不小于 {r}%。",
+  sugTransShort: "将过渡比例增大到 {r}% 以上，或增大该段转角/基圆直径，或减小滚子直径。",
+  alertTransImpossible: "第 {seg} 段转角过小或滚子直径过大：最小过渡长度已超过该段弧长的 49%，无法形成有效梯形过渡（弧长 {arc} mm，滚子直径 {d} mm）。",
+  sugTransImpossible: "增大该段转角或基圆直径，或减小滚子直径，或改用其他运动规律。",
   phRollerAngles: "留空则自动均布，例如 0, 180",
   segHint: "勾选「跟随」沿用工况与受力中的转速/负载质量；取消后可单独设置，再次勾选恢复默认。",
   segNameLbl: "段名", segAngleLbl: "转角 (°)", segLiftLbl: "升程 (mm)",
@@ -618,6 +637,14 @@ Object.assign(I18N.en, {
   rollerCount: "Roller count", unitPcs: "pcs", rollerAngles: "Relative angles",
   camSpeed: "Cam speed",
   followDefault: "Follow",
+  segTransLbl: "Blend",
+  transByRatio: "Ratio",
+  transByLength: "Length",
+  transTooShort: "Blend {l} mm < min {d} mm",
+  alertTransShort: "Segment {seg}: trapezoid blend length {l} mm is below the minimum {d} mm (set by roller diameter); current {cur}%, recommended ≥ {r}%.",
+  sugTransShort: "Increase the blend ratio to at least {r}%, or enlarge the segment angle / base diameter, or reduce the roller diameter.",
+  alertTransImpossible: "Segment {seg}: the minimum blend length exceeds 49% of the segment arc, so a valid trapezoid cannot be formed (arc {arc} mm, roller dia {d} mm).",
+  sugTransImpossible: "Increase the segment angle or base diameter, reduce the roller diameter, or choose another motion law.",
   phRollerAngles: "Blank = auto distribute, e.g. 0, 180",
   segHint: "Check Follow to inherit speed/load mass from Load & Force; uncheck to set separately, re-check to restore the default.",
   segNameLbl: "Name", segAngleLbl: "Angle (°)", segLiftLbl: "Lift (mm)",
@@ -658,6 +685,14 @@ Object.assign(I18N.ja, {
   rollerCount: "ローラ数", unitPcs: "個", rollerAngles: "相対角度",
   camSpeed: "カム回転数",
   followDefault: "追従",
+  segTransLbl: "遷移",
+  transByRatio: "比率",
+  transByLength: "長さ",
+  transTooShort: "遷移 {l} mm < 最小 {d} mm",
+  alertTransShort: "第 {seg} 区間：台形の遷移長さ {l} mm が最小値 {d} mm（ローラ径で決定）未満です。現在 {cur}%、{r}% 以上を推奨。",
+  sugTransShort: "遷移比率を {r}% 以上に増やすか、区間角度/基円径を大きくするか、ローラ径を小さくしてください。",
+  alertTransImpossible: "第 {seg} 区間：最小遷移長さが区間弧長の 49% を超え、有効な台形遷移を形成できません（弧長 {arc} mm、ローラ径 {d} mm）。",
+  sugTransImpossible: "区間角度または基円径を大きくするか、ローラ径を小さくするか、別の運動規則を選択してください。",
   phRollerAngles: "空欄なら自動等配、例：0, 180",
   segHint: "「追従」をオンにすると荷重・力の回転数/負荷質量を継承します。オフで個別設定、再度オンで既定に戻ります。",
   segNameLbl: "名前", segAngleLbl: "角度 (°)", segLiftLbl: "リフト (mm)",
@@ -1122,6 +1157,34 @@ const App = {
       const defMass = parseFloat((document.getElementById('p_loadMass') || {}).value);
       const speedDisp = speedFollow ? defSpeed : seg.speed;
       const massDisp = massFollow ? (isNaN(defMass) ? '' : defMass) : seg.mass;
+
+      // 梯形过渡可编辑行（比例 / 长度）
+      let transRow = '';
+      if (seg.law === 'trap_cubic' || seg.law === 'mod_trap') {
+        const RbNow = (parseFloat((document.getElementById('p_baseDia') || {}).value) || 80) / 2;
+        const rollerDia = parseFloat((document.getElementById('p_rollerDia') || {}).value) || 8;
+        const arc = RbNow * Math.abs(seg.angle) * Math.PI / 180;
+        const mode = seg.transitionMode === 'length' ? 'length' : 'ratio';
+        const tr = this.getSegTr(seg, RbNow);
+        const lenMm = tr * arc;
+        const minPct = arc > 0 ? (rollerDia / arc * 100) : 0;
+        const bad = lenMm + 1e-9 < rollerDia;
+        const val = mode === 'length'
+          ? (seg.transitionLength > 0 ? seg.transitionLength : lenMm).toFixed(2)
+          : (tr * 100).toFixed(2);
+        transRow = `<div class="seg-trans ${bad ? 'trans-bad' : ''}">
+          <span class="trans-lbl">${this.t('segTransLbl')}</span>
+          <select onchange="App.setTransMode(${i},this.value)">
+            <option value="ratio" ${mode === 'ratio' ? 'selected' : ''}>${this.t('transByRatio')}</option>
+            <option value="length" ${mode === 'length' ? 'selected' : ''}>${this.t('transByLength')}</option>
+          </select>
+          <input type="number" min="0.01" step="0.5" value="${val}" onchange="App.setTransValue(${i},this.value)">
+          <span class="trans-unit">${mode === 'ratio' ? '%' : 'mm'}</span>
+          <span class="trans-eq">${mode === 'ratio' ? '≈ ' + lenMm.toFixed(2) + ' mm' : '≈ ' + (tr * 100).toFixed(1) + ' %'}</span>
+          ${bad ? `<span class="trans-warn">${this.t('transTooShort', { l: lenMm.toFixed(2), d: rollerDia.toFixed(2) })}</span>` : ''}
+        </div>`;
+      }
+
       return `<div class="seg-card" data-idx="${i}">
         <div class="seg-head">
           <span class="seg-idx">${i + 1}</span>
@@ -1134,7 +1197,7 @@ const App = {
           <label class="seg-field"><span>${this.t('segLiftLbl')}</span>
             <input type="number" value="${seg.lift}" step="0.5" onchange="App.state.segments[${i}].lift=+this.value"></label>
           <label class="seg-field"><span>${this.t('segLawLbl')}</span>
-            <select onchange="App.state.segments[${i}].law=this.value">${lawOpts}</select></label>
+            <select onchange="App.state.segments[${i}].law=this.value;App.renderSegTable()">${lawOpts}</select></label>
           <label class="seg-field"><span class="seg-lbl">${this.t('segSpeedLbl')}
               <span class="follow"><input type="checkbox" ${speedFollow ? 'checked' : ''} onchange="App.toggleSegFollow(${i},'speed',this.checked)">${this.t('followDefault')}</span></span>
             <input type="number" value="${speedDisp}" step="10" min="1" ${speedFollow ? 'disabled' : ''}
@@ -1145,6 +1208,7 @@ const App = {
               onchange="App.state.segments[${i}].mass = +this.value"></label>
           <label class="seg-field"><span>${this.t('segCumLbl')}</span>
             <div class="seg-static">${i === 0 ? '—' : cum + '°'}</div></label>
+          ${transRow}
         </div>
       </div>`;
     }).join('');
@@ -1173,7 +1237,45 @@ const App = {
     this.renderSegTable();
   },
 
-  /* -------- 核心计算 -------- */
+  // 有效过渡比例（每端占整段比例）：支持按比例或按弧长(mm)输入
+  getSegTr(seg, Rb) {
+    const arc = Rb * Math.abs(seg.angle) * Math.PI / 180;
+    let tr;
+    if (seg.transitionMode === 'length' && seg.transitionLength > 0 && arc > 0) {
+      tr = seg.transitionLength / arc;
+    } else {
+      tr = (seg.transitionRatio != null ? seg.transitionRatio : 0.125);
+    }
+    return Math.min(Math.max(tr, 0.001), 0.49);
+  },
+
+  setTransMode(i, mode) {
+    const seg = this.state.segments[i];
+    const Rb = (parseFloat((document.getElementById('p_baseDia') || {}).value) || 80) / 2;
+    const arc = Rb * Math.abs(seg.angle) * Math.PI / 180;
+    if (mode === 'length') {
+      if (!(seg.transitionLength > 0)) {
+        const tr = (seg.transitionRatio != null ? seg.transitionRatio : 0.125);
+        seg.transitionLength = +(tr * arc).toFixed(2);
+      }
+    } else if (arc > 0 && !(seg.transitionRatio > 0)) {
+      seg.transitionRatio = +((seg.transitionLength || 0) / arc).toFixed(4);
+    }
+    seg.transitionMode = (mode === 'length' ? 'length' : 'ratio');
+    this.renderSegTable();
+  },
+
+  setTransValue(i, val) {
+    const seg = this.state.segments[i];
+    const v = parseFloat(val);
+    if (!isFinite(v) || v <= 0) return;
+    if (seg.transitionMode === 'length') {
+      seg.transitionLength = v;
+    } else {
+      seg.transitionRatio = v / 100;
+    }
+    this.renderSegTable();
+  },
   compute() {
     const p = this.getParamFields();
     const segs = this.state.segments;
@@ -1211,7 +1313,7 @@ const App = {
         const phi_in_seg = tau * phimax;
         const phi_abs = pts.length > 0 ? pts[pts.length - 1].phi + dphi : 0;
         // 用 MotionLaws 计算相对增量
-        const rel = MotionLaws.compute(seg.law, tau, Math.abs(hSeg), phimax, { transitionRatio: seg.transitionRatio || 0.125 });
+        const rel = MotionLaws.compute(seg.law, tau, Math.abs(hSeg), phimax, { transitionRatio: this.getSegTr(seg, Rb) });
         // 位移: s0 ± 量
         let ds = rel.s;
         if (hSeg < 0) ds = -rel.s;
@@ -1353,6 +1455,33 @@ const App = {
         suggestion: this.t('sugCurvature')
       });
     }
+
+    // 梯形过渡长度校核（按滚子直径）
+    segs.forEach((seg, si) => {
+      if (seg.law !== 'trap_cubic' && seg.law !== 'mod_trap') return;
+      const arc = Rb * Math.abs(seg.angle) * Math.PI / 180;
+      if (arc <= 0) return;
+      const tr = this.getSegTr(seg, Rb);
+      const L = tr * arc;
+      const Lmin = p.rollerDia;
+      const trMin = Lmin / arc;
+      if (trMin >= 0.49) {
+        alerts.push({
+          level: 'E',
+          text: this.t('alertTransImpossible', { seg: si + 1, d: Lmin.toFixed(2), arc: arc.toFixed(2) }),
+          suggestion: this.t('sugTransImpossible')
+        });
+      } else if (L + 1e-6 < Lmin) {
+        alerts.push({
+          level: 'W',
+          text: this.t('alertTransShort', {
+            seg: si + 1, l: L.toFixed(2), d: Lmin.toFixed(2),
+            cur: (tr * 100).toFixed(1), r: (trMin * 100).toFixed(1)
+          }),
+          suggestion: this.t('sugTransShort', { r: (trMin * 100).toFixed(1) })
+        });
+      }
+    });
 
     // 跃度不连续
     for (let i = 1; i < pts.length; i++) {
