@@ -2706,11 +2706,11 @@ const App = {
 
     const pts = this.state.points;
     const p = this.state.params;
+    const vls = this.vizLayers();
     const RbBase = p.baseDia / 2;
     const Rb = (this.state.camType === 'compound' && this.state.layerStore[0] && this.state.layerStore[0].params)
       ? Math.max(RbBase, this.state.layerStore[0].params.baseDia / 2) : RbBase;
-    const camLen = p.camWidth;
-    const vls = this.vizLayers();
+    const camLen = vls.reduce((m, vl) => Math.max(m, vl.p.camWidth), p.camWidth);
 
     // 正交投影 + 自动适配画布 + 手动视角（拖动旋转）
     const { alpha, beta } = this.state.view3d;
@@ -2756,28 +2756,20 @@ const App = {
       Y: X * Math.sin(phase) + Y * Math.cos(phase)
     });
 
-    // 画圆柱基体外框（两个圆环 + 两条母线）
-    const drawCylinder = (R, color) => {
-      const seg = 64;
-      // 前盖 (z = 0)
-      ctx.strokeStyle = color; ctx.lineWidth = 1.2;
-      ctx.beginPath();
-      for (let k = 0; k <= seg; k++) {
-        const theta = 2 * Math.PI * k / seg;
-        const { X, Y } = rotate(R * Math.cos(theta), R * Math.sin(theta));
-        const pt = project(X, Y, 0);
-        if (k === 0) ctx.moveTo(pt.x, pt.y); else ctx.lineTo(pt.x, pt.y);
-      }
-      ctx.stroke();
-      // 后盖 (z = camLen)
-      ctx.beginPath();
-      for (let k = 0; k <= seg; k++) {
-        const theta = 2 * Math.PI * k / seg;
-        const { X, Y } = rotate(R * Math.cos(theta), R * Math.sin(theta));
-        const pt = project(X, Y, camLen);
-        if (k === 0) ctx.moveTo(pt.x, pt.y); else ctx.lineTo(pt.x, pt.y);
-      }
-      ctx.stroke();
+    // 画圆柱基体外框（前后两个圆）
+    const drawCylinder = (R, color, z0 = 0, z1 = camLen, lw = 1.2) => {
+      const seg = 72;
+      ctx.strokeStyle = color; ctx.lineWidth = lw;
+      [z0, z1].forEach(z => {
+        ctx.beginPath();
+        for (let k = 0; k <= seg; k++) {
+          const theta = 2 * Math.PI * k / seg;
+          const { X, Y } = rotate(R * Math.cos(theta), R * Math.sin(theta));
+          const pt = project(X, Y, z);
+          if (k === 0) ctx.moveTo(pt.x, pt.y); else ctx.lineTo(pt.x, pt.y);
+        }
+        ctx.stroke();
+      });
     };
 
     // 画轴（中心 + 两条母线）
