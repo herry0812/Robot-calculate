@@ -1403,9 +1403,11 @@ const App = {
         const a = rel.a * sign;
         const j = rel.j * sign;
 
-        // 压力角 α = arctan( |ds/(Rb*dφ)| ) = arctan( |v / Rb| )
-        // v 单位 mm/°, α = arctan(|v| / Rb)
-        const alphaRad = Math.atan(Math.abs(v) / Math.max(Rb, 0.1));
+        // 压力角：α = arctan( |ds/dx| )，x = Rb·φ(rad)
+        // v 的单位是 mm/°，需换成 mm/rad 再除以 Rb
+        const vRad = v * (180 / Math.PI);          // mm/rad
+        const aRad = a * (180 / Math.PI) * (180 / Math.PI); // mm/rad²
+        const alphaRad = Math.atan(Math.abs(vRad) / Math.max(Rb, 0.1));
         const alphaDeg = alphaRad * 180 / Math.PI;
 
         // 理论轮廓坐标 (圆柱展开)
@@ -1417,11 +1419,11 @@ const App = {
         // 法线方向: 对 (x_theory, y_theory)，切线方向由 ds/dφ 决定
         // 切线斜率 dy/dx = (ds/dφ) / (Rb) = v / Rb
         // 法线方向 = (-dy/dx, 1) 归一化
-        const tx = Rb;           // dx/dφ = Rb
-        const ty = v;            // dy/dφ = ds/dφ
-        const norm = Math.sqrt(tx * tx + ty * ty);
-        const nx = -ty / norm;   // 法线 x（向内偏移方向）
-        const ny = tx / norm;    // 法线 y
+        // 切线/法线：dx/dφ(deg) = Rb·π/180，dy/dφ(deg) = v (mm/°)
+        const dxd = Rb * Math.PI / 180;
+        const norm = Math.sqrt(dxd * dxd + v * v);
+        const nx = -v / norm;    // 法线 x
+        const ny = dxd / norm;   // 法线 y
         const x_work = x_theory + dR * nx;
         const y_work = y_theory + dR * ny;
 
@@ -1443,6 +1445,7 @@ const App = {
         // 实际线速度/加速度：v 单位 mm/°，a 单位 mm/°²
         const v_dyn = v * omegaDeg;                   // mm/s
         const a_dyn = a * omegaDeg * omegaDeg;        // mm/s²
+        const j_dyn = j * omegaDeg * omegaDeg * omegaDeg; // mm/s³
         // 合力：重力（负载质量，按段可单独设置）+ 弹簧力 + 惯性力
         const g = 9.81;
         const segMass = (seg.mass === null || seg.mass === undefined) ? p.loadMass : seg.mass;
@@ -1470,7 +1473,8 @@ const App = {
         pts.push({
           phi: phi_abs, phiRad: phi_r,
           s: s_abs, v, a, j,
-          alphaDeg, alphaRad,
+          v_s: v_dyn, a_s: a_dyn, j_s: j_dyn,
+          alphaDeg, alphaRad, vRad, aRad,
           x_theory, y_theory,
           x_work, y_work,
           x3d_th: hx_hex, y3d_th: hy_hex, z3d_th: hz_hex,
@@ -1522,10 +1526,11 @@ const App = {
       });
     }
 
-    // 曲率半径自交检查
+    // 曲率半径自交检查（v/a 换算到 mm/rad、mm/rad² 后计算）
     let minRadius = Infinity;
     for (const pt of pts) {
-      const rho = Math.pow(Rb * Rb + pt.v * pt.v, 1.5) / Math.abs(Rb * pt.a + 1e-12);
+      const vR = pt.vRad, aR = pt.aRad;
+      const rho = Math.pow(Rb * Rb + vR * vR, 1.5) / Math.abs(Rb * aR + 1e-12);
       if (rho < minRadius && rho > 0.1) minRadius = rho;
     }
     if (minRadius < p.rollerDia / 2) {
@@ -1669,9 +1674,9 @@ const App = {
 
     const rows = [
       { key: 's', label: 's', name: this.t('legS'), unit: 'mm', v: '--line-s' },
-      { key: 'v', label: 'v', name: this.t('legV'), unit: 'mm/°', v: '--line-v' },
-      { key: 'a', label: 'a', name: this.t('legA'), unit: 'mm/°²', v: '--line-a' },
-      { key: 'j', label: 'j', name: this.t('legJ'), unit: 'mm/°³', v: '--line-j' },
+      { key: 'v_s', label: 'v', name: this.t('legV'), unit: 'mm/s', v: '--line-v' },
+      { key: 'a_s', label: 'a', name: this.t('legA'), unit: 'mm/s²', v: '--line-a' },
+      { key: 'j_s', label: 'j', name: this.t('legJ'), unit: 'mm/s³', v: '--line-j' },
       { key: 'alphaDeg', label: 'α', name: this.t('legAlpha'), unit: '°', v: '--line-alpha', nonNeg: true },
       { key: 'forceAxial', label: 'F', name: this.t('legFaxial'), unit: 'N', v: '--line-force', nonNeg: true, fold: true },
       { key: 'forceN', label: 'N', name: this.t('legN'), unit: 'N', v: '--line-norm', nonNeg: true, fold: true }
@@ -2272,9 +2277,10 @@ const App = {
   exportCSV() {
     const pts = this.state.points;
     if (!pts || pts.length === 0) { alert(this.t('needCompute')); return; }
-    const headers = ['#', 'phi_deg', 's_mm', 'v_mm_per_deg', 'a_mm_per_deg2', 'j_mm_per_deg3', 'alpha_deg', 'torque_Nmm', 'force_N', 'force_axial_N', 'x_theory_mm', 'y_theory_mm', 'x_work_mm', 'y_work_mm', 'segIdx', 'segName'];
+    const headers = ['#', 'phi_deg', 's_mm', 'v_mm_per_deg', 'a_mm_per_deg2', 'j_mm_per_deg3', 'v_mm_per_s', 'a_mm_per_s2', 'j_mm_per_s3', 'alpha_deg', 'torque_Nm', 'force_N', 'force_axial_N', 'x_theory_mm', 'y_theory_mm', 'x_work_mm', 'y_work_mm', 'segIdx', 'segName'];
     const rows = pts.map((pt, i) => [
       i, pt.phi.toFixed(4), pt.s.toFixed(4), pt.v.toFixed(5), pt.a.toFixed(5), pt.j.toFixed(6),
+      pt.v_s.toFixed(4), pt.a_s.toFixed(4), pt.j_s.toFixed(3),
       pt.alphaDeg.toFixed(3), pt.torqueNmm.toFixed(3), pt.forceN.toFixed(3), pt.forceAxial.toFixed(3),
       pt.x_theory.toFixed(4), pt.y_theory.toFixed(4), pt.x_work.toFixed(4), pt.y_work.toFixed(4),
       pt.segIdx, pt.segName
@@ -2332,7 +2338,7 @@ const App = {
       // 叠加轮廓切向
       const tx = -Math.sin(phi_rad);
       const ty = Math.cos(phi_rad);
-      const t = pt.v / Math.sqrt(Rb * Rb + pt.v * pt.v);
+      const t = pt.vRad / Math.sqrt(Rb * Rb + pt.vRad * pt.vRad);
       // 法线方向 = 径向向外 - 切向分量（因为轮廓上升，法线有切向偏移）
       const normalX = nx - t * tx;
       const normalY = ny - t * ty;
