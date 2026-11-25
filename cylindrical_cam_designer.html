@@ -227,6 +227,21 @@ hr.section { border: none; border-top: 1px solid var(--border); margin: 14px 0; 
 .field-label-row { display: flex; align-items: center; justify-content: space-between; }
 .panel-hint { font-size: 0.75em; color: var(--text-muted); margin-top: 6px; line-height: 1.45; }
 
+/* 运动曲线：行显示开关 */
+.row-toggles { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 10px; }
+.row-toggles .rt-label { font-size: 0.8em; color: var(--text-muted); margin-right: 2px; }
+.row-toggles .rt-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 0.8em; padding: 3px 10px; border: 1px solid var(--border);
+  border-radius: 14px; background: var(--panel); cursor: pointer; user-select: none;
+  transition: border-color 0.15s, background 0.15s;
+}
+.row-toggles .rt-chip:hover { border-color: var(--primary); }
+.row-toggles .rt-chip input[type="checkbox"] { width: auto; margin: 0; accent-color: var(--primary); }
+.row-toggles .rt-chip span { color: var(--text-dim); }
+.row-toggles .rt-chip:has(input:not(:checked)) { background: var(--bg); border-style: dashed; }
+.row-toggles .rt-chip:has(input:not(:checked)) span { color: var(--text-muted); }
+
 /* ========== 滚动条 ========== */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
@@ -418,6 +433,16 @@ hr.section { border: none; border-top: 1px solid var(--border); margin: 14px 0; 
       </div>
 
       <div id="viz-curves" class="viz-pane">
+        <div class="row-toggles" id="rowToggles">
+          <span class="rt-label" data-i18n="cvShow">显示</span>
+          <label class="rt-chip"><input type="checkbox" data-row="s" checked><span data-i18n="legS">位置</span></label>
+          <label class="rt-chip"><input type="checkbox" data-row="v_s" checked><span data-i18n="legV">速度</span></label>
+          <label class="rt-chip"><input type="checkbox" data-row="a_s" checked><span data-i18n="legA">加速度</span></label>
+          <label class="rt-chip"><input type="checkbox" data-row="j_s" checked><span data-i18n="legJ">跃度</span></label>
+          <label class="rt-chip"><input type="checkbox" data-row="alphaDeg" checked><span data-i18n="legAlpha">压力角</span></label>
+          <label class="rt-chip"><input type="checkbox" data-row="forceAxial" checked><span data-i18n="legFaxial">沿运动方向</span></label>
+          <label class="rt-chip"><input type="checkbox" data-row="forceN" checked><span data-i18n="legN">法向正压力</span></label>
+        </div>
         <div class="canvas-wrap"><canvas id="cvCurves" width="900" height="1260"></canvas></div>
         <p class="panel-hint" data-i18n="cvProbeHint">在曲线上移动或拖动鼠标，查看该角度各参数数值</p>
       </div>
@@ -587,7 +612,7 @@ Object.assign(I18N.zh, {
   alertLowRes: "分度分辨率偏低（{res} 点/转）",
   sugLowRes: "建议提高到 72–144 点/转以获得平滑曲线；STEP 曲面导出建议 288 点/转以上。",
   cvPhi: "凸轮转角 φ (°)", cvArc: "展开弧长 (mm)", cvAxial: "轴向位移 s (mm)",
-  cvProbeHint: "在曲线上移动或拖动鼠标，查看该角度各参数数值", cvFoldMin: "最小", cvFoldMax: "最大",
+  cvProbeHint: "在曲线上移动或拖动鼠标，查看该角度各参数数值", cvFoldMin: "最小", cvFoldMax: "最大", cvShow: "显示",
   cvTheory: "理论轮廓（随动器中心轨迹）", cvWork: "工作轮廓（槽壁）",
   cvBaseCircle: "基圆", cvPhase: "相位 φ",
   needCompute: "请先点击\"计算\"",
@@ -640,7 +665,7 @@ Object.assign(I18N.en, {
   alertLowRes: "Low angular resolution ({res} pts/rev)",
   sugLowRes: "Use 72–144 pts/rev for smooth curves; 288+ pts/rev for STEP surface export.",
   cvPhi: "Cam angle φ (°)", cvArc: "Unrolled arc (mm)", cvAxial: "Axial displacement s (mm)",
-  cvProbeHint: "Move or drag over the chart to read values at that angle", cvFoldMin: "min", cvFoldMax: "max",
+  cvProbeHint: "Move or drag over the chart to read values at that angle", cvFoldMin: "min", cvFoldMax: "max", cvShow: "Show",
   cvTheory: "Theoretical profile (follower center)", cvWork: "Working profile (groove wall)",
   cvBaseCircle: "Base circle", cvPhase: "Phase φ",
   needCompute: "Please click \"Compute\" first",
@@ -693,7 +718,7 @@ Object.assign(I18N.ja, {
   alertLowRes: "分割分解能が低い（{res} 点/回転）",
   sugLowRes: "滑らかな曲線には 72–144 点/回転、STEP 曲面出力には 288 点/回転以上を推奨します。",
   cvPhi: "カム角度 φ (°)", cvArc: "展開弧長 (mm)", cvAxial: "軸方向変位 s (mm)",
-  cvProbeHint: "グラフ上でマウスを移動・ドラッグすると各値を表示します", cvFoldMin: "最小", cvFoldMax: "最大",
+  cvProbeHint: "グラフ上でマウスを移動・ドラッグすると各値を表示します", cvFoldMin: "最小", cvFoldMax: "最大", cvShow: "表示",
   cvTheory: "理論輪郭（フォロワ中心軌跡）", cvWork: "実作輪郭（溝壁）",
   cvBaseCircle: "基礎円", cvPhase: "位相 φ",
   needCompute: "先に「計算」を押してください",
@@ -939,6 +964,7 @@ const App = {
     anim: { phase: 0, playing: true, dir: 1, lastT: 0 },
     view3d: { alpha: Math.PI / 6, beta: Math.PI / 5 },
     probePhi: null,
+    visibleRows: {},
     dataVersion: 0,
     dirty: false
   },
@@ -959,6 +985,7 @@ const App = {
     });
     this.bind3DRotate();
     this.bindCurveProbe();
+    this.bindRowToggles();
     // 参数修改后自动重算（无需按计算按钮）
     document.addEventListener('input', (e) => {
       if (e.target.closest && e.target.closest('.left-col')) this.scheduleCompute();
@@ -1668,9 +1695,16 @@ const App = {
 
   drawCurves() {
     const cv = document.getElementById('cvCurves');
+    const W = cv.width;
+    const vis = this.state.visibleRows || {};
+    const nVis = ['s', 'v_s', 'a_s', 'j_s', 'alphaDeg', 'forceAxial', 'forceN']
+      .filter(k => vis[k] !== false).length || 1;
+    const targetH = 68 + 170 * nVis;
+    if (cv.height !== targetH) cv.height = targetH;
+    const H = cv.height;
     const ctx = cv.getContext('2d');
-    const W = cv.width, H = cv.height;
-    const key = W + 'x' + H + 'x' + this.state.lang + 'x' + this.state.dataVersion;
+    const visKey = Object.keys(vis).filter(k => vis[k] === false).join(',');
+    const key = W + 'x' + H + 'x' + this.state.lang + 'x' + this.state.dataVersion + 'x' + visKey;
     if (!this._curveCache || this._curveCache.key !== key) {
       const off = document.createElement('canvas');
       off.width = W; off.height = H;
@@ -1697,7 +1731,8 @@ const App = {
       { key: 'alphaDeg', label: 'α', name: this.t('legAlpha'), unit: '°', v: '--line-alpha', nonNeg: true },
       { key: 'forceAxial', label: 'F', name: this.t('legFaxial'), unit: 'N', v: '--line-force', nonNeg: true, fold: true },
       { key: 'forceN', label: 'N', name: this.t('legN'), unit: 'N', v: '--line-norm', nonNeg: true, fold: true }
-    ];
+    ].filter(r => (this.state.visibleRows || {})[r.key] !== false);
+    if (rows.length === 0) return;
     const totalWeight = rows.reduce((a, r) => a + (r.weight || 1), 0);
     const unitH = plotH / totalWeight;
     const gridC = this.cssVar('--grid');
@@ -1868,6 +1903,22 @@ const App = {
       ctx.fillText(txt, tx + 10, ty + 10);
     });
     ctx.restore();
+  },
+
+  bindRowToggles() {
+    const box = document.getElementById('rowToggles');
+    if (!box) return;
+    const boxes = Array.from(box.querySelectorAll('input[data-row]'));
+    boxes.forEach(cb => {
+      cb.checked = this.state.visibleRows[cb.dataset.row] !== false;
+      cb.addEventListener('change', () => {
+        // 至少保留一行，避免画布为空
+        if (!boxes.some(x => x.checked)) { cb.checked = true; return; }
+        this.state.visibleRows[cb.dataset.row] = cb.checked;
+        this._curveCache = null;
+        this.drawCurves();
+      });
+    });
   },
 
   bindCurveProbe() {
