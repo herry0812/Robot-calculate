@@ -129,6 +129,10 @@ input.inp-sm { width: 80px; }
 .seg-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 8px; }
 .seg-field { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .seg-field > span { font-size: 0.72em; color: var(--text-muted); white-space: nowrap; }
+.seg-field .seg-lbl { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+.seg-field .follow { display: inline-flex; align-items: center; gap: 2px; font-size: 0.95em; color: var(--text-muted); cursor: pointer; white-space: nowrap; }
+.seg-field .follow input[type="checkbox"] { margin: 0; width: 11px; height: 11px; accent-color: var(--primary); }
+.seg-field input[disabled] { background: var(--bg); color: var(--text-muted); cursor: not-allowed; }
 .seg-field input, .seg-field select {
   width: 100%; min-width: 0; padding: 3px 5px; font-size: 0.8em;
   border: 1px solid var(--border); border-radius: 5px; background: var(--panel); color: var(--text);
@@ -271,7 +275,7 @@ hr.section { border: none; border-top: 1px solid var(--border); margin: 14px 0; 
         </div>
         <div class="form-row">
           <label><span data-i18n="divRes">分度分辨率</span><span class="unit" data-i18n="unitPtsRev">点/转</span></label>
-          <input type="number" id="p_resolution" value="144" step="12" min="36">
+          <input type="number" id="p_resolution" value="3600" step="36" min="36">
         </div>
         <div class="form-row">
           <label data-i18n="handedness">旋向</label>
@@ -308,7 +312,7 @@ hr.section { border: none; border-top: 1px solid var(--border); margin: 14px 0; 
         <div class="param-grid">
           <div class="form-row">
             <label><span data-i18n="offsetDist">滚子中心距</span><span class="unit">mm</span></label>
-            <input type="number" id="p_offset" value="0" step="1">
+            <input type="number" id="p_offset" value="40" step="1">
           </div>
           <div class="form-row">
             <label data-i18n="motionDir">运动方向</label>
@@ -376,7 +380,7 @@ hr.section { border: none; border-top: 1px solid var(--border); margin: 14px 0; 
       </h2>
       <div class="seg-list" id="segList"></div>
       <div class="seg-sum sum-ok" id="segSum">Σ = 360° ✓</div>
-      <p class="panel-hint" data-i18n="segHint">各段转速/负载质量留空则该段沿用工况中的默认值。</p>
+      <p class="panel-hint" data-i18n="segHint">勾选「跟随」沿用工况与受力中的转速/负载质量；取消后可单独设置，再次勾选恢复默认。</p>
     </div>
 
     <div class="panel">
@@ -573,8 +577,9 @@ Object.assign(I18N.zh, {
   secFollower: "从动件", subTrans: "直动参数", subSwing: "摆动参数",
   rollerCount: "滚子数量", unitPcs: "个", rollerAngles: "相对角度",
   camSpeed: "凸轮转速",
+  followDefault: "跟随",
   phRollerAngles: "留空则自动均布，例如 0, 180",
-  segHint: "各段转速/负载质量留空时沿用工况中的默认值。",
+  segHint: "勾选「跟随」沿用工况与受力中的转速/负载质量；取消后可单独设置，再次勾选恢复默认。",
   segNameLbl: "段名", segAngleLbl: "转角 (°)", segLiftLbl: "升程 (mm)",
   segLawLbl: "运动规律", segSpeedLbl: "凸轮转速 (rpm)", segMassLbl: "负载质量 (kg)",
   segCumLbl: "累计 (°)", segNo: "段",
@@ -612,8 +617,9 @@ Object.assign(I18N.en, {
   secFollower: "Follower", subTrans: "Translating", subSwing: "Oscillating",
   rollerCount: "Roller count", unitPcs: "pcs", rollerAngles: "Relative angles",
   camSpeed: "Cam speed",
+  followDefault: "Follow",
   phRollerAngles: "Blank = auto distribute, e.g. 0, 180",
-  segHint: "Leave a segment's speed/load mass blank to use the default from Load & Force.",
+  segHint: "Check Follow to inherit speed/load mass from Load & Force; uncheck to set separately, re-check to restore the default.",
   segNameLbl: "Name", segAngleLbl: "Angle (°)", segLiftLbl: "Lift (mm)",
   segLawLbl: "Motion law", segSpeedLbl: "Cam speed (rpm)", segMassLbl: "Load mass (kg)",
   segCumLbl: "Cumulative (°)", segNo: "Seg",
@@ -651,8 +657,9 @@ Object.assign(I18N.ja, {
   secFollower: "従節", subTrans: "直動パラメータ", subSwing: "揺動パラメータ",
   rollerCount: "ローラ数", unitPcs: "個", rollerAngles: "相対角度",
   camSpeed: "カム回転数",
+  followDefault: "追従",
   phRollerAngles: "空欄なら自動等配、例：0, 180",
-  segHint: "区間の回転数/負荷質量を空欄にすると、荷重・力の既定値を使用します。",
+  segHint: "「追従」をオンにすると荷重・力の回転数/負荷質量を継承します。オフで個別設定、再度オンで既定に戻ります。",
   segNameLbl: "名前", segAngleLbl: "角度 (°)", segLiftLbl: "リフト (mm)",
   segLawLbl: "運動法則", segSpeedLbl: "カム回転数 (rpm)", segMassLbl: "負荷質量 (kg)",
   segCumLbl: "累積 (°)", segNo: "区間",
@@ -930,8 +937,20 @@ const App = {
     // 绑定事件
     document.getElementById('p_followerType').addEventListener('change', () => this.onFollowerTypeChange());
     document.getElementById('p_rollerCount').addEventListener('change', () => this.updateRollerAnglesAuto());
+    document.getElementById('p_baseDia').addEventListener('change', () => this.onBaseDiaChange());
+    document.getElementById('p_offset').addEventListener('input', () => {
+      document.getElementById('p_offset').dataset.userSet = '1';
+    });
     requestAnimationFrame((t) => this.animLoop(t));
     this.refreshUI();
+  },
+
+  // 滚子中心距默认跟随基圆直径的一半，人工修改后不再自动跟随
+  onBaseDiaChange() {
+    const off = document.getElementById('p_offset');
+    if (off.dataset.userSet === '1') return;
+    const d = parseFloat(document.getElementById('p_baseDia').value);
+    if (isFinite(d)) off.value = +(d / 2).toFixed(2);
   },
 
   /* -------- 语言 -------- */
@@ -995,10 +1014,11 @@ const App = {
     set('p_rollerDia', 16);
     set('p_followerLen', 80);
     set('p_initialHt', 20);
-    set('p_resolution', 144);
+    set('p_resolution', 3600);
     set('p_followerType', 'trans');
     set('p_handedness', 'rh');
-    set('p_offset', 0);
+    set('p_offset', 40);
+    document.getElementById('p_offset').dataset.userSet = '';
     set('p_motionDir', 'vertical');
     set('p_tiltAngle', 0);
     set('p_camSpeed', 60);
@@ -1096,11 +1116,12 @@ const App = {
       const lawOpts = LAW_KEYS.map(k =>
         `<option value="${k}" ${k === seg.law ? 'selected' : ''}>${lawLabel(k)}</option>`
       ).join('');
-      const massVal = (seg.mass === null || seg.mass === undefined) ? '' : seg.mass;
-      const speedVal = (seg.speed === null || seg.speed === undefined) ? '' : seg.speed;
+      const massFollow = (seg.mass === null || seg.mass === undefined);
+      const speedFollow = (seg.speed === null || seg.speed === undefined);
       const defSpeed = parseFloat((document.getElementById('p_camSpeed') || {}).value) || 60;
       const defMass = parseFloat((document.getElementById('p_loadMass') || {}).value);
-      const defMassVal = isNaN(defMass) ? '' : defMass;
+      const speedDisp = speedFollow ? defSpeed : seg.speed;
+      const massDisp = massFollow ? (isNaN(defMass) ? '' : defMass) : seg.mass;
       return `<div class="seg-card" data-idx="${i}">
         <div class="seg-head">
           <span class="seg-idx">${i + 1}</span>
@@ -1114,12 +1135,14 @@ const App = {
             <input type="number" value="${seg.lift}" step="0.5" onchange="App.state.segments[${i}].lift=+this.value"></label>
           <label class="seg-field"><span>${this.t('segLawLbl')}</span>
             <select onchange="App.state.segments[${i}].law=this.value">${lawOpts}</select></label>
-          <label class="seg-field"><span>${this.t('segSpeedLbl')}</span>
-            <input type="number" value="${speedVal}" step="10" min="1" placeholder="${defSpeed}"
-              onchange="App.state.segments[${i}].speed = (this.value==='' ? null : +this.value)"></label>
-          <label class="seg-field"><span>${this.t('segMassLbl')}</span>
-            <input type="number" value="${massVal}" step="0.5" min="0" placeholder="${defMassVal}"
-              onchange="App.state.segments[${i}].mass = (this.value==='' ? null : +this.value)"></label>
+          <label class="seg-field"><span class="seg-lbl">${this.t('segSpeedLbl')}
+              <span class="follow"><input type="checkbox" ${speedFollow ? 'checked' : ''} onchange="App.toggleSegFollow(${i},'speed',this.checked)">${this.t('followDefault')}</span></span>
+            <input type="number" value="${speedDisp}" step="10" min="1" ${speedFollow ? 'disabled' : ''}
+              onchange="App.state.segments[${i}].speed = +this.value"></label>
+          <label class="seg-field"><span class="seg-lbl">${this.t('segMassLbl')}
+              <span class="follow"><input type="checkbox" ${massFollow ? 'checked' : ''} onchange="App.toggleSegFollow(${i},'mass',this.checked)">${this.t('followDefault')}</span></span>
+            <input type="number" value="${massDisp}" step="0.5" min="0" ${massFollow ? 'disabled' : ''}
+              onchange="App.state.segments[${i}].mass = +this.value"></label>
           <label class="seg-field"><span>${this.t('segCumLbl')}</span>
             <div class="seg-static">${i === 0 ? '—' : cum + '°'}</div></label>
         </div>
@@ -1134,6 +1157,20 @@ const App = {
       sumCell.className = 'seg-sum sum-bad';
       sumCell.textContent = this.t('sumBad', { sum: sum, diff: (360 - sum).toFixed(1) });
     }
+  },
+
+  // 分段转速/负载质量：勾选=跟随工况值（null），取消=写入当前工况值后可单独编辑
+  toggleSegFollow(i, field, checked) {
+    const seg = this.state.segments[i];
+    if (field !== 'speed' && field !== 'mass') return;
+    if (checked) {
+      seg[field] = null;
+    } else {
+      const gid = field === 'speed' ? 'p_camSpeed' : 'p_loadMass';
+      const g = parseFloat(document.getElementById(gid).value);
+      seg[field] = isFinite(g) ? g : 0;
+    }
+    this.renderSegTable();
   },
 
   /* -------- 核心计算 -------- */
@@ -1664,29 +1701,41 @@ const App = {
     });
     ctx.stroke();
 
-    // 滚子显示（多个）
+    // 随动器（滚子 + 杆/摆臂）：固定在世界角度，只做轴向直动或摆动，不随凸轮旋转
     const nRollers = p.rollerCount;
+    const NP = pts.length;
+    const liftAtWorld = (worldDeg) => {
+      const phi = ((worldDeg - this.state.anim.phase) % 360 + 360) % 360;
+      const idx = Math.round(phi / 360 * (NP - 1));
+      const pt = pts[Math.min(Math.max(idx, 0), NP - 1)];
+      return pt ? pt.z3d_th + p.initialHt : p.initialHt;
+    };
     for (let r = 0; r < nRollers; r++) {
-      const relAng = (p.rollerAngles[r] || (360 / nRollers * r)) * Math.PI / 180;
-      // 滚子在当前相位下的位置（凸轮旋转后滚子固定）
-      // 滚子安装角是相对角度, 对应 pt 位置偏移
-      const idx = Math.floor((relAng + this.state.anim.phase) / 360 * pts.length) % pts.length;
-      const pt = pts[idx];
-      const { X, Y } = rotate(pt.x3d_th, pt.y3d_th);
-      const z = pt.z3d_th + p.initialHt;
+      const worldDeg = (p.rollerAngles[r] != null && p.rollerAngles[r] !== '')
+        ? Number(p.rollerAngles[r]) : (360 / nRollers * r);
+      const th = worldDeg * Math.PI / 180;
+      // 滚子固定在世界角度 θ 上，θ 不随 phase 改变，仅轴向 z 变化
+      const X = Rb * Math.cos(th), Y = Rb * Math.sin(th);
+      const z = liftAtWorld(worldDeg);
       const rollerCenter = project(X, Y, z);
       ctx.fillStyle = '#ff922b'; ctx.beginPath();
       ctx.arc(rollerCenter.x, rollerCenter.y, 6, 0, Math.PI * 2); ctx.fill();
       ctx.strokeStyle = '#d9480f'; ctx.lineWidth = 1.5;
       ctx.beginPath(); ctx.arc(rollerCenter.x, rollerCenter.y, 6, 0, Math.PI * 2); ctx.stroke();
 
-      // 滚子杆（朝向运动方向：直动竖直 = 向上 +Z）
-      const rodEnd = project(X, Y, z + p.followerLen);
       ctx.strokeStyle = '#868e96'; ctx.lineWidth = 3; ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.moveTo(rollerCenter.x, rollerCenter.y); ctx.lineTo(rodEnd.x, rodEnd.y); ctx.stroke();
-
-      // 杆端点
-      ctx.fillStyle = '#5c6370'; ctx.beginPath(); ctx.arc(rodEnd.x, rodEnd.y, 3, 0, Math.PI * 2); ctx.fill();
+      if (p.followerType === 'swing') {
+        // 摆动从动件：固定支点 + 摆臂，只有摆角随升程变化
+        const pivotR = Rb + (p.swingLen || 100);
+        const pivot = project(pivotR * Math.cos(th), pivotR * Math.sin(th), p.initialHt);
+        ctx.beginPath(); ctx.moveTo(pivot.x, pivot.y); ctx.lineTo(rollerCenter.x, rollerCenter.y); ctx.stroke();
+        ctx.fillStyle = '#495057'; ctx.beginPath(); ctx.arc(pivot.x, pivot.y, 4, 0, Math.PI * 2); ctx.fill();
+      } else {
+        // 直动从动件：滚子杆沿轴向 +Z 伸出，不参与凸轮旋转
+        const rodEnd = project(X, Y, z + (p.followerLen || 80));
+        ctx.beginPath(); ctx.moveTo(rollerCenter.x, rollerCenter.y); ctx.lineTo(rodEnd.x, rodEnd.y); ctx.stroke();
+        ctx.fillStyle = '#5c6370'; ctx.beginPath(); ctx.arc(rodEnd.x, rodEnd.y, 3, 0, Math.PI * 2); ctx.fill();
+      }
     }
 
     // 显示相位
@@ -1850,6 +1899,7 @@ const App = {
           set('p_camSpeed', p.camSpeed != null ? p.camSpeed : 60);
           set('p_followerType', p.followerType); set('p_handedness', p.handedness);
           set('p_offset', p.offset || 0); set('p_motionDir', p.motionDir);
+          document.getElementById('p_offset').dataset.userSet = '1';
           set('p_tiltAngle', p.tiltAngle || 0);
           set('p_loadMass', p.loadMass); set('p_springForce', p.springForce);
           set('p_efficiency', Math.round(p.efficiency * 100));
