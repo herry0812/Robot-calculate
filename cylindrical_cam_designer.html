@@ -418,7 +418,7 @@ hr.section { border: none; border-top: 1px solid var(--border); margin: 14px 0; 
       </div>
 
       <div id="viz-curves" class="viz-pane">
-        <div class="canvas-wrap"><canvas id="cvCurves" width="900" height="560"></canvas></div>
+        <div class="canvas-wrap"><canvas id="cvCurves" width="900" height="660"></canvas></div>
       </div>
 
       <div id="viz-flatten" class="viz-pane hidden">
@@ -1652,11 +1652,11 @@ const App = {
       { key: 'a', label: 'a', name: this.t('legA'), unit: 'mm/°²', v: '--line-a' },
       { key: 'j', label: 'j', name: this.t('legJ'), unit: 'mm/°³', v: '--line-j' },
       { key: 'alphaDeg', label: 'α', name: this.t('legAlpha'), unit: '°', v: '--line-alpha' },
-      { key: 'forceAxial', label: 'F', name: this.t('legFaxial'), unit: 'N', v: '--line-force' },
-      { key: 'forceN', label: 'N', name: this.t('legN'), unit: 'N', v: '--line-norm' }
+      { key: 'forceAxial', label: 'F', name: this.t('legFaxial'), unit: 'N', v: '--line-force', weight: 2 },
+      { key: 'forceN', label: 'N', name: this.t('legN'), unit: 'N', v: '--line-norm', weight: 2 }
     ];
-    const nRows = rows.length;
-    const rowH = plotH / nRows;
+    const totalWeight = rows.reduce((a, r) => a + (r.weight || 1), 0);
+    const unitH = plotH / totalWeight;
     const gridC = this.cssVar('--grid');
     const borderC = this.cssVar('--border');
     const dimC = this.cssVar('--text-dim');
@@ -1664,13 +1664,17 @@ const App = {
 
     const xToPx = (phi) => pad.l + (phi / maxPhi) * plotW;
 
+    let rowY = pad.t;
     rows.forEach((row, idx) => {
-      const y0 = pad.t + idx * rowH;
+      const rowH = unitH * (row.weight || 1);
+      const y0 = rowY;
+      rowY += rowH;
       const y1 = y0 + rowH - 6;
 
       const vals = pts.map(p => p[row.key]);
       const vMax = Math.max(...vals.map(Math.abs), 0.01);
-      const yToPx = (v) => y0 + rowH / 2 - (v / vMax) * (rowH / 2 - 8);
+      // 曲线占满本行高度的 70%
+      const yToPx = (v) => y0 + rowH / 2 - (v / vMax) * (rowH * 0.35);
 
       // 网格
       ctx.strokeStyle = gridC; ctx.lineWidth = 1;
