@@ -49,9 +49,10 @@ html, body { background: var(--bg); color: var(--text); font-family: -apple-syst
 header {
   background: var(--panel); border-bottom: 1px solid var(--border);
   padding: 12px 24px; display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 8px 16px;
   position: sticky; top: 0; z-index: 50; box-shadow: var(--shadow);
 }
-header h1 { font-size: 1.2em; font-weight: 600; }
+header h1 { font-size: 1.2em; font-weight: 600; min-width: 0; }
 header h1 .sub { font-weight: 400; color: var(--text-dim); font-size: 0.75em; margin-left: 8px; }
 .lang-switch { display: flex; gap: 4px; background: var(--bg); border-radius: 6px; padding: 3px; }
 .lang-switch button {
@@ -61,8 +62,10 @@ header h1 .sub { font-weight: 400; color: var(--text-dim); font-size: 0.75em; ma
 .lang-switch button.active { background: var(--panel); color: var(--primary); box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
 
 /* ========== 主体布局 ========== */
-main { display: grid; grid-template-columns: 380px 1fr; gap: 18px; padding: 18px 24px; }
-@media (max-width: 1200px) { main { grid-template-columns: 1fr; } }
+main { display: grid; grid-template-columns: 430px minmax(0, 1fr); gap: 18px; padding: 18px 24px; align-items: start; }
+@media (max-width: 1240px) { main { grid-template-columns: minmax(0, 1fr); } }
+.left-col { min-width: 0; }
+.right-col { min-width: 0; }
 
 .panel {
   background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
@@ -78,46 +81,69 @@ main { display: grid; grid-template-columns: 380px 1fr; gap: 18px; padding: 18px
 .panel h3 { font-size: 0.88em; font-weight: 600; color: var(--text-dim); margin: 12px 0 6px; text-transform: uppercase; letter-spacing: 0.5px; }
 
 /* ========== 表单 ========== */
-.form-group { margin-bottom: 10px; }
-.form-row { display: flex; align-items: center; gap: 8px; }
-.form-row label { flex: 1; font-size: 0.88em; color: var(--text); }
-.form-row label .unit { color: var(--text-muted); font-size: 0.82em; margin-left: 4px; }
-.form-row label .tip { color: var(--text-muted); font-size: 0.8em; }
+.form-row {
+  display: flex; flex-direction: column; align-items: stretch;
+  gap: 3px; min-width: 0;
+}
+.form-row label {
+  font-size: 0.8em; color: var(--text-dim); font-weight: 500;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.form-row label .unit { color: var(--text-muted); font-size: 0.95em; margin-left: 3px; font-weight: 400; }
+.form-row label .tip { color: var(--text-muted); font-size: 0.9em; }
 input[type="number"], input[type="text"], select {
-  width: 110px; padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px;
-  font-size: 0.88em; background: var(--panel); color: var(--text);
+  width: 100%; min-width: 0; padding: 5px 8px;
+  border: 1px solid var(--border); border-radius: 6px;
+  font-size: 0.86em; background: var(--panel); color: var(--text);
   transition: border-color 0.15s;
 }
 input[type="number"]:focus, select:focus, input[type="text"]:focus {
-  outline: none; border-color: var(--primary);
+  outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(65,88,208,0.12);
 }
 input[type="checkbox"] { margin-right: 6px; }
 input.inp-wide { width: 140px; }
 input.inp-sm { width: 80px; }
 
-/* ========== 分段表 ========== */
-.segment-table { width: 100%; border-collapse: collapse; font-size: 0.82em; margin-top: 6px; }
-.segment-table th {
-  background: var(--panel-alt); color: var(--text); font-weight: 600; text-align: left;
-  padding: 6px 4px; border-bottom: 2px solid var(--border); font-size: 0.78em;
+/* ========== 分段卡片 ========== */
+.seg-list { display: flex; flex-direction: column; gap: 8px; }
+.seg-card {
+  border: 1px solid var(--border); border-radius: 8px;
+  padding: 8px 10px 10px; background: var(--panel-alt);
 }
-.segment-table td { padding: 4px; border-bottom: 1px solid var(--border); }
-.segment-table input, .segment-table select { width: 100%; padding: 3px 5px; font-size: 0.85em; }
-.segment-table .col-name { width: 22%; }
-.segment-table .col-angle { width: 18%; }
-.segment-table .col-lift { width: 18%; }
-.segment-table .col-law { width: 22%; }
-.segment-table .col-speed { width: 14%; }
-.segment-table .col-cum { width: 8%; color: var(--text-muted); font-size: 0.78em; }
-.segment-table .row-del button {
-  border: none; background: transparent; cursor: pointer; color: var(--text-muted);
-  padding: 2px 6px; border-radius: 4px; font-size: 1.1em;
+.seg-head { display: flex; align-items: center; gap: 6px; margin-bottom: 7px; }
+.seg-head .seg-idx {
+  flex-shrink: 0; width: 20px; height: 20px; border-radius: 50%;
+  background: var(--primary); color: #fff; font-size: 0.72em; font-weight: 600;
+  display: inline-flex; align-items: center; justify-content: center;
 }
-.segment-table .row-del button:hover { background: var(--err-bg); color: var(--warn); }
-
-.segment-table tfoot td { background: var(--panel-alt); font-weight: 600; font-size: 0.85em; padding: 6px; }
-.segment-table tfoot td.sum-ok { color: var(--ok); }
-.segment-table tfoot td.sum-bad { color: var(--warn); }
+.seg-head input.seg-name {
+  flex: 1; min-width: 0; padding: 3px 7px; font-size: 0.85em; font-weight: 600;
+  border: 1px solid var(--border); border-radius: 5px; background: var(--panel);
+}
+.seg-head .seg-del {
+  flex-shrink: 0; border: none; background: transparent; cursor: pointer;
+  color: var(--text-muted); font-size: 0.95em; padding: 2px 6px; border-radius: 4px;
+}
+.seg-head .seg-del:hover { background: var(--err-bg); color: var(--warn); }
+.seg-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 8px; }
+.seg-field { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.seg-field > span { font-size: 0.72em; color: var(--text-muted); white-space: nowrap; }
+.seg-field input, .seg-field select {
+  width: 100%; min-width: 0; padding: 3px 5px; font-size: 0.8em;
+  border: 1px solid var(--border); border-radius: 5px; background: var(--panel); color: var(--text);
+}
+.seg-field .seg-static {
+  font-size: 0.8em; padding: 3px 5px; color: var(--text-dim);
+  background: var(--panel); border: 1px dashed var(--border); border-radius: 5px;
+  text-align: center; font-family: 'Menlo', 'Consolas', monospace;
+}
+.seg-sum {
+  margin-top: 10px; padding: 7px 10px; border-radius: 6px;
+  font-size: 0.84em; font-weight: 600; text-align: center;
+  background: var(--panel-alt); border: 1px solid var(--border);
+}
+.seg-sum.sum-ok { color: var(--ok); }
+.seg-sum.sum-bad { color: var(--warn); background: var(--err-bg); border-color: #ffc9c9; }
 
 .btn-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
 .btn {
@@ -191,9 +217,11 @@ canvas { display: block; width: 100%; height: auto; background: var(--canvas-bg)
 .hidden { display: none !important; }
 hr.section { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
 
-/* ========== 默认参数卡片 ========== */
-.param-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px 12px; }
-.param-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+/* ========== 参数网格 ========== */
+.param-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 14px; }
+.param-grid.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.field-label-row { display: flex; align-items: center; justify-content: space-between; }
+.panel-hint { font-size: 0.75em; color: var(--text-muted); margin-top: 6px; line-height: 1.45; }
 
 /* ========== 滚动条 ========== */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -221,35 +249,28 @@ hr.section { border: none; border-top: 1px solid var(--border); margin: 14px 0; 
       <h2><span class="icon">⚙️</span><span data-i18n="secBasic">基础参数</span></h2>
       <div class="param-grid">
         <div class="form-row">
-          <label data-i18n="baseDia">基圆直径<span class="unit">mm</span></label>
+          <label><span data-i18n="baseDia">基圆直径</span><span class="unit">mm</span></label>
           <input type="number" id="p_baseDia" value="80" step="0.5" min="1">
         </div>
         <div class="form-row">
-          <label data-i18n="camWidth">凸轮宽度<span class="unit">mm</span></label>
+          <label><span data-i18n="camWidth">凸轮宽度</span><span class="unit">mm</span></label>
           <input type="number" id="p_camWidth" value="60" step="1" min="1">
         </div>
         <div class="form-row">
-          <label data-i18n="rollerDia">滚子直径<span class="unit">mm</span></label>
+          <label><span data-i18n="rollerDia">滚子直径</span><span class="unit">mm</span></label>
           <input type="number" id="p_rollerDia" value="16" step="0.5" min="1">
         </div>
         <div class="form-row">
-          <label data-i18n="followerLen">滚子杆长度<span class="unit">mm</span></label>
+          <label><span data-i18n="followerLen">滚子杆长度</span><span class="unit">mm</span></label>
           <input type="number" id="p_followerLen" value="80" step="1" min="1">
         </div>
         <div class="form-row">
-          <label data-i18n="initialHt">初始高度<span class="unit">mm</span></label>
+          <label><span data-i18n="initialHt">初始高度</span><span class="unit">mm</span></label>
           <input type="number" id="p_initialHt" value="20" step="1">
         </div>
         <div class="form-row">
-          <label data-i18n="divRes">分度分辨率<span class="unit">点/转</span></label>
+          <label><span data-i18n="divRes">分度分辨率</span><span class="unit" data-i18n="unitPtsRev">点/转</span></label>
           <input type="number" id="p_resolution" value="144" step="12" min="36">
-        </div>
-        <div class="form-row">
-          <label data-i18n="followerType">从动件类型</label>
-          <select id="p_followerType">
-            <option value="trans" data-i18n="followerTrans">直动</option>
-            <option value="swing" data-i18n="followerSwing">摆动</option>
-          </select>
         </div>
         <div class="form-row">
           <label data-i18n="handedness">旋向</label>
@@ -261,107 +282,99 @@ hr.section { border: none; border-top: 1px solid var(--border); margin: 14px 0; 
       </div>
     </div>
 
-    <div class="panel" id="panelTransParam">
-      <h2><span class="icon">📐</span><span data-i18n="secTrans">直动从动件参数</span></h2>
+    <div class="panel" id="panelFollower">
+      <h2><span class="icon">📐</span><span data-i18n="secFollower">从动件</span></h2>
       <div class="param-grid">
         <div class="form-row">
-          <label data-i18n="offsetDist">滚子中心距<span class="unit">mm</span></label>
-          <input type="number" id="p_offset" value="0" step="1">
-        </div>
-        <div class="form-row">
-          <label data-i18n="motionDir">运动方向</label>
-          <select id="p_motionDir">
-            <option value="vertical" data-i18n="dirVert">竖直</option>
-            <option value="horizontal" data-i18n="dirHoriz">水平</option>
-            <option value="tilted" data-i18n="dirTilt">倾斜</option>
+          <label data-i18n="followerType">从动件类型</label>
+          <select id="p_followerType">
+            <option value="trans" data-i18n="followerTrans">直动</option>
+            <option value="swing" data-i18n="followerSwing">摆动</option>
           </select>
         </div>
         <div class="form-row">
-          <label data-i18n="tiltAngle">倾斜角<span class="unit">°</span></label>
-          <input type="number" id="p_tiltAngle" value="0" step="5" min="-90" max="90">
+          <label><span data-i18n="rollerCount">滚子数量</span><span class="unit" data-i18n="unitPcs">个</span></label>
+          <input type="number" id="p_rollerCount" value="1" step="1" min="1" max="8">
+        </div>
+        <div class="form-row" style="grid-column: 1 / -1;">
+          <label><span data-i18n="rollerAngles">相对角度</span><span class="unit">°</span></label>
+          <input type="text" id="p_rollerAngles" value="" data-i18n-ph="phRollerAngles">
         </div>
       </div>
-    </div>
 
-    <div class="panel hidden" id="panelSwingParam">
-      <h2><span class="icon">📐</span><span data-i18n="secSwing">摆动从动件参数</span></h2>
-      <div class="param-grid">
-        <div class="form-row">
-          <label data-i18n="swingLen">摆杆长度<span class="unit">mm</span></label>
-          <input type="number" id="p_swingLen" value="100" step="1" min="1">
+      <div id="groupTrans">
+        <h3 data-i18n="subTrans">直动参数</h3>
+        <div class="param-grid">
+          <div class="form-row">
+            <label><span data-i18n="offsetDist">滚子中心距</span><span class="unit">mm</span></label>
+            <input type="number" id="p_offset" value="0" step="1">
+          </div>
+          <div class="form-row">
+            <label data-i18n="motionDir">运动方向</label>
+            <select id="p_motionDir">
+              <option value="vertical" data-i18n="dirVert">竖直</option>
+              <option value="horizontal" data-i18n="dirHoriz">水平</option>
+              <option value="tilted" data-i18n="dirTilt">倾斜</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label><span data-i18n="tiltAngle">倾斜角</span><span class="unit">°</span></label>
+            <input type="number" id="p_tiltAngle" value="0" step="5" min="-90" max="90">
+          </div>
         </div>
-        <div class="form-row">
-          <label data-i18n="fulcrumDist">支点距轴线<span class="unit">mm</span></label>
-          <input type="number" id="p_fulcrumDist" value="80" step="1" min="1">
-        </div>
-        <div class="form-row">
-          <label data-i18n="initialAngle">初始安装角<span class="unit">°</span></label>
-          <input type="number" id="p_swingInitAngle" value="30" step="1">
+      </div>
+
+      <div id="groupSwing" class="hidden">
+        <h3 data-i18n="subSwing">摆动参数</h3>
+        <div class="param-grid">
+          <div class="form-row">
+            <label><span data-i18n="swingLen">摆杆长度</span><span class="unit">mm</span></label>
+            <input type="number" id="p_swingLen" value="100" step="1" min="1">
+          </div>
+          <div class="form-row">
+            <label><span data-i18n="fulcrumDist">支点距轴线</span><span class="unit">mm</span></label>
+            <input type="number" id="p_fulcrumDist" value="80" step="1" min="1">
+          </div>
+          <div class="form-row">
+            <label><span data-i18n="initialAngle">初始安装角</span><span class="unit">°</span></label>
+            <input type="number" id="p_swingInitAngle" value="30" step="1">
+          </div>
         </div>
       </div>
     </div>
 
     <div class="panel">
       <h2><span class="icon">📈</span><span data-i18n="secSegments">运动分段</span>
-        <button class="btn btn-secondary btn" onclick="App.addSegment()" style="margin-left:auto;padding:3px 10px;font-size:0.82em;">+ <span data-i18n="addSeg">新增</span></button>
+        <button class="btn btn-secondary" onclick="App.addSegment()" style="margin-left:auto;padding:3px 10px;font-size:0.82em;">+ <span data-i18n="addSeg">新增</span></button>
       </h2>
-      <table class="segment-table" id="segTable">
-        <thead>
-          <tr>
-            <th class="col-name" data-i18n="segName">段名</th>
-            <th class="col-angle" data-i18n="segAngle">转角°</th>
-            <th class="col-lift" data-i18n="segLift">升程mm</th>
-            <th class="col-law" data-i18n="segLaw">运动规律</th>
-            <th class="col-speed" data-i18n="segSpeed">转速rpm</th>
-            <th class="col-cum" data-i18n="segCum">累计°</th>
-            <th class="row-del"></th>
-          </tr>
-        </thead>
-        <tbody id="segBody"></tbody>
-        <tfoot>
-          <tr><td colspan="7" id="segSum" class="sum-ok">Σ = 360° ✓</td></tr>
-        </tfoot>
-      </table>
+      <div class="seg-list" id="segList"></div>
+      <div class="seg-sum sum-ok" id="segSum">Σ = 360° ✓</div>
+      <p class="panel-hint" data-i18n="segHint">各段负载质量留空则该段沿用工况中的默认负载质量。</p>
     </div>
 
     <div class="panel">
       <h2><span class="icon">⚡</span><span data-i18n="secForce">工况与受力</span></h2>
       <div class="param-grid">
         <div class="form-row">
-          <label data-i18n="loadMass">负载质量<span class="unit">kg</span></label>
+          <label><span data-i18n="loadMass">负载质量</span><span class="unit">kg</span></label>
           <input type="number" id="p_loadMass" value="5" step="0.5" min="0">
         </div>
         <div class="form-row">
-          <label data-i18n="springForce">最大弹簧复位力<span class="unit">N</span></label>
+          <label><span data-i18n="springForce">最大弹簧复位力</span><span class="unit">N</span></label>
           <input type="number" id="p_springForce" value="50" step="5" min="0">
         </div>
         <div class="form-row">
-          <label data-i18n="followerMass">从动件质量<span class="unit">kg</span></label>
-          <input type="number" id="p_followerMass" value="1" step="0.1" min="0">
-        </div>
-        <div class="form-row">
-          <label data-i18n="camEfficiency">凸轮传动效率<span class="unit">%</span></label>
+          <label><span data-i18n="camEfficiency">凸轮传动效率</span><span class="unit">%</span></label>
           <input type="number" id="p_efficiency" value="95" step="1" min="10" max="100">
         </div>
         <div class="form-row">
-          <label data-i18n="pressAngleLimit">压力角限值<span class="unit">°</span></label>
+          <label><span data-i18n="pressAngleLimit">压力角限值</span><span class="unit">°</span></label>
           <input type="number" id="p_pressAngleLimit" value="30" step="1" min="5" max="90">
         </div>
       </div>
     </div>
 
     <div class="panel">
-      <h2><span class="icon">🎯</span><span data-i18n="secMultiRoller">多滚子参数</span></h2>
-      <div class="param-grid">
-        <div class="form-row">
-          <label data-i18n="rollerCount">滚子数量</label>
-          <input type="number" id="p_rollerCount" value="1" step="1" min="1" max="8">
-        </div>
-        <div class="form-row">
-          <label data-i18n="rollerAngles">相对角度°</label>
-          <input type="text" id="p_rollerAngles" value="" placeholder="自动均布或自定义">
-        </div>
-      </div>
       <div class="btn-row">
         <button class="btn btn-primary" onclick="App.compute()"><span>🚀</span> <span data-i18n="btnCompute">计算</span></button>
         <button class="btn btn-secondary" onclick="App.loadDefault()"><span>📥</span> <span data-i18n="btnDefault">默认</span></button>
@@ -407,11 +420,11 @@ hr.section { border: none; border-top: 1px solid var(--border); margin: 14px 0; 
       <div id="viz-line3d" class="viz-pane hidden">
         <div class="canvas-wrap"><canvas id="cv3D" width="900" height="420"></canvas></div>
         <div class="anim-controls">
-          <button class="anim-btn" onclick="App.animControl('stepRev')" title="步进反转">⏮</button>
-          <button class="anim-btn" onclick="App.animControl('backward')" title="连续反转">◀</button>
-          <button class="anim-btn" onclick="App.animControl('stop')" title="停止">■</button>
-          <button class="anim-btn active" onclick="App.animControl('forward')" title="连续正转">▶</button>
-          <button class="anim-btn" onclick="App.animControl('stepFwd')" title="步进正转">⏭</button>
+          <button class="anim-btn" onclick="App.animControl('stepRev')" data-i18n-title="tStepRev" title="步进反转">⏮</button>
+          <button class="anim-btn" onclick="App.animControl('backward')" data-i18n-title="tBack" title="连续反转">◀</button>
+          <button class="anim-btn" onclick="App.animControl('stop')" data-i18n-title="tStop" title="停止">■</button>
+          <button class="anim-btn active" onclick="App.animControl('forward')" data-i18n-title="tFwd" title="连续正转">▶</button>
+          <button class="anim-btn" onclick="App.animControl('stepFwd')" data-i18n-title="tStepFwd" title="步进正转">⏭</button>
           <span class="phase-label" id="animPhase">φ = 0.0°</span>
           <input type="range" id="animSlider" min="0" max="3600" value="0" oninput="App.animSlider(this.value)">
         </div>
@@ -549,8 +562,128 @@ const I18N = {
   }
 };
 
+/* ---- v1.1 追加词典（覆盖 + 新增，保证三种语言无遗漏） ---- */
+Object.assign(I18N.zh, {
+  titleSub: "v1.1",
+  secFollower: "从动件", subTrans: "直动参数", subSwing: "摆动参数",
+  rollerCount: "滚子数量", unitPcs: "个", rollerAngles: "相对角度",
+  phRollerAngles: "留空则自动均布，例如 0, 180",
+  segHint: "各段负载质量留空时沿用工况中的默认负载质量。",
+  segNameLbl: "段名", segAngleLbl: "转角 (°)", segLiftLbl: "升程 (mm)",
+  segLawLbl: "运动规律", segSpeedLbl: "转速 (rpm)", segMassLbl: "负载质量 (kg)",
+  segCumLbl: "累计 (°)", segNo: "段",
+  sumOk: "Σ = {sum}° ✓ 角度闭合", sumBad: "⚠ Σ = {sum}°（需 360°，差 {diff}°）",
+  okNoAlerts: "参数有效，无警告。",
+  moreAlerts: "还有 {n} 条提示已省略…",
+  alertSumAngle: "各段转角之和 Σφ = {sum}° ≠ 360°",
+  sugSumAngle: "调整各段转角之和至 360°，否则轮廓不闭合、曲线首尾跳变。可增加/删除一段，或在最后一段微调转角补齐差额。",
+  alertAlphaExceed: "最大压力角 {max}° 超过限值 {lim}°（出现在 φ ≈ {phi}°）",
+  sugAlphaExceed: "① 增大基圆直径（降低 v/Rb 比值）；② 加长对应工作段（让升程在更大转角内完成）；③ 改用更平缓的运动规律（正弦 / 3-4-5）以减小速度峰值。",
+  alertAlphaNear: "最大压力角 {max}° 接近限值 {lim}°",
+  sugAlphaNear: "建议预留余量：轻微增大基圆直径，或调整运动规律降低速度峰值。",
+  alertCurvature: "理论轮廓最小曲率半径 {min} mm 小于滚子半径 {roller} mm，槽口会自交",
+  sugCurvature: "① 增大基圆直径（最有效）；② 减小滚子直径；③ 降低升程或改用更平滑的运动规律；④ 加长分段以减小加速度峰值。",
+  alertJerk: "转角 {phi}° 处跃度不连续：{prev} → {cur} mm/°³",
+  sugJerk: "① 两端改用正弦加速度、3-4-5 多项式或梯形（三次过渡）等跃度连续的规律；② 增大梯形过渡区比例；③ 高速工况下必须消除跃度跳变以避免冲击。",
+  alertCloseMismatch: "首尾位移不连续：s(0) = {s0} mm，s(360°) = {s1} mm",
+  sugCloseMismatch: "让最后一段的回程终点等于第一段起始升程（通常回程到 0），检查各段升程的绝对值设置。",
+  alertLowRes: "分度分辨率偏低（{res} 点/转）",
+  sugLowRes: "建议提高到 72–144 点/转以获得平滑曲线；STEP 曲面导出建议 288 点/转以上。",
+  cvPhi: "凸轮转角 φ (°)", cvArc: "展开弧长 (mm)", cvAxial: "轴向位移 s (mm)",
+  cvTheory: "理论轮廓（滚子中心轨迹）", cvWork: "工作轮廓（槽壁）",
+  cvBaseCircle: "基圆", cvPhase: "相位 φ",
+  needCompute: "请先点击\"计算\"",
+  tStepRev: "步进反转", tBack: "连续反转", tStop: "停止", tFwd: "连续正转", tStepFwd: "步进正转",
+  segLawTrapCubic: "梯形（三次过渡）",
+  titleLabel: "圆柱凸轮设计工具",
+  unitPtsRev: "点/转",
+  alertJsonFail: "JSON 解析失败：",
+  segDefaultDwell1: "停歇1", segDefaultRise: "升程",
+  segDefaultDwell2: "停歇2", segDefaultFall: "回程"
+});
+Object.assign(I18N.en, {
+  titleSub: "v1.1",
+  secFollower: "Follower", subTrans: "Translating", subSwing: "Oscillating",
+  rollerCount: "Roller count", unitPcs: "pcs", rollerAngles: "Relative angles",
+  phRollerAngles: "Blank = auto distribute, e.g. 0, 180",
+  segHint: "Leave a segment's load mass blank to use the default load mass.",
+  segNameLbl: "Name", segAngleLbl: "Angle (°)", segLiftLbl: "Lift (mm)",
+  segLawLbl: "Motion law", segSpeedLbl: "Speed (rpm)", segMassLbl: "Load mass (kg)",
+  segCumLbl: "Cumulative (°)", segNo: "Seg",
+  sumOk: "Σ = {sum}° ✓ angles closed", sumBad: "⚠ Σ = {sum}° (need 360°, off by {diff}°)",
+  okNoAlerts: "Parameters valid, no warnings.",
+  moreAlerts: "{n} more messages omitted…",
+  alertSumAngle: "Sum of segment angles Σφ = {sum}° ≠ 360°",
+  sugSumAngle: "Adjust the segment angles to sum to 360°, otherwise the profile will not close and the curve will jump at the seam. Add/remove a segment or tweak the last segment's angle.",
+  alertAlphaExceed: "Max pressure angle {max}° exceeds limit {lim}° (at φ ≈ {phi}°)",
+  sugAlphaExceed: "① Increase base diameter (lowers v/Rb); ② lengthen that working segment (finish the lift over more degrees); ③ switch to a gentler law (sine / 3-4-5) to reduce peak velocity.",
+  alertAlphaNear: "Max pressure angle {max}° is close to limit {lim}°",
+  sugAlphaNear: "Keep a margin: slightly increase the base diameter or adjust the motion law to lower peak velocity.",
+  alertCurvature: "Min profile radius {min} mm < roller radius {roller} mm, groove will self-intersect",
+  sugCurvature: "① Increase base diameter (most effective); ② reduce roller diameter; ③ lower the lift or use a smoother law; ④ lengthen the segment to reduce peak acceleration.",
+  alertJerk: "Jerk discontinuity at {phi}°: {prev} → {cur} mm/°³",
+  sugJerk: "① Use laws with continuous jerk (sine acceleration, 3-4-5 poly, trapezoidal with cubic transitions); ② increase the trapezoid transition ratio; ③ high-speed applications must remove jerk jumps to avoid impact.",
+  alertCloseMismatch: "Displacement not closed: s(0) = {s0} mm, s(360°) = {s1} mm",
+  sugCloseMismatch: "Make the last segment's return end equal the first segment's start lift (usually return to 0). Check the absolute lift values of each segment.",
+  alertLowRes: "Low angular resolution ({res} pts/rev)",
+  sugLowRes: "Use 72–144 pts/rev for smooth curves; 288+ pts/rev for STEP surface export.",
+  cvPhi: "Cam angle φ (°)", cvArc: "Unrolled arc (mm)", cvAxial: "Axial displacement s (mm)",
+  cvTheory: "Theoretical profile (roller center)", cvWork: "Working profile (groove wall)",
+  cvBaseCircle: "Base circle", cvPhase: "Phase φ",
+  needCompute: "Please click \"Compute\" first",
+  tStepRev: "Step reverse", tBack: "Continuous reverse", tStop: "Stop", tFwd: "Continuous forward", tStepFwd: "Step forward",
+  segLawTrapCubic: "Trapezoidal (cubic)",
+  titleLabel: "Cylindrical Cam Designer",
+  unitPtsRev: "pts/rev",
+  alertJsonFail: "Failed to parse JSON: ",
+  segDefaultDwell1: "Dwell1", segDefaultRise: "Rise",
+  segDefaultDwell2: "Dwell2", segDefaultFall: "Fall"
+});
+Object.assign(I18N.ja, {
+  titleSub: "v1.1",
+  secFollower: "従節", subTrans: "直動パラメータ", subSwing: "揺動パラメータ",
+  rollerCount: "ローラ数", unitPcs: "個", rollerAngles: "相対角度",
+  phRollerAngles: "空欄なら自動等配、例：0, 180",
+  segHint: "区間の負荷質量を空欄にすると、既定の負荷質量を使用します。",
+  segNameLbl: "名前", segAngleLbl: "角度 (°)", segLiftLbl: "リフト (mm)",
+  segLawLbl: "運動法則", segSpeedLbl: "回転数 (rpm)", segMassLbl: "負荷質量 (kg)",
+  segCumLbl: "累積 (°)", segNo: "区間",
+  sumOk: "Σ = {sum}° ✓ 角度閉合", sumBad: "⚠ Σ = {sum}°（360° 必要、差 {diff}°）",
+  okNoAlerts: "パラメータは有効です。警告なし。",
+  moreAlerts: "残り {n} 件のメッセージを省略…",
+  alertSumAngle: "区間角度の合計 Σφ = {sum}° ≠ 360°",
+  sugSumAngle: "区間角度の合計を 360° に調整してください。閉じないと輪郭が繋がらず、曲線が継ぎ目で跳びます。区間の追加/削除、または最後の区間の角度で調整します。",
+  alertAlphaExceed: "最大圧力角 {max}° が限界 {lim}° を超過（φ ≈ {phi}°）",
+  sugAlphaExceed: "① 基礎円径を大きくする（v/Rb を低減）；② 該当区間を長くする（より大きな角度でリフト）；③ より滑らかな法則（正弦 / 3-4-5）に変更して速度ピークを下げる。",
+  alertAlphaNear: "最大圧力角 {max}° が限界 {lim}° に接近",
+  sugAlphaNear: "余裕を確保してください：基礎円径を少し大きくするか、運動法則を調整して速度ピークを下げます。",
+  alertCurvature: "理論輪郭の最小曲率半径 {min} mm がローラ半径 {roller} mm 未満、溝が自己交差します",
+  sugCurvature: "① 基礎円径を大きくする（最も効果的）；② ローラ径を小さくする；③ リフトを下げるか滑らかな法則に変更；④ 区間を長くして加速度ピークを下げる。",
+  alertJerk: "角度 {phi}° で躍度が不連続：{prev} → {cur} mm/°³",
+  sugJerk: "① 躍度が連続な法則（正弦加速度、3-4-5 多項式、三次遷移付き台形）を使用；② 台形の遷移区間比を大きくする；③ 高速では躍度の跳びを必ず除去して衝撃を避ける。",
+  alertCloseMismatch: "変位が閉じていません：s(0) = {s0} mm、s(360°) = {s1} mm",
+  sugCloseMismatch: "最後の区間の復帰終点を最初の区間の開始リフト（通常 0）に合わせてください。各区間の絶対リフト値を確認します。",
+  alertLowRes: "分割分解能が低い（{res} 点/回転）",
+  sugLowRes: "滑らかな曲線には 72–144 点/回転、STEP 曲面出力には 288 点/回転以上を推奨します。",
+  cvPhi: "カム角度 φ (°)", cvArc: "展開弧長 (mm)", cvAxial: "軸方向変位 s (mm)",
+  cvTheory: "理論輪郭（ローラ中心軌跡）", cvWork: "実作輪郭（溝壁）",
+  cvBaseCircle: "基礎円", cvPhase: "位相 φ",
+  needCompute: "先に「計算」を押してください",
+  tStepRev: "逆ステップ", tBack: "連続逆転", tStop: "停止", tFwd: "連続正転", tStepFwd: "正ステップ",
+  segLawTrapCubic: "台形（三次遷移）",
+  titleLabel: "円筒カム設計",
+  unitPtsRev: "点/回転",
+  alertJsonFail: "JSON の解析に失敗しました：",
+  segDefaultDwell1: "停止1", segDefaultRise: "上昇",
+  segDefaultDwell2: "停止2", segDefaultFall: "復帰"
+});
+
 /* 运动规律枚举（英文 key 内部使用） */
-const LAW_KEYS = ['const','acc','cos','sin','poly345','dwell','mod_trap'];
+const LAW_KEYS = ['const','acc','cos','sin','poly345','dwell','mod_trap','trap_cubic'];
+const LAW_LABEL_KEY = {
+  const: 'segLawConst', acc: 'segLawAcc', cos: 'segLawCos', sin: 'segLawSin',
+  poly345: 'segLaw345', dwell: 'segLawDwell', mod_trap: 'segLawModTrap', trap_cubic: 'segLawTrapCubic'
+};
 
 /* =====================================================================
    M1: motion-laws.js — 六种运动规律 + 修正梯形
@@ -709,13 +842,55 @@ const MotionLaws = {
     };
   },
 
+  /* 梯形（三次过渡）Trapezoidal with cubic transitions
+     速度曲线为梯形：两端用三次平滑（smoothstep）过渡，中间恒加速。
+     过渡区比例 tr（每端占整段比例，默认 0.125），e = 2*tr。
+     位移/速度/加速度/跃度均首尾连续（s(0)=0, s(1)=h, v(0)=v(1)=0, a(0)=a(1)=0）。
+  */
+  trap_cubic: (tau, h, phimax, tr = 0.125) => {
+    const e = Math.min(Math.max(2 * tr, 1e-4), 0.98);
+    const S = (x) => 3 * x * x - 2 * x * x * x;   // 三次 smoothstep 0→1
+    const dS = (x) => 6 * x - 6 * x * x;          // dS/dx
+    const half = (t) => {                          // 前半段 0..1 的形状函数
+      let I1, I2, g, dg;
+      if (t <= e) {
+        const u = t / e;
+        I1 = e * (u * u * u - u * u * u * u / 2);
+        I2 = e * e * (u * u * u * u / 4 - u * u * u * u * u / 10);
+        g = S(u); dg = dS(u) / e;
+      } else if (t <= 1 - e) {
+        const d = t - e;
+        I1 = 0.5 * e + d;
+        I2 = 0.15 * e * e + 0.5 * e * d + 0.5 * d * d;
+        g = 1; dg = 0;
+      } else {
+        const w = (1 - t) / e;
+        I1 = 1 - e - e * w * w * w + 0.5 * e * w * w * w * w;
+        I2 = (1.15 * e * e - 1.5 * e + 0.5) + e * (1 - e) * (1 - w)
+           - (e * e) * (1 - Math.pow(w, 4)) / 4 + 0.1 * e * e * (1 - Math.pow(w, 5));
+        g = S(w); dg = -dS(w) / e;
+      }
+      return { I1, I2, g, dg };
+    };
+    const firstHalf = tau <= 0.5;
+    const t = firstHalf ? tau / 0.5 : (1 - tau) / 0.5;
+    const r = half(t);
+    const norm = 1 - e;
+    const s1 = h * r.I2 / norm;
+    const v1 = 2 * h / (norm * phimax) * r.I1;
+    const a1 = 4 * h / (norm * phimax * phimax) * r.g;
+    const j1 = 8 * h / (norm * phimax * phimax * phimax) * r.dg;
+    if (firstHalf) return { s: s1, v: v1, a: a1, j: j1 };
+    return { s: h - s1, v: v1, a: -a1, j: j1 };
+  },
+
   /* 公共入口: 根据 law key 调用 */
   compute: (lawKey, tau, h, phimax, extra) => {
     const fn = MotionLaws[lawKey];
     if (!fn) { console.warn('Unknown law:', lawKey); return { s: 0, v: 0, a: 0, j: 0 }; }
-    if (lawKey === 'mod_trap') {
+    if (lawKey === 'mod_trap' || lawKey === 'trap_cubic') {
       const tr = (extra && extra.transitionRatio) || 0.125;
-      return MotionLaws.mod_trap(tau, h, phimax, tr);
+      return MotionLaws[lawKey](tau, h, phimax, tr);
     }
     return fn(tau, h, phimax);
   }
@@ -747,40 +922,58 @@ const App = {
     // 绑定事件
     document.getElementById('p_followerType').addEventListener('change', () => this.onFollowerTypeChange());
     document.getElementById('p_rollerCount').addEventListener('change', () => this.updateRollerAnglesAuto());
-    document.querySelectorAll('.viz-tab').forEach(t => t.addEventListener('click', (e) => {
-      this.switchViz(t.dataset.viz, t);
-    }));
     requestAnimationFrame((t) => this.animLoop(t));
     this.refreshUI();
   },
 
   /* -------- 语言 -------- */
-  setLang(lang, silent) {
+  t(key, vars) {
+    const dict = I18N[this.state.lang] || I18N.zh;
+    let str = dict[key];
+    if (str == null) str = (I18N.en[key] != null ? I18N.en[key] : key);
+    if (vars) for (const k in vars) str = str.split('{' + k + '}').join(vars[k]);
+    return str;
+  },
+
+  setLang(lang) {
     this.state.lang = lang;
     localStorage.setItem('cam_lang', lang);
+    document.documentElement.lang = lang === 'zh' ? 'zh-CN' : (lang === 'ja' ? 'ja' : 'en');
     document.querySelectorAll('[data-lang]').forEach(b => {
       b.classList.toggle('active', b.dataset.lang === lang);
     });
+    const dict = I18N[lang] || I18N.zh;
     document.querySelectorAll('[data-i18n]').forEach(el => {
-      const key = el.dataset.i18n;
-      const dict = I18N[lang];
-      if (dict && dict[key]) {
-        el.textContent = dict[key];
-      }
+      const v = dict[el.dataset.i18n];
+      if (v != null) el.textContent = v;
     });
-    // 分段表运动规律下拉也更新
-    this.refreshSegLawOptions();
+    document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+      const v = dict[el.dataset.i18nPh];
+      if (v != null) el.setAttribute('placeholder', v);
+    });
+    document.querySelectorAll('[data-i18n-title]').forEach(el => {
+      const v = dict[el.dataset.i18nTitle];
+      if (v != null) el.setAttribute('title', v);
+    });
+    // 重新渲染所有依赖语言的动态内容（分段卡片、警告、画布图例）
+    document.title = this.t('title');
+    this.localizeDefaultSegNames();
+    if (this.state.segments && this.state.segments.length) this.renderSegTable(true);
+    if (this.state.alerts) this.renderAlerts(this.state.alerts);
+    this.renderAllViz();
   },
 
-  refreshSegLawOptions() {
-    const opts = LAW_KEYS.map(k => {
-      const label = I18N[this.state.lang]['segLaw' + k.charAt(0).toUpperCase() + k.slice(1)] || k;
-      return `<option value="${k}">${label}</option>`;
-    }).join('');
-    document.querySelectorAll('.seg-law-select').forEach(sel => {
-      const cur = sel.value;
-      sel.innerHTML = opts;
-      sel.value = cur;
+  // 默认分段名（停歇/升程/回程）随语言切换，用户自定义名称保持不动
+  localizeDefaultSegNames() {
+    const keys = ['segDefaultDwell1', 'segDefaultRise', 'segDefaultDwell2', 'segDefaultFall'];
+    const variants = {};
+    keys.forEach(k => {
+      variants[k] = new Set(['zh', 'en', 'ja'].map(l => I18N[l] && I18N[l][k]).filter(Boolean));
+    });
+    (this.state.segments || []).forEach(seg => {
+      for (const k of keys) {
+        if (variants[k].has(seg.name)) { seg.name = this.t(k); break; }
+      }
     });
   },
 
@@ -802,17 +995,16 @@ const App = {
     set('p_tiltAngle', 0);
     set('p_loadMass', 5);
     set('p_springForce', 50);
-    set('p_followerMass', 1);
     set('p_efficiency', 95);
     set('p_pressAngleLimit', 30);
     set('p_rollerCount', 1);
     set('p_rollerAngles', '');
     // 默认 4 段: 停歇 90° + 升程 120° + 停歇 60° + 回程 90°
     this.state.segments = [
-      { name: 'Dwell1',  angle: 90,  lift: 0,   law: 'dwell',     speed: 60, transitionRatio: 0.125 },
-      { name: 'Rise',    angle: 120, lift: 20,  law: 'mod_trap',  speed: 60, transitionRatio: 0.125 },
-      { name: 'Dwell2',  angle: 60,  lift: 20,  law: 'dwell',     speed: 60, transitionRatio: 0.125 },
-      { name: 'Fall',    angle: 90,  lift: 0,   law: 'mod_trap',  speed: 60, transitionRatio: 0.125 }
+      { name: this.t('segDefaultDwell1'), angle: 90,  lift: 0,  law: 'dwell',      speed: 60, mass: null, transitionRatio: 0.125 },
+      { name: this.t('segDefaultRise'),   angle: 120, lift: 20, law: 'trap_cubic', speed: 60, mass: null, transitionRatio: 0.125 },
+      { name: this.t('segDefaultDwell2'), angle: 60,  lift: 20, law: 'dwell',      speed: 60, mass: null, transitionRatio: 0.125 },
+      { name: this.t('segDefaultFall'),   angle: 90,  lift: 0,  law: 'trap_cubic', speed: 60, mass: null, transitionRatio: 0.125 }
     ];
     this.updateRollerAnglesAuto();
     this.renderSegTable();
@@ -850,7 +1042,6 @@ const App = {
       swingInitAngle: n('p_swingInitAngle') || 30,
       loadMass: n('p_loadMass'),
       springForce: n('p_springForce') || 0,
-      followerMass: n('p_followerMass') || 0,
       efficiency: (n('p_efficiency') || 95) / 100,
       pressAngleLimit: n('p_pressAngleLimit') || 30,
       rollerCount,
@@ -861,8 +1052,8 @@ const App = {
 
   onFollowerTypeChange() {
     const t = document.getElementById('p_followerType').value;
-    document.getElementById('panelTransParam').classList.toggle('hidden', t !== 'trans');
-    document.getElementById('panelSwingParam').classList.toggle('hidden', t !== 'swing');
+    document.getElementById('groupTrans').classList.toggle('hidden', t !== 'trans');
+    document.getElementById('groupSwing').classList.toggle('hidden', t !== 'swing');
   },
 
   updateRollerAnglesAuto() {
@@ -872,11 +1063,11 @@ const App = {
     document.getElementById('p_rollerAngles').value = angles.join(', ');
   },
 
-  /* -------- 分段表 -------- */
+  /* -------- 分段卡片 -------- */
   addSegment() {
     this.state.segments.push({
-      name: 'Seg' + (this.state.segments.length + 1),
-      angle: 60, lift: 10, law: 'mod_trap', speed: 60, transitionRatio: 0.125
+      name: this.t('segNo') + (this.state.segments.length + 1),
+      angle: 60, lift: 10, law: 'trap_cubic', speed: 60, mass: null, transitionRatio: 0.125
     });
     this.renderSegTable();
   },
@@ -886,35 +1077,48 @@ const App = {
     this.renderSegTable();
   },
 
-  renderSegTable() {
-    const lang = this.state.lang;
+  renderSegTable(skipLawRefresh) {
     const sum = this.state.segments.reduce((a, s) => a + s.angle, 0);
-    const body = document.getElementById('segBody');
-    body.innerHTML = this.state.segments.map((seg, i) => {
+    const list = document.getElementById('segList');
+    const lawLabel = (k) => this.t(LAW_LABEL_KEY[k] || k);
+    list.innerHTML = this.state.segments.map((seg, i) => {
       const cum = this.state.segments.slice(0, i).reduce((a, s) => a + s.angle, 0);
-      const lawOpts = LAW_KEYS.map(k => {
-        const label = I18N[lang]['segLaw' + k.charAt(0).toUpperCase() + k.slice(1)] || k;
-        return `<option value="${k}" ${k === seg.law ? 'selected' : ''}>${label}</option>`;
-      }).join('');
-      return `<tr data-idx="${i}">
-        <td><input type="text" value="${seg.name}" onchange="App.state.segments[${i}].name=this.value"></td>
-        <td><input type="number" value="${seg.angle}" step="1" onchange="App.state.segments[${i}].angle=+this.value;App.renderSegTable()"></td>
-        <td><input type="number" value="${seg.lift}" step="0.5" onchange="App.state.segments[${i}].lift=+this.value"></td>
-        <td><select class="seg-law-select" onchange="App.state.segments[${i}].law=this.value">${lawOpts}</select></td>
-        <td><input type="number" value="${seg.speed}" step="10" min="1" onchange="App.state.segments[${i}].speed=+this.value"></td>
-        <td class="col-cum">${i === 0 ? '—' : cum}</td>
-        <td class="row-del"><button onclick="App.removeSegment(${i})" title="删除">✕</button></td>
-      </tr>`;
+      const lawOpts = LAW_KEYS.map(k =>
+        `<option value="${k}" ${k === seg.law ? 'selected' : ''}>${lawLabel(k)}</option>`
+      ).join('');
+      const massVal = (seg.mass === null || seg.mass === undefined) ? '' : seg.mass;
+      return `<div class="seg-card" data-idx="${i}">
+        <div class="seg-head">
+          <span class="seg-idx">${i + 1}</span>
+          <input type="text" class="seg-name" value="${seg.name}" onchange="App.state.segments[${i}].name=this.value">
+          <button class="seg-del" onclick="App.removeSegment(${i})" title="✕">✕</button>
+        </div>
+        <div class="seg-fields">
+          <label class="seg-field"><span>${this.t('segAngleLbl')}</span>
+            <input type="number" value="${seg.angle}" step="1" onchange="App.state.segments[${i}].angle=+this.value;App.renderSegTable()"></label>
+          <label class="seg-field"><span>${this.t('segLiftLbl')}</span>
+            <input type="number" value="${seg.lift}" step="0.5" onchange="App.state.segments[${i}].lift=+this.value"></label>
+          <label class="seg-field"><span>${this.t('segLawLbl')}</span>
+            <select onchange="App.state.segments[${i}].law=this.value">${lawOpts}</select></label>
+          <label class="seg-field"><span>${this.t('segSpeedLbl')}</span>
+            <input type="number" value="${seg.speed}" step="10" min="1" onchange="App.state.segments[${i}].speed=+this.value"></label>
+          <label class="seg-field"><span>${this.t('segMassLbl')}</span>
+            <input type="number" value="${massVal}" step="0.5" min="0" placeholder="—"
+              onchange="App.state.segments[${i}].mass = (this.value==='' ? null : +this.value)"></label>
+          <label class="seg-field"><span>${this.t('segCumLbl')}</span>
+            <div class="seg-static">${i === 0 ? '—' : cum + '°'}</div></label>
+        </div>
+      </div>`;
     }).join('');
+
     const sumCell = document.getElementById('segSum');
     if (Math.abs(sum - 360) < 0.01) {
-      sumCell.className = 'sum-ok';
-      sumCell.innerHTML = `Σ = ${sum}° ✓`;
+      sumCell.className = 'seg-sum sum-ok';
+      sumCell.textContent = this.t('sumOk', { sum: sum });
     } else {
-      sumCell.className = 'sum-bad';
-      sumCell.innerHTML = `⚠ Σ = ${sum}° （需要 360°，差 ${(360 - sum).toFixed(1)}°）`;
+      sumCell.className = 'seg-sum sum-bad';
+      sumCell.textContent = this.t('sumBad', { sum: sum, diff: (360 - sum).toFixed(1) });
     }
-    // 绑定顺序调节（简化：暂省略）
   },
 
   /* -------- 核心计算 -------- */
@@ -1006,9 +1210,10 @@ const App = {
         // 用实际速度 v_dyn (mm/s) = v_mm_per_deg * ω_deg_per_s
         const v_dyn = (v * 180 / Math.PI) * omega_rad;  // 近似
         const a_dyn = (a * 180 / Math.PI) * omega_rad * omega_rad; // 近似
-        // 合力：重力（负载+从动件）+ 弹簧力 + 惯性力（若 a_dyn 向上则 N 需增大）
+        // 合力：重力（负载质量，按段可单独设置）+ 弹簧力 + 惯性力
         const g = 9.81;
-        const massTotal = p.loadMass + p.followerMass;
+        const segMass = (seg.mass === null || seg.mass === undefined) ? p.loadMass : seg.mass;
+        const massTotal = segMass;
         const forceGravity = massTotal * g;             // N, 始终向下
         const forceSpring = p.springForce;              // N, 复位方向（对抗升程）
         const forceInertia = massTotal * a_dyn / 1000;  // N, 方向随加速度
@@ -1053,55 +1258,49 @@ const App = {
   /* -------- 校验 -------- */
   runValidator(segs, p, pts) {
     const alerts = [];
+    const Rb = p.baseDia / 2;
     const totalAngle = segs.reduce((a, s) => a + s.angle, 0);
 
     if (Math.abs(totalAngle - 360) > 0.01) {
       alerts.push({
         level: 'E',
-        text: `Σφ = ${totalAngle.toFixed(1)}° ≠ 360°`,
-        suggestion: '调整各段转角之和至 360°，否则轮廓不闭合、曲线首尾跳变。可以：①增加/删除一个段；②在最后一段微调转角补齐差额。'
+        text: this.t('alertSumAngle', { sum: totalAngle.toFixed(1) }),
+        suggestion: this.t('sugSumAngle')
       });
     }
 
-    // 压力角超限时给分位 + 建议
+    // 压力角超限
     const maxAlpha = pts.reduce((m, pt) => Math.max(m, pt.alphaDeg), 0);
     if (maxAlpha > p.pressAngleLimit) {
-      // 找出峰值位置
       const worst = pts.reduce((m, pt) => pt.alphaDeg > m.alphaDeg ? pt : m, { alphaDeg: 0 });
       alerts.push({
         level: 'E',
-        text: `最大压力角 ${maxAlpha.toFixed(2)}° > 限值 ${p.pressAngleLimit}°（出现在 φ ≈ ${worst.phi.toFixed(1)}°）`,
-        suggestion: '① 增大基圆直径（降低 v/Rb 比值）；② 缩短对应工作段（让升程在更大转角内完成）；③ 换更平缓的运动规律（如正弦或 3-4-5，减少 v 峰值）。'
+        text: this.t('alertAlphaExceed', { max: maxAlpha.toFixed(2), lim: p.pressAngleLimit, phi: worst.phi.toFixed(1) }),
+        suggestion: this.t('sugAlphaExceed')
       });
     } else if (maxAlpha > p.pressAngleLimit * 0.85) {
       alerts.push({
         level: 'W',
-        text: `最大压力角 ${maxAlpha.toFixed(2)}° 接近限值 ${p.pressAngleLimit}°`,
-        suggestion: '预留余量，可轻微增大基圆或调整运动规律以减小速度峰值。'
+        text: this.t('alertAlphaNear', { max: maxAlpha.toFixed(2), lim: p.pressAngleLimit }),
+        suggestion: this.t('sugAlphaNear')
       });
     }
 
-    // 曲率半径自交检查（简化：理论轮廓曲率半径 < 滚子半径）
-    // 展开面上的曲率半径 ρ = Rb / cos³(α) （圆柱展开近似）
-    // 更精确：用理论轮廓曲率公式
+    // 曲率半径自交检查
     let minRadius = Infinity;
     for (const pt of pts) {
-      // 展开轮廓 x = Rb·φ, y = s(φ)
-      // dx/dφ = Rb, dy/dφ = v
-      // d²x/dφ² = 0, d²y/dφ² = a
-      // ρ = (Rb² + v²)^(3/2) / |Rb·a - 0·v|  = (Rb² + v²)^(3/2) / |Rb·a|
       const rho = Math.pow(Rb * Rb + pt.v * pt.v, 1.5) / Math.abs(Rb * pt.a + 1e-12);
       if (rho < minRadius && rho > 0.1) minRadius = rho;
     }
-    if (minRadius < p.rollerDia) {
+    if (minRadius < p.rollerDia / 2) {
       alerts.push({
         level: 'E',
-        text: `理论轮廓最小曲率半径 ${minRadius.toFixed(2)} mm < 滚子直径 ${p.rollerDia} mm → 槽口自交`,
-        suggestion: '① 增大基圆直径（最有效）；② 减小滚子直径；③ 降低升程或用更平滑的运动规律减小加速度峰值；④ 分段加长让 a 变小。'
+        text: this.t('alertCurvature', { min: minRadius.toFixed(2), roller: (p.rollerDia / 2).toFixed(2) }),
+        suggestion: this.t('sugCurvature')
       });
     }
 
-    // 跃度（jerk）不连续: 段边界两侧 j 差值大
+    // 跃度不连续
     for (let i = 1; i < pts.length; i++) {
       const prev = pts[i - 1];
       const cur = pts[i];
@@ -1110,39 +1309,34 @@ const App = {
         if (deltaJ > 0.01 && prev.law !== 'dwell' && cur.law !== 'dwell') {
           alerts.push({
             level: 'I',
-            text: `段边界 φ ≈ ${prev.phi.toFixed(1)}° 处跃度跳变 Δj = ${deltaJ.toFixed(3)} mm/°³（${prev.segName}→${cur.segName}）`,
-            suggestion: '① 两端都用正弦加速度或 3-4-5 多项式（跃度连续）；② 换修正梯形（两端光滑过渡）；③ 增大过渡区比例 tr。跃度跳变意味着冲击，高速场合需消除。'
+            text: this.t('alertJerk', {
+              phi: prev.phi.toFixed(1),
+              prev: prev.j.toFixed(3),
+              cur: cur.j.toFixed(3)
+            }),
+            suggestion: this.t('sugJerk')
           });
         }
       }
     }
 
-    // 修正梯形过渡区被滚子半径限制的检查
-    for (const seg of segs) {
-      if (seg.law === 'mod_trap') {
-        // 过渡区对应的曲率半径是否足够
-        // 简化: 只要整段 minRadius >= 滚子半径，过渡区就安全
-        // 这里不做硬性报错，给信息提示
-      }
-    }
-
-    // 首尾闭合: s(0) vs s(end)
+    // 首尾闭合
     const s0 = pts[0].s;
     const sEnd = pts[pts.length - 1].s;
     if (Math.abs(s0 - sEnd) > 0.001) {
       alerts.push({
         level: 'E',
-        text: `首尾位移不连续: s(0)=${s0.toFixed(3)} mm, s(360°)=${sEnd.toFixed(3)} mm`,
-        suggestion: '确保最后一段的升程等于第一段的起始升程（通常最后一段为回程到 0）。检查各段绝对升程设置。'
+        text: this.t('alertCloseMismatch', { s0: s0.toFixed(3), s1: sEnd.toFixed(3) }),
+        suggestion: this.t('sugCloseMismatch')
       });
     }
 
-    // 默认段数不足提示
+    // 分辨率过低
     if (pts.length < 36) {
       alerts.push({
         level: 'I',
-        text: `分度分辨率较低 (${p.resolution} 点/转)`,
-        suggestion: '提高到至少 72–144 点/转以获得平滑的曲线；STEP 曲面生成建议 288 以上。'
+        text: this.t('alertLowRes', { res: p.resolution }),
+        suggestion: this.t('sugLowRes')
       });
     }
 
@@ -1153,7 +1347,7 @@ const App = {
   renderAlerts(alerts) {
     const box = document.getElementById('alertList');
     if (!alerts || alerts.length === 0) {
-      box.innerHTML = `<div class="alert alert-i"><span class="level">✓</span><span class="body">参数有效，无警告。</span></div>`;
+      box.innerHTML = `<div class="alert alert-i"><span class="level">✓</span><span class="body">${this.t('okNoAlerts')}</span></div>`;
       return;
     }
     box.innerHTML = alerts.slice(0, 20).map(a => {
@@ -1161,7 +1355,7 @@ const App = {
       const levelLabel = a.level === 'E' ? 'E' : a.level === 'W' ? '!' : 'i';
       return `<div class="alert ${levelCls}"><span class="level">${levelLabel}</span><span class="body"><b>${a.text}</b><span class="suggestion">💡 ${a.suggestion}</span></span></div>`;
     }).join('');
-    if (alerts.length > 20) box.innerHTML += `<div class="alert alert-i"><span class="level">i</span><span class="body">还有 ${alerts.length - 20} 条提示省略…</span></div>`;
+    if (alerts.length > 20) box.innerHTML += `<div class="alert alert-i"><span class="level">i</span><span class="body">${this.t('moreAlerts', { n: alerts.length - 20 })}</span></div>`;
   },
 
   /* -------- 数据表 -------- */
@@ -1205,54 +1399,57 @@ const App = {
   },
 
   /* -------- 运动曲线图 -------- */
+  cssVar(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  },
+
   drawCurves() {
     const cv = document.getElementById('cvCurves');
     const ctx = cv.getContext('2d');
     const W = cv.width, H = cv.height;
     ctx.clearRect(0, 0, W, H);
-    const pad = { l: 60, r: 20, t: 30, b: 40 };
+    const pad = { l: 64, r: 20, t: 26, b: 40 };
     const plotW = W - pad.l - pad.r, plotH = H - pad.t - pad.b;
 
     const pts = this.state.points;
-    const phis = pts.map(p => p.phi);
-    const minPhi = 0, maxPhi = 360;
+    const maxPhi = 360;
 
-    // 每条曲线单独画（分 4 个小图）
     const rows = [
-      { key: 's', label: 's (mm)', color: 'var(--line-s)' },
-      { key: 'v', label: 'v (mm/°)', color: 'var(--line-v)' },
-      { key: 'a', label: 'a (mm/°²)', color: 'var(--line-a)' },
-      { key: 'j', label: 'j (mm/°³)', color: 'var(--line-j)' },
-      { key: 'alphaDeg', label: 'α (°)', color: 'var(--line-alpha)' }
+      { key: 's', label: 's', unit: 'mm', v: '--line-s' },
+      { key: 'v', label: 'v', unit: 'mm/°', v: '--line-v' },
+      { key: 'a', label: 'a', unit: 'mm/°²', v: '--line-a' },
+      { key: 'j', label: 'j', unit: 'mm/°³', v: '--line-j' },
+      { key: 'alphaDeg', label: 'α', unit: '°', v: '--line-alpha' }
     ];
     const nRows = rows.length;
     const rowH = plotH / nRows;
+    const gridC = this.cssVar('--grid');
+    const borderC = this.cssVar('--border');
+    const dimC = this.cssVar('--text-dim');
+    const mutedC = this.cssVar('--text-muted');
 
     const xToPx = (phi) => pad.l + (phi / maxPhi) * plotW;
 
     rows.forEach((row, idx) => {
       const y0 = pad.t + idx * rowH;
-      const y1 = y0 + rowH - 8;
+      const y1 = y0 + rowH - 6;
 
       const vals = pts.map(p => p[row.key]);
       const vMax = Math.max(...vals.map(Math.abs), 0.01);
-      const yToPx = (v) => y0 + rowH / 2 - (v / vMax) * (rowH / 2 - 10);
+      const yToPx = (v) => y0 + rowH / 2 - (v / vMax) * (rowH / 2 - 8);
 
       // 网格
-      ctx.strokeStyle = 'var(--grid)';
-      ctx.lineWidth = 1;
+      ctx.strokeStyle = gridC; ctx.lineWidth = 1;
       for (let k = 0; k <= 6; k++) {
         const x = pad.l + (k / 6) * plotW;
         ctx.beginPath(); ctx.moveTo(x, y0); ctx.lineTo(x, y1); ctx.stroke();
       }
-      // 中轴
-      ctx.beginPath(); ctx.strokeStyle = 'var(--border)';
+      // 零点轴
+      ctx.beginPath(); ctx.strokeStyle = borderC;
       ctx.moveTo(pad.l, y0 + rowH / 2); ctx.lineTo(pad.l + plotW, y0 + rowH / 2); ctx.stroke();
 
       // 曲线
-      ctx.strokeStyle = row.color.replace('var(', '').replace(')', '');
-      try { ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue(row.color.trim()).trim() || row.color; } catch(e) {}
-      ctx.lineWidth = 2;
+      ctx.strokeStyle = this.cssVar(row.v); ctx.lineWidth = 2;
       ctx.beginPath();
       pts.forEach((pt, i) => {
         const x = xToPx(pt.phi);
@@ -1261,20 +1458,23 @@ const App = {
       });
       ctx.stroke();
 
-      // 标签
-      ctx.fillStyle = 'var(--text-dim)';
-      ctx.font = '11px sans-serif';
-      ctx.textAlign = 'left';
-      ctx.fillText(row.label, pad.l - 55, y0 + 14);
+      // 左侧图例：符号 + 单位 + 峰值
+      ctx.textAlign = 'left'; ctx.font = '600 12px sans-serif';
+      ctx.fillStyle = this.cssVar(row.v);
+      ctx.fillText(row.label, pad.l - 62, y0 + 12);
+      ctx.font = '10px sans-serif'; ctx.fillStyle = dimC;
+      ctx.fillText(row.unit, pad.l - 50, y0 + 12);
       ctx.textAlign = 'right';
-      ctx.fillText('+' + vMax.toFixed(2), pad.l - 5, y0 + 14);
-      ctx.fillText('-' + vMax.toFixed(2), pad.l - 5, y1);
+      ctx.fillText('+' + vMax.toFixed(2), pad.l - 6, y0 + 12);
+      ctx.fillText('-' + vMax.toFixed(2), pad.l - 6, y1);
     });
 
-    // 底部轴
-    ctx.fillStyle = 'var(--text-muted)';
-    ctx.textAlign = 'center';
-    ctx.fillText('φ (°)', W / 2, H - 8);
+    // 底部轴标签 + 刻度
+    ctx.fillStyle = mutedC; ctx.font = '11px sans-serif'; ctx.textAlign = 'center';
+    for (let a = 0; a <= 360; a += 90) {
+      ctx.fillText(a + '°', xToPx(a), H - 22);
+    }
+    ctx.fillText(this.t('cvPhi'), W / 2, H - 5);
   },
 
   /* -------- 轮廓展开图 -------- */
@@ -1296,9 +1496,12 @@ const App = {
     const plotW = W - pad.l - pad.r, plotH = H - pad.t - pad.b;
     const xToPx = (arc) => pad.l + (arc / camLen) * plotW;
     const yToPx = (s) => pad.t + plotH - ((s - sMin) / Math.max(sMax - sMin, 1)) * plotH;
+    const gridC = this.cssVar('--grid');
+    const textC = this.cssVar('--text');
+    const mutedC = this.cssVar('--text-muted');
 
     // 背景网格
-    ctx.strokeStyle = 'var(--grid)'; ctx.lineWidth = 1;
+    ctx.strokeStyle = gridC; ctx.lineWidth = 1;
     for (let k = 0; k <= 8; k++) {
       ctx.beginPath(); ctx.moveTo(pad.l + k * plotW / 8, pad.t); ctx.lineTo(pad.l + k * plotW / 8, pad.t + plotH); ctx.stroke();
     }
@@ -1333,7 +1536,7 @@ const App = {
     ctx.setLineDash([]);
 
     // 基圆参考线
-    ctx.strokeStyle = 'var(--text-muted)'; ctx.lineWidth = 1; ctx.setLineDash([6, 4]);
+    ctx.strokeStyle = mutedC; ctx.lineWidth = 1; ctx.setLineDash([6, 4]);
     ctx.beginPath();
     ctx.moveTo(xToPx(0), yToPx(0)); ctx.lineTo(xToPx(camLen), yToPx(0)); ctx.stroke();
     ctx.setLineDash([]);
@@ -1346,17 +1549,18 @@ const App = {
     ctx.fill();
 
     // 图例
-    ctx.fillStyle = 'var(--text)'; ctx.font = '12px sans-serif'; ctx.textAlign = 'left';
-    ctx.fillStyle = '#4158d0'; ctx.fillRect(W - 180, 14, 16, 4);
-    ctx.fillStyle = 'var(--text)'; ctx.fillText('理论轮廓 (滚子中心轨迹)', W - 160, 18);
-    ctx.fillStyle = '#c850c0'; ctx.fillRect(W - 180, 32, 16, 4);
-    ctx.fillStyle = 'var(--text)'; ctx.fillText('工作轮廓 (槽腔内壁)', W - 160, 36);
+    ctx.font = '12px sans-serif'; ctx.textAlign = 'left';
+    ctx.fillStyle = '#4158d0'; ctx.fillRect(pad.l, 12, 16, 4);
+    ctx.fillStyle = textC; ctx.fillText(this.t('cvTheory'), pad.l + 22, 17);
+    ctx.fillStyle = '#c850c0'; ctx.fillRect(pad.l, 30, 16, 4);
+    ctx.fillStyle = textC; ctx.fillText(this.t('cvWork'), pad.l + 22, 35);
 
     // 轴标签
-    ctx.fillStyle = 'var(--text-muted)'; ctx.textAlign = 'center';
-    ctx.fillText('展开弧长 (mm)', W / 2, H - 8);
+    ctx.fillStyle = mutedC;
+    ctx.textAlign = 'center';
+    ctx.fillText(this.t('cvArc'), W / 2, H - 8);
     ctx.save(); ctx.translate(16, H / 2); ctx.rotate(-Math.PI / 2);
-    ctx.fillText('轴向位移 s (mm)', 0, 0); ctx.restore();
+    ctx.fillText(this.t('cvAxial'), 0, 0); ctx.restore();
   },
 
   /* -------- 3D 线框 -------- */
@@ -1424,7 +1628,7 @@ const App = {
     // 画轴（中心 + 两条母线）
     const axisFwd = project(0, 0, 0);
     const axisBack = project(0, 0, camLen);
-    ctx.strokeStyle = 'var(--text-muted)'; ctx.lineWidth = 1;
+    ctx.strokeStyle = this.cssVar('--text-muted'); ctx.lineWidth = 1;
     ctx.setLineDash([4, 3]);
     ctx.beginPath(); ctx.moveTo(axisFwd.x, axisFwd.y); ctx.lineTo(axisBack.x, axisBack.y); ctx.stroke();
     ctx.setLineDash([]);
@@ -1468,7 +1672,7 @@ const App = {
     }
 
     // 显示相位
-    ctx.fillStyle = 'var(--text)'; ctx.font = '14px monospace'; ctx.textAlign = 'left';
+    ctx.fillStyle = this.cssVar('--text'); ctx.font = '14px monospace'; ctx.textAlign = 'left';
     ctx.fillText(`φ = ${this.state.anim.phase.toFixed(1)}°`, 14, H - 14);
   },
 
@@ -1513,7 +1717,6 @@ const App = {
 
   /* -------- 参数示意 -------- */
   drawIndic() {
-    // 静态参数示意图（简化示意几何）
     const cv = document.getElementById('cvIndic');
     const ctx = cv.getContext('2d');
     const W = cv.width, H = cv.height;
@@ -1521,29 +1724,79 @@ const App = {
     const p = this.state.params;
     if (!p) return;
 
-    const cx = W / 2, cy = H / 2 + 20;
-    const Rb = p.baseDia / 2;
-    const dR = p.rollerDia / 2;
-    const sMax = Math.max(...this.state.points.map(q => q.s), 1);
-    const camLen = p.camWidth;
+    const textC = this.cssVar('--text');
+    const dimC = this.cssVar('--text-dim');
+    const mutedC = this.cssVar('--text-muted');
+    const accent = this.cssVar('--primary');
 
-    const scale = Math.min(W, H) / (Rb * 3 + sMax);
-    // 画凸轮圆柱
-    ctx.strokeStyle = '#b8c0ff'; ctx.fillStyle = 'rgba(184,192,255,0.3)';
-    ctx.lineWidth = 2;
-    // 简化表示：画圆 + 上下两条环 + 轴向长度
-    ctx.beginPath(); ctx.ellipse(cx, cy - Rb * scale * 0.3, Rb * scale, Rb * scale * 0.35, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-    ctx.beginPath(); ctx.ellipse(cx, cy + Rb * scale * 0.3, Rb * scale, Rb * scale * 0.35, 0, 0, Math.PI * 2); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(cx - Rb * scale, cy - Rb * scale * 0.3); ctx.lineTo(cx - Rb * scale, cy + Rb * scale * 0.3); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(cx + Rb * scale, cy - Rb * scale * 0.3); ctx.lineTo(cx + Rb * scale, cy + Rb * scale * 0.3); ctx.stroke();
+    const cx = W * 0.36, cy = H * 0.55;
+    const scale = Math.min(
+      (W * 0.42) / Math.max(p.camWidth, 10),
+      (H - 150) / Math.max(p.baseDia, 10),
+      (H - 170) / Math.max(p.followerLen + p.initialHt + 20, 20)
+    );
+    const w = p.camWidth * scale;
+    const h = p.baseDia * scale;
+    const r = Math.max(5, (p.rollerDia / 2) * scale);
 
-    // 标注
-    ctx.fillStyle = 'var(--text-dim)'; ctx.font = '11px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('基圆', cx, cy - Rb * scale - 14);
-    ctx.strokeStyle = '#4158d0'; ctx.setLineDash([3, 3]);
-    ctx.beginPath(); ctx.moveTo(cx - Rb * scale, cy); ctx.lineTo(cx + Rb * scale, cy); ctx.stroke(); ctx.setLineDash([]);
-    ctx.fillText('φ = 360°', cx, cy + Rb * scale + 20);
+    // 凸轮柱体（正视矩形 + 椭圆端面示意）
+    ctx.fillStyle = 'rgba(184,192,255,0.28)';
+    ctx.strokeStyle = '#6b7bff'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.rect(cx - w / 2, cy - h / 2, w, h); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(cx, cy - h / 2, w / 2, h * 0.10, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(cx, cy + h / 2, w / 2, h * 0.10, 0, 0, Math.PI * 2); ctx.stroke();
+
+    // 尺寸标注工具
+    const tick = (x, y) => { ctx.beginPath(); ctx.moveTo(x - 4, y - 4); ctx.lineTo(x + 4, y + 4); ctx.stroke(); };
+    const dimV = (x, y1, y2, label) => {
+      ctx.strokeStyle = accent; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(x, y1); ctx.lineTo(x, y2); ctx.stroke();
+      tick(x, y1); tick(x, y2);
+      ctx.save(); ctx.translate(x - 8, (y1 + y2) / 2); ctx.rotate(-Math.PI / 2);
+      ctx.fillStyle = dimC; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+      ctx.fillText(label, 0, 0); ctx.restore(); ctx.textBaseline = 'alphabetic';
+    };
+    const dimH = (y, x1, x2, label) => {
+      ctx.strokeStyle = accent; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(x1, y); ctx.lineTo(x2, y); ctx.stroke();
+      tick(x1, y); tick(x2, y);
+      ctx.fillStyle = dimC; ctx.textAlign = 'center'; ctx.fillText(label, (x1 + x2) / 2, y + 16);
+    };
+
+    // 基圆直径（竖向）
+    dimV(cx - w / 2 - 28, cy - h / 2, cy + h / 2, `${this.t('baseDia')} ${p.baseDia} mm`);
+    // 凸轮宽度（横向）
+    dimH(cy + h / 2 + 34, cx - w / 2, cx + w / 2, `${this.t('camWidth')} ${p.camWidth} mm`);
+
+    // 滚子 + 杆
+    const rx = cx + w / 2 + 90;
+    const rollerCy = cy;
+    ctx.fillStyle = '#ff922b'; ctx.strokeStyle = '#d9480f'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(rx, rollerCy, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    // 杆（朝上）
+    const rodTop = rollerCy - p.followerLen * scale;
+    ctx.strokeStyle = '#868e96'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(rx, rollerCy); ctx.lineTo(rx, rodTop); ctx.stroke();
+    ctx.lineCap = 'butt';
+    // 杆长标注
+    dimV(rx + 26, rodTop, rollerCy, `${this.t('followerLen')} ${p.followerLen} mm`);
+    // 滚子直径标注
+    ctx.strokeStyle = accent; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(rx - r, rollerCy + r + 14); ctx.lineTo(rx + r, rollerCy + r + 14); ctx.stroke();
+    tick(rx - r, rollerCy + r + 14); tick(rx + r, rollerCy + r + 14);
+    ctx.fillStyle = dimC; ctx.textAlign = 'center';
+    ctx.fillText(`${this.t('rollerDia')} ${p.rollerDia} mm`, rx, rollerCy + r + 30);
+
+    // 初始高度（凸轮内向上）
+    const liftY = cy + h / 2 - p.initialHt * scale;
+    ctx.strokeStyle = '#2f9e44'; ctx.lineWidth = 1; ctx.setLineDash([4, 3]);
+    ctx.beginPath(); ctx.moveTo(cx - w / 2, liftY); ctx.lineTo(cx + w / 2, liftY); ctx.stroke();
+    ctx.setLineDash([]);
+    dimV(cx + w / 2 + 16, liftY, cy + h / 2, `${this.t('initialHt')} ${p.initialHt} mm`);
+
+    // 标题
+    ctx.fillStyle = mutedC; ctx.textAlign = 'left'; ctx.font = '12px sans-serif';
+    ctx.fillText(`φ = 360°`, 14, H - 14);
   },
 
   /* -------- 数据存取 -------- */
@@ -1580,7 +1833,6 @@ const App = {
           set('p_offset', p.offset || 0); set('p_motionDir', p.motionDir);
           set('p_tiltAngle', p.tiltAngle || 0);
           set('p_loadMass', p.loadMass); set('p_springForce', p.springForce);
-          set('p_followerMass', p.followerMass);
           set('p_efficiency', Math.round(p.efficiency * 100));
           set('p_pressAngleLimit', p.pressAngleLimit);
           set('p_rollerCount', p.rollerCount);
@@ -1589,14 +1841,14 @@ const App = {
         this.renderSegTable();
         this.onFollowerTypeChange();
         this.compute();
-      } catch (e) { alert('JSON 解析失败: ' + e.message); }
+      } catch (e) { alert(this.t('alertJsonFail') + e.message); }
     };
     reader.readAsText(f);
   },
 
   exportCSV() {
     const pts = this.state.points;
-    if (!pts || pts.length === 0) { alert('请先计算'); return; }
+    if (!pts || pts.length === 0) { alert(this.t('needCompute')); return; }
     const headers = ['#', 'phi_deg', 's_mm', 'v_mm_per_deg', 'a_mm_per_deg2', 'j_mm_per_deg3', 'alpha_deg', 'torque_Nmm', 'force_N', 'x_theory_mm', 'y_theory_mm', 'x_work_mm', 'y_work_mm', 'segIdx', 'segName'];
     const rows = pts.map((pt, i) => [
       i, pt.phi.toFixed(4), pt.s.toFixed(4), pt.v.toFixed(5), pt.a.toFixed(5), pt.j.toFixed(6),
@@ -1618,7 +1870,7 @@ const App = {
   exportSTEP() {
     const pts = this.state.points;
     const p = this.state.params;
-    if (!pts || pts.length === 0) { alert('请先计算'); return; }
+    if (!pts || pts.length === 0) { alert(this.t('needCompute')); return; }
 
     // 用离散点生成 STEP 文件（圆柱轮廓工作表面）
     // 简化方案: 输出点云 + 基本几何实体
