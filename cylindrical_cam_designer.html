@@ -1286,6 +1286,7 @@ const App = {
       seg.transitionRatio = +((seg.transitionLength || 0) / arc).toFixed(4);
     }
     seg.transitionMode = (mode === 'length' ? 'length' : 'ratio');
+    seg.transAuto = false;
     this.renderSegTable();
     this.scheduleCompute();
   },
@@ -1299,6 +1300,7 @@ const App = {
     } else {
       seg.transitionRatio = v / 100;
     }
+    seg.transAuto = false;
     this.renderSegTable();
     this.scheduleCompute();
   },
@@ -1311,6 +1313,14 @@ const App = {
     seg.transitionMode = 'length';
     seg.transitionLength = +(arc > 0 ? Math.min(D, arc * 0.49) : D).toFixed(2);
     seg.transitionRatio = arc > 0 ? +Math.min(D / arc, 0.49).toFixed(4) : 0.125;
+    seg.transAuto = true;
+  },
+
+  // 随动器直径/基圆变化时，自动过渡的段重新取最小值
+  reapplyAutoTransitions() {
+    this.state.segments.forEach(s => {
+      if (s.transAuto && (s.law === 'trap_cubic' || s.law === 'mod_trap')) this.applyMinTransition(s);
+    });
   },
 
   // 切换运动规律：选择梯形时过渡自动设为最小值
@@ -1326,7 +1336,14 @@ const App = {
   scheduleCompute() {
     clearTimeout(this._autoTimer);
     this._autoTimer = setTimeout(() => {
-      try { this.compute(); } catch (e) { console.error(e); }
+      try {
+        this.reapplyAutoTransitions();
+        this.compute();
+        // 刷新分段卡片中的过渡最小值/换算/警示（正在编辑分段输入框时跳过，避免打断输入）
+        const ae = document.activeElement;
+        const editingSeg = ae && ae.closest && ae.closest('#segList');
+        if (!editingSeg) this.renderSegTable(true);
+      } catch (e) { console.error(e); }
     }, 300);
   },
   compute() {
