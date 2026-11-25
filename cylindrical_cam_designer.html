@@ -176,6 +176,17 @@ input.inp-sm { width: 80px; }
 .btn-danger { background: var(--panel); color: var(--warn); border: 1px solid #ffc9c9; }
 .btn-danger:hover { background: var(--err-bg); }
 
+/* ========== 凸轮类型 / 层切换 ========== */
+.layer-bar { display: flex; gap: 4px; background: var(--bg); border-radius: 6px; padding: 3px; margin-top: 8px; }
+.layer-btn {
+  flex: 1; border: none; background: transparent; padding: 5px 8px; border-radius: 4px;
+  cursor: pointer; font-size: 0.82em; color: var(--text-dim); font-weight: 500;
+}
+.layer-btn.active { background: var(--panel); color: var(--primary); box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+.layer-hint { margin-top: 7px; font-size: 0.75em; color: var(--text-muted); line-height: 1.45; }
+.type-note { font-size: 0.72em; color: var(--info); margin-top: 2px; }
+input.derived { background: var(--bg); color: var(--text-dim); }
+
 /* ========== 警告条 ========== */
 .alert-list { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
 .alert {
@@ -265,11 +276,27 @@ hr.section { border: none; border-top: 1px solid var(--border); margin: 14px 0; 
   <aside class="left-col">
 
     <div class="panel">
+      <h2><span class="icon">🧩</span><span data-i18n="secCamType">凸轮类型</span></h2>
+      <div class="form-row">
+        <select id="p_camType" onchange="App.onCamTypeChange()">
+          <option value="single" data-i18n="camSingle">单层圆柱凸轮</option>
+          <option value="compound" data-i18n="camCompound">复合圆柱凸轮（两层）</option>
+        </select>
+      </div>
+      <div class="layer-bar" id="layerBar" style="display:none">
+        <button type="button" class="layer-btn active" data-layer="0" onclick="App.switchLayer(0)" data-i18n="layer1">第1层</button>
+        <button type="button" class="layer-btn" data-layer="1" onclick="App.switchLayer(1)" data-i18n="layer2">第2层</button>
+      </div>
+      <div class="layer-hint" id="layerHint" style="display:none" data-i18n="layerHint"></div>
+    </div>
+
+    <div class="panel">
       <h2><span class="icon">⚙️</span><span data-i18n="secBasic">基础参数</span></h2>
       <div class="param-grid">
         <div class="form-row">
           <label><span data-i18n="baseDia">基圆直径</span><span class="unit">mm</span></label>
           <input type="number" id="p_baseDia" value="80" step="0.5" min="1">
+          <div class="type-note" id="noteBaseDia" style="display:none" data-i18n="baseDiaDerivedNote"></div>
         </div>
         <div class="form-row">
           <label><span data-i18n="camWidth">凸轮宽度</span><span class="unit">mm</span></label>
@@ -587,6 +614,22 @@ Object.assign(I18N.zh, {
   view3dHint: "拖动旋转视角 · 双击复位",
   alertGrooveOverflow: "沟槽轴向范围超出凸轮宽度：至少需要 {need} mm（随动器直径 {rd} mm + 升程 {lift} mm），当前凸轮宽度仅 {w} mm。",
   sugGrooveOverflow: "将「凸轮宽度」增大到 {need} mm 以上，或减小升程/初始高度，或减小随动器直径。",
+  secCamType: "凸轮类型",
+  camSingle: "单层圆柱凸轮",
+  camCompound: "复合圆柱凸轮（两层）",
+  layer1: "第 1 层",
+  layer2: "第 2 层",
+  layerHint: "两层同轴径向嵌套，共用同一轴向区间。第 2 层外径自动取第 1 层沟槽底部直径。下方曲线/受力显示当前层。",
+  layerHint2: "第 2 层外径已锁定为第 1 层槽底直径 {d} mm（不可改）。下方曲线/受力显示第 2 层。",
+  baseDiaDerivedNote: "= 第 1 层沟槽底部直径（自动锁定）",
+  alertCompoundRaised: "第 2 层工作面在第 {ranges} 低于第 1 层工作面，已自动抬高 {n} mm（初始高度 {a} → {b} mm）。",
+  sugCompoundRaised: "若想减小整体高度，可减小第 2 层升程或让第 2 层运动曲线的低谷与第 1 层峰值错开；也可直接改小第 2 层「初始高度」但必须保持在不违规区间内。",
+  infoCompoundOk: "复合凸轮：第 2 层工作面全程高于第 1 层，第 2 层外径 = {d} mm，满足加工条件。",
+  sugCompoundOk: "如需调整两层相对高度，可在「第 2 层」页修改初始高度；系统会自动校核并保证不重叠。",
+  alertCompoundNoFit: "第 2 层沟槽轴向占用 {z} mm，需要其凸轮宽度 ≥ {need} mm，当前仅 {w} mm。",
+  sugCompoundNoFit: "把第 2 层的「凸轮宽度」增大到 {need} mm 以上，或减小第 2 层的升程／初始高度。",
+  alertLayer2Deep: "第 2 层沟槽深度 {d} mm 已超过其外圆半径 {r} mm。",
+  sugLayer2Deep: "减小第 2 层「随动器宽度」，或增大第 1 层「基圆直径」以放大第 2 层外径。",
   alertTransShort: "第 {seg} 段梯形过渡长度 {l} mm 小于最小允许值 {d} mm（由随动器直径决定），当前 {cur}%，建议不小于 {r}%。",
   sugTransShort: "将过渡比例增大到 {r}% 以上，或增大该段转角/基圆直径，或减小随动器直径。",
   alertTransImpossible: "第 {seg} 段转角过小或随动器直径过大：最小过渡长度已超过该段弧长的 49%，无法形成有效梯形过渡（弧长 {arc} mm，随动器直径 {d} mm）。",
@@ -644,6 +687,22 @@ Object.assign(I18N.en, {
   view3dHint: "Drag to rotate · double-click to reset",
   alertGrooveOverflow: "Groove axial span exceeds cam width: at least {need} mm is required (follower dia {rd} mm + lift {lift} mm), but cam width is only {w} mm.",
   sugGrooveOverflow: "Increase cam width to at least {need} mm, or reduce the lift/initial height, or reduce the follower diameter.",
+  secCamType: "Cam type",
+  camSingle: "Single cylindrical cam",
+  camCompound: "Compound cylindrical cam (2 layers)",
+  layer1: "Layer 1",
+  layer2: "Layer 2",
+  layerHint: "Two coaxial layers nested radially in the same axial span. Layer 2 OD is taken from layer 1's groove floor diameter. Charts below show the current layer.",
+  layerHint2: "Layer 2 OD is locked to layer 1's groove floor diameter ({d} mm). Charts below show layer 2.",
+  baseDiaDerivedNote: "= layer 1 groove floor diameter (locked)",
+  alertCompoundRaised: "Layer 2 working surface is below layer 1 between {ranges}; layer 2 was raised automatically by {n} mm (initial height {a} → {b} mm).",
+  sugCompoundRaised: "To reduce total height, lower layer 2's lift or shift its low points away from layer 1's peaks; you may also set layer 2's initial height manually as long as it stays clear.",
+  infoCompoundOk: "Compound cam: layer 2 stays above layer 1 over the full cycle; layer 2 OD = {d} mm, machinable.",
+  sugCompoundOk: "Adjust the relative height on the Layer 2 page; the tool re-checks and keeps them from overlapping.",
+  alertCompoundNoFit: "Layer 2 groove spans {z} mm axially; its cam width must be at least {need} mm (currently {w} mm).",
+  sugCompoundNoFit: "Increase layer 2's cam width to at least {need} mm, or reduce its lift / initial height.",
+  alertLayer2Deep: "Layer 2 groove depth {d} mm exceeds its outer radius {r} mm.",
+  sugLayer2Deep: "Reduce layer 2's follower width, or increase layer 1's base diameter to enlarge layer 2's OD.",
   alertTransShort: "Segment {seg}: trapezoid blend length {l} mm is below the minimum {d} mm (set by follower diameter); current {cur}%, recommended ≥ {r}%.",
   sugTransShort: "Increase the blend ratio to at least {r}%, or enlarge the segment angle / base diameter, or reduce the follower diameter.",
   alertTransImpossible: "Segment {seg}: the minimum blend length exceeds 49% of the segment arc, so a valid trapezoid cannot be formed (arc {arc} mm, follower dia {d} mm).",
@@ -701,6 +760,22 @@ Object.assign(I18N.ja, {
   view3dHint: "ドラッグで回転・ダブルクリックでリセット",
   alertGrooveOverflow: "溝の軸方向範囲がカム幅を超えています：最低 {need} mm 必要（フォロワ径 {rd} mm ＋ リフト {lift} mm）ですが、カム幅は {w} mm です。",
   sugGrooveOverflow: "カム幅を {need} mm 以上に増やすか、リフト／初期高さを小さくするか、フォロワ径を小さくしてください。",
+  secCamType: "カム形式",
+  camSingle: "単段円筒カム",
+  camCompound: "複合円筒カム（2段）",
+  layer1: "第1段",
+  layer2: "第2段",
+  layerHint: "2段は同軸・半径方向に入れ子状、同じ軸方向範囲を共有します。第2段の外径は第1段の溝底径から自動決定されます。下のグラフは現在の段を表示します。",
+  layerHint2: "第2段の外径は第1段の溝底径 {d} mm に固定されています。下のグラフは第2段を表示します。",
+  baseDiaDerivedNote: "= 第1段の溝底径（自動固定）",
+  alertCompoundRaised: "第2段の作用面が {ranges} で第1段より低いため、{n} mm 自動的に上げました（初期高さ {a} → {b} mm）。",
+  sugCompoundRaised: "全高を小さくしたい場合は、第2段のリフトを小さくするか、第2段の谷と第1段の山をずらしてください。手動で初期高さを下げることも可能です（重ならない範囲で）。",
+  infoCompoundOk: "複合カム：第2段の作用面は全周で第1段より高く、第2段外径 = {d} mm、加工可能です。",
+  sugCompoundOk: "段間の高さは「第2段」ページで調整できます。重なりは自動で検査されます。",
+  alertCompoundNoFit: "第2段の溝は軸方向 {z} mm を占め、カム幅は {need} mm 以上が必要です（現在 {w} mm）。",
+  sugCompoundNoFit: "第2段の「カム幅」を {need} mm 以上に増やすか、リフト／初期高さを小さくしてください。",
+  alertLayer2Deep: "第2段の溝深さ {d} mm が外半径 {r} mm を超えています。",
+  sugLayer2Deep: "第2段のフォロワ幅を小さくするか、第1段の基準円直径を大きくして第2段外径を確保してください。",
   alertTransShort: "第 {seg} 区間：台形の遷移長さ {l} mm が最小値 {d} mm（フォロワ径で決定）未満です。現在 {cur}%、{r}% 以上を推奨。",
   sugTransShort: "遷移比率を {r}% 以上に増やすか、区間角度/基円径を大きくするか、フォロワ径を小さくしてください。",
   alertTransImpossible: "第 {seg} 区間：最小遷移長さが区間弧長の 49% を超え、有効な台形遷移を形成できません（弧長 {arc} mm、フォロワ径 {d} mm）。",
@@ -978,7 +1053,13 @@ const App = {
     probePhi: null,
     visibleRows: {},
     dataVersion: 0,
-    dirty: false
+    dirty: false,
+    /* 复合圆柱凸轮（两层，同轴径向嵌套） */
+    camType: 'single',          // 'single' | 'compound'
+    activeLayer: 0,             // 当前编辑/显示的层
+    layerStore: [null, null],   // 每层缓存 { params, segments }
+    ptsByLayer: [null, null],   // 每层点列
+    compoundInfo: null          // 复合校核结果（自动抬高量/违规区间）
   },
 
   /* -------- 初始化 -------- */
@@ -1392,9 +1473,8 @@ const App = {
       } catch (e) { console.error(e); }
     }, 300);
   },
-  compute() {
-    const p = this.getParamFields();
-    const segs = this.state.segments;
+  /* 由参数 + 分段生成整周点列（纯计算，不写 state） */
+  buildPoints(p, segs) {
     const totalAngle = segs.reduce((a, s) => a + s.angle, 0);
     const resolutions = Math.max(36, p.resolution);
     const step = 360 / resolutions;
@@ -1527,15 +1607,227 @@ const App = {
       cumLift = seg.lift; // 本段末升程作为下一段起点
     }
 
+    return pts;
+  },
+
+  /* -------- 计算入口（单层 / 复合两层） -------- */
+  compute() {
+    const camType = this.state.camType || 'single';
+    const p = this.getParamFields();
+    const segs = this.state.segments;
+    this.state.params = p;
+
+    if (camType === 'compound') {
+      this.state.layerStore[this.state.activeLayer] = { params: p, segments: segs };
+      if (this.state.activeLayer === 0) {
+        // 第1层尺寸变化时，第2层外径随之派生
+        this.syncLayer2Derived();
+      } else {
+        const d2 = this.derivedBaseDia2();
+        if (d2 > 0) p.baseDia = d2;
+      }
+    }
+
+    const pts = this.buildPoints(p, segs);
     this.state.points = pts;
     this.state.dataVersion++;
     this._curveCache = null;
-    this.runValidator(segs, p, pts);
+
+    this.state.compoundInfo = null;
+    if (camType === 'compound') {
+      this.state.ptsByLayer[this.state.activeLayer] = pts;
+      this.compoundPrecheck();
+    } else {
+      this.state.ptsByLayer = [pts, null];
+      this.state.layerStore = [null, null];
+    }
+
+    this.runValidator(segs, p, pts, this.state.compoundInfo);
     this.renderAllViz();
+    this.renderLayerUI();
+  },
+
+  /* ======== 复合凸轮：层管理 ======== */
+  onCamTypeChange() {
+    const v = document.getElementById('p_camType').value;
+    const pNow = this.getParamFields();
+    if (this.state.camType === 'compound' && this.state.layerStore[this.state.activeLayer]) {
+      this.state.layerStore[this.state.activeLayer] = { params: pNow, segments: this.state.segments };
+    }
+    this.state.camType = v;
+    if (v === 'compound') {
+      if (!this.state.layerStore[0]) {
+        this.state.layerStore[0] = { params: pNow, segments: JSON.parse(JSON.stringify(this.state.segments)) };
+      }
+      if (!this.state.layerStore[1]) {
+        const c1 = this.state.layerStore[0];
+        const p2 = JSON.parse(JSON.stringify(c1.params));
+        p2.initialHt = +(c1.params.initialHt + (c1.params.rollerDia + 0.2)).toFixed(2);
+        this.state.layerStore[1] = { params: p2, segments: JSON.parse(JSON.stringify(c1.segments)) };
+      }
+      this.state.activeLayer = 0;
+      this.syncLayer2Derived();
+      this.applyLayerToUI(this.state.layerStore[0]);
+    } else {
+      if (this.state.layerStore[0]) {
+        this.state.activeLayer = 0;
+        this.applyLayerToUI(this.state.layerStore[0]);
+      }
+      this.state.ptsByLayer = [null, null];
+    }
+    this.renderLayerUI();
+    this.compute();
+  },
+
+  switchLayer(i) {
+    if (this.state.camType !== 'compound' || i === this.state.activeLayer) return;
+    this.state.layerStore[this.state.activeLayer] = {
+      params: this.getParamFields(), segments: this.state.segments
+    };
+    this.state.activeLayer = i;
+    this.applyLayerToUI(this.state.layerStore[i]);
+    this.compute();
+  },
+
+  /* 把某一层的参数写回左侧面板 */
+  applyLayerToUI(L) {
+    if (!L || !L.params) return;
+    const p = L.params;
+    const set = (id, v) => { const el = document.getElementById(id); if (el && v !== undefined && v !== null) el.value = v; };
+    set('p_baseDia', p.baseDia); set('p_camWidth', p.camWidth);
+    set('p_rollerDia', p.rollerDia); set('p_rollerWidth', p.rollerWidth);
+    set('p_initialHt', p.initialHt); set('p_resolution', p.resolution);
+    set('p_camSpeed', p.camSpeed); set('p_followerType', p.followerType);
+    set('p_handedness', p.handedness); set('p_offset', p.offset);
+    set('p_motionDir', p.motionDir); set('p_tiltAngle', p.tiltAngle);
+    set('p_swingLen', p.swingLen); set('p_fulcrumDist', p.fulcrumDist);
+    set('p_swingInitAngle', p.swingInitAngle);
+    set('p_loadMass', p.loadMass); set('p_springForce', p.springForce);
+    set('p_efficiency', Math.round((p.efficiency || 0.95) * 100));
+    set('p_pressAngleLimit', p.pressAngleLimit);
+    set('p_rollerCount', p.rollerCount);
+    set('p_rollerAngles', (p.rollerAngles || []).join(', '));
+    this.state.segments = L.segments;
+    this.renderSegTable();
+    const gt = document.getElementById('groupTrans'), gs = document.getElementById('groupSwing');
+    if (gt) gt.classList.toggle('hidden', p.followerType !== 'trans');
+    if (gs) gs.classList.toggle('hidden', p.followerType !== 'swing');
+  },
+
+  /* 第2层外径 = 第1层沟槽底部直径 */
+  derivedBaseDia2() {
+    const L1 = this.state.layerStore[0];
+    if (!L1 || !L1.params) return 0;
+    const p1 = L1.params;
+    const depth1 = (p1.rollerWidth || 0) + 1.0;
+    return Math.max(2, +(p1.baseDia - 2 * depth1).toFixed(3));
+  },
+
+  syncLayer2Derived() {
+    const L2 = this.state.layerStore[1];
+    if (!L2 || !L2.params) return;
+    L2.params.baseDia = this.derivedBaseDia2();
+  },
+
+  /* 层控件显示状态 */
+  renderLayerUI() {
+    const comp = this.state.camType === 'compound';
+    const isL2 = comp && this.state.activeLayer === 1;
+    const bar = document.getElementById('layerBar');
+    const hint = document.getElementById('layerHint');
+    const note = document.getElementById('noteBaseDia');
+    const nb = document.getElementById('p_baseDia');
+    if (bar) bar.style.display = comp ? '' : 'none';
+    if (hint) hint.style.display = comp ? '' : 'none';
+    document.querySelectorAll('.layer-btn').forEach(b => {
+      b.classList.toggle('active', Number(b.dataset.layer) === this.state.activeLayer);
+    });
+    if (nb) {
+      nb.readOnly = isL2;
+      nb.classList.toggle('derived', isL2);
+      if (isL2) nb.value = this.derivedBaseDia2();
+    }
+    if (note) note.style.display = isL2 ? '' : 'none';
+    if (hint) {
+      hint.textContent = isL2
+        ? this.t('layerHint2', { d: this.derivedBaseDia2().toFixed(2) })
+        : this.t('layerHint');
+    }
+  },
+
+  /* 按角度插值取位移 */
+  sAtPhi(pts, deg) {
+    if (!pts || !pts.length) return 0;
+    const d = ((deg % 360) + 360) % 360;
+    let lo = 0, hi = pts.length - 1;
+    while (lo < hi - 1) {
+      const mid = (lo + hi) >> 1;
+      if (pts[mid].phi <= d) lo = mid; else hi = mid;
+    }
+    const a = pts[lo], b = pts[hi] || a;
+    const t = (d - a.phi) / ((b.phi - a.phi) || 1);
+    return a.s + (b.s - a.s) * Math.max(0, Math.min(1, t));
+  },
+
+  /* 复合校核：第2层工作面必须全程高于第1层；不满足则自动抬高第2层 */
+  compoundPrecheck() {
+    const S = this.state.layerStore;
+    const other = 1 - this.state.activeLayer;
+    if (S[other]) this.state.ptsByLayer[other] = this.buildPoints(S[other].params, S[other].segments);
+    const P0 = this.state.ptsByLayer[0], P1 = this.state.ptsByLayer[1];
+    const L1 = S[0], L2 = S[1];
+    if (!P0 || !P1 || !L1 || !L2) return;
+    const p1 = L1.params, p2 = L2.params;
+    const hw1 = (p1.rollerDia + 0.2) / 2, hw2 = (p2.rollerDia + 0.2) / 2;
+
+    let need = 0;
+    const ranges = [];
+    let prevBad = false, startD = 0;
+    const D = 0.5;
+    for (let d = 0; d < 360 - 1e-9; d += D) {
+      const top1 = p1.initialHt + this.sAtPhi(P0, d) + hw1;   // 第1层工作面最高处
+      const bot2 = p2.initialHt + this.sAtPhi(P1, d) - hw2;   // 第2层工作面最低处
+      const gap = top1 - bot2;                                // >0 表示第2层偏低
+      if (gap > 1e-6) {
+        if (gap > need) need = gap;
+        if (!prevBad) { startD = d; prevBad = true; }
+      } else if (prevBad) {
+        ranges.push([startD, d - D]); prevBad = false;
+      }
+    }
+    if (prevBad) ranges.push([startD, 360]);
+
+    let raised = 0;
+    if (need > 0) {
+      raised = +(need + 0.1).toFixed(2);
+      p2.initialHt = +(p2.initialHt + raised).toFixed(2);
+      const el = document.getElementById('p_initialHt');
+      if (this.state.activeLayer === 1 && el) el.value = p2.initialHt;
+    }
+    const g1 = this.grooveGeomFor(p1, P0);
+    const g2 = this.grooveGeomFor(p2, P1);
+    // 抬高后第2层沟槽能否装进它自己的凸轮宽度
+    const sMin2 = Math.min.apply(null, P1.map(q => q.s));
+    const sMax2 = Math.max.apply(null, P1.map(q => q.s));
+    const zB = p2.initialHt + sMin2 - hw2;
+    const zT = p2.initialHt + sMax2 + hw2;
+    const fit2 = (zB >= 0.05) && (zT <= p2.camWidth - 0.05);
+    this.state.compoundInfo = {
+      raised, ranges,
+      d2: this.derivedBaseDia2(),
+      h1: p1.initialHt, h2: p2.initialHt,
+      overflow1: g1.overflow, overflow2: g2.overflow,
+      fit2,
+      fitInfo: {
+        z: (zT - zB).toFixed(1),
+        w: Number(p2.camWidth).toFixed(1),
+        need: Math.max(zT + 0.05, zT - zB + 0.1).toFixed(1)
+      }
+    };
   },
 
   /* -------- 校验 -------- */
-  runValidator(segs, p, pts) {
+  runValidator(segs, p, pts, compoundInfo) {
     const alerts = [];
     const Rb = p.baseDia / 2;
     const totalAngle = segs.reduce((a, s) => a + s.angle, 0);
@@ -1667,6 +1959,58 @@ const App = {
       });
     }
 
+    // 复合凸轮：层间高度关系
+    if (compoundInfo) {
+      const S = this.state.layerStore;
+      const p2 = S[1] && S[1].params;
+      const ov = compoundInfo.overflow1 || compoundInfo.overflow2;
+      if (ov) {
+        alerts.push({
+          level: 'E',
+          text: this.t('alertGrooveOverflow', ov),
+          suggestion: this.t('sugGrooveOverflow', ov)
+        });
+      }
+      if (compoundInfo.fit2 === false) {
+        alerts.push({
+          level: 'E',
+          text: this.t('alertCompoundNoFit', compoundInfo.fitInfo),
+          suggestion: this.t('sugCompoundNoFit', compoundInfo.fitInfo)
+        });
+      }
+      if (p2) {
+        const R2 = p2.baseDia / 2;
+        const d2 = (p2.rollerWidth || 0) + 1.0;
+        if (R2 - d2 <= 1) {
+          alerts.push({
+            level: 'E',
+            text: this.t('alertLayer2Deep', { r: R2.toFixed(2), d: d2.toFixed(2) }),
+            suggestion: this.t('sugLayer2Deep')
+          });
+        }
+      }
+      if (compoundInfo.raised > 0) {
+        const ranges = compoundInfo.ranges
+          .map(r => `${r[0].toFixed(1)}°~${r[1].toFixed(1)}°`).join('、');
+        alerts.push({
+          level: 'W',
+          text: this.t('alertCompoundRaised', {
+            n: compoundInfo.raised.toFixed(2),
+            ranges: ranges || '—',
+            a: compoundInfo.h1.toFixed(2),
+            b: compoundInfo.h2.toFixed(2)
+          }),
+          suggestion: this.t('sugCompoundRaised')
+        });
+      } else if (compoundInfo.fit2 !== false) {
+        alerts.push({
+          level: 'I',
+          text: this.t('infoCompoundOk', { d: compoundInfo.d2.toFixed(2) }),
+          suggestion: this.t('sugCompoundOk')
+        });
+      }
+    }
+
     this.state.alerts = alerts;
     this.renderAlerts(alerts);
   },
@@ -1696,6 +2040,7 @@ const App = {
   },
 
   renderAllViz() {
+    this.renderLayerUI();
     if (!this.state.points || this.state.points.length === 0) return;
     if (this.state.currentViz === 'curves') this.drawCurves();
     else if (this.state.currentViz === 'flatten') this.drawFlatten();
@@ -2081,8 +2426,11 @@ const App = {
 
     const pts = this.state.points;
     const p = this.state.params;
-    const Rb = p.baseDia / 2;
+    const RbBase = p.baseDia / 2;
+    const Rb = (this.state.camType === 'compound' && this.state.layerStore[0] && this.state.layerStore[0].params)
+      ? Math.max(RbBase, this.state.layerStore[0].params.baseDia / 2) : RbBase;
     const camLen = p.camWidth;
+    const vls = this.vizLayers();
 
     // 正交投影 + 自动适配画布 + 手动视角（拖动旋转）
     const { alpha, beta } = this.state.view3d;
@@ -2093,7 +2441,13 @@ const App = {
     const swing = p.followerType === 'swing';
     const Rmax = Math.max(Rb + p.initialHt + 20, swing ? Rb + (p.swingLen || 100) : Rb);
     const rodLen = Math.max(50, Rb * 1.2); // 随动器杆示意长度（非参数）
-    const zTop = p.initialHt + maxLift + (swing ? 0 : rodLen);
+    // 视野要同时容纳所有层（复合凸轮第2层可能更高）
+    let zTopG = p.initialHt + maxLift;
+    vls.forEach(vl => {
+      const sMax = vl.pts.reduce((m, q) => Math.max(m, q.s), 0);
+      zTopG = Math.max(zTopG, vl.gg.z0 + sMax + vl.gg.halfW);
+    });
+    const zTop = zTopG + (swing ? 0 : rodLen);
     const zOff = Rb * 0.3;
     const z1min = -zOff, z1max = zTop - zOff;
     const y2min = -z1max * cosB - Rmax * sinB;
@@ -2154,65 +2508,58 @@ const App = {
     ctx.beginPath(); ctx.moveTo(axisFwd.x, axisFwd.y); ctx.lineTo(axisBack.x, axisBack.y); ctx.stroke();
     ctx.setLineDash([]);
 
-    drawCylinder(Rb, '#b8c0ff'); // 凸轮外圆（基圆半径 = 毛坯半径）
-
-    // 与导出实体一致的沟槽轮廓：4 条边界曲线
-    //   外圆面上的槽口两条（r = R）+ 槽底两条（r = rIn）
-    const gg = this.camGrooveGeom();
-    if (!gg.overflow) {
-      const grooveCurves = [
-        { r: gg.R, dz: -gg.halfW, color: '#d9480f', w: 1.8 },  // 槽口下沿
-        { r: gg.R, dz: gg.halfW, color: '#d9480f', w: 1.8 },   // 槽口上沿
-        { r: gg.rIn, dz: -gg.halfW, color: '#0b7285', w: 1.2 },// 槽底下沿
-        { r: gg.rIn, dz: gg.halfW, color: '#0b7285', w: 1.2 }  // 槽底上沿
-      ];
-      grooveCurves.forEach(c => {
+    // ---- 各层沟槽轮廓（与导出实体一致）：4 条边界曲线 ----
+    // 凸轮外圆：单层 1 个，复合 2 个（外套环 + 内芯）
+    const drawnR = [];
+    vls.forEach((vl, li) => {
+      const r = vl.gg.R;
+      if (drawnR.some(x => Math.abs(x - r) < 1e-6)) return;
+      drawnR.push(r);
+      drawCylinder(r, li === 0 ? '#b8c0ff' : 'rgba(112,72,232,0.5)');
+    });
+    const LCOL = ['#d9480f', '#7048e8'], LCOLIN = ['#0b7285', '#4c6ef5'];
+    vls.forEach((vl, li) => {
+      const g = vl.gg;
+      if (g.overflow) return;
+      const oc = LCOL[li] || LCOL[0], ic = LCOLIN[li] || LCOLIN[0];
+      const kk = vl.active ? 1 : 0.85;
+      [
+        { r: g.R, dz: -g.halfW, color: oc, w: 1.8 * kk },   // 槽口下沿
+        { r: g.R, dz: g.halfW, color: oc, w: 1.8 * kk },    // 槽口上沿
+        { r: g.rIn, dz: -g.halfW, color: ic, w: 1.2 * kk }, // 槽底下沿
+        { r: g.rIn, dz: g.halfW, color: ic, w: 1.2 * kk }   // 槽底上沿
+      ].forEach(c => {
         ctx.strokeStyle = c.color; ctx.lineWidth = c.w;
         ctx.beginPath();
-        pts.forEach((pt, i) => {
+        vl.pts.forEach((pt, i) => {
           const ph = pt.phi * Math.PI / 180;
           const { X, Y } = rotate(c.r * Math.cos(ph), c.r * Math.sin(ph));
-          const pr = project(X, Y, gg.z0 + pt.s + c.dz);
+          const pr = project(X, Y, g.z0 + pt.s + c.dz);
           if (i === 0) ctx.moveTo(pr.x, pr.y); else ctx.lineTo(pr.x, pr.y);
         });
         ctx.stroke();
       });
-    }
+    });
 
-    // 随动器中心轨迹（理论轮廓）
+    // 当前层随动器理论轨迹
+    const al = vls.find(v => v.active) || vls[0];
+    const gg = al.gg;
     ctx.strokeStyle = '#4158d0'; ctx.lineWidth = 2;
     ctx.beginPath();
-    pts.forEach((pt, i) => {
+    al.pts.forEach((pt, i) => {
       const { X, Y } = rotate(pt.x3d_th, pt.y3d_th);
       const pr = project(X, Y, gg.z0 + pt.z3d_th);
       if (i === 0) ctx.moveTo(pr.x, pr.y); else ctx.lineTo(pr.x, pr.y);
     });
     ctx.stroke();
 
-    // 随动器（随动器 + 杆/摆臂）：固定在世界角度，只做轴向直动或摆动，不随凸轮旋转
-    const nRollers = p.rollerCount;
-    const NP = pts.length;
-    const liftAtWorld = (worldDeg) => {
-      const phi = ((worldDeg - this.state.anim.phase) % 360 + 360) % 360;
-      const idx = Math.round(phi / 360 * (NP - 1));
-      const pt = pts[Math.min(Math.max(idx, 0), NP - 1)];
-      return pt ? pt.z3d_th + gg.z0 : gg.z0;
-    };
-    for (let r = 0; r < nRollers; r++) {
-      const worldDeg = (p.rollerAngles[r] != null && p.rollerAngles[r] !== '')
-        ? Number(p.rollerAngles[r]) : (360 / nRollers * r);
-      const th = worldDeg * Math.PI / 180;
-      // 随动器固定在世界角度 θ 上，θ 不随 phase 改变，仅轴向 z 变化
-      const X = Rb * Math.cos(th), Y = Rb * Math.sin(th);
-      const z = liftAtWorld(worldDeg);
-      const rollerCenter = project(X, Y, z);
-
-      // ---- 随动器：按实际尺寸画成圆柱实体（直径 rollerDia × 宽 rollerWidth，轴线沿径向）----
-      const rr = Math.max(1, (p.rollerDia || 20) / 2);      // 滚子半径（跨凸轮轴向）
-      const hl = Math.max(0.5, (p.rollerWidth || 20) / 2);   // 滚子半宽（沿径向）
-      const Rc = Math.max(rr * 0.2 + hl, Rb - 0.5 - hl);     // 滚子中心半径（落在槽深中部）
-      const ux = Math.cos(th), uy = Math.sin(th);            // 径向单位向量 = 滚子轴线
-      const vx = -uy, vy = ux;                               // 周向单位向量
+    // ---- 随动器：按实际尺寸画成圆柱实体（直径 × 宽度，轴线沿径向）----
+    const drawRoller = (th, z, dia, wid, Rbase, color, alpha) => {
+      const rr = Math.max(1, (dia || 20) / 2);       // 滚子半径（跨凸轮轴向）
+      const hl = Math.max(0.5, (wid || 20) / 2);     // 滚子半宽（沿径向）
+      const Rc = Math.max(rr * 0.2 + hl, Rbase - 0.5 - hl);
+      const ux = Math.cos(th), uy = Math.sin(th);
+      const vx = -uy, vy = ux;
       const SEGR = 28;
       const mkCap = (s) => {
         const cc = [Rc * ux + s * hl * ux, Rc * uy + s * hl * uy, z];
@@ -2229,33 +2576,33 @@ const App = {
       };
       const capA = mkCap(-1), capB = mkCap(1);
       // 投影轮廓（凸包）→ 半透明实体
-      const hpts = capA.concat(capB).sort((m, n) => m.x - n.x || m.y - n.y);
+      const hp = capA.concat(capB).sort((m, n) => m.x - n.x || m.y - n.y);
       const crs = (o, a, b) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
-      const lo = [], up = [];
-      for (const q of hpts) {
-        while (lo.length >= 2 && crs(lo[lo.length - 2], lo[lo.length - 1], q) <= 0) lo.pop();
-        lo.push(q);
+      const lo2 = [], up2 = [];
+      for (const q of hp) {
+        while (lo2.length >= 2 && crs(lo2[lo2.length - 2], lo2[lo2.length - 1], q) <= 0) lo2.pop();
+        lo2.push(q);
       }
-      for (let i = hpts.length - 1; i >= 0; i--) {
-        const q = hpts[i];
-        while (up.length >= 2 && crs(up[up.length - 2], up[up.length - 1], q) <= 0) up.pop();
-        up.push(q);
+      for (let i = hp.length - 1; i >= 0; i--) {
+        const q = hp[i];
+        while (up2.length >= 2 && crs(up2[up2.length - 2], up2[up2.length - 1], q) <= 0) up2.pop();
+        up2.push(q);
       }
-      lo.pop(); up.pop();
-      const hull = lo.concat(up);
+      lo2.pop(); up2.pop();
+      const hull = lo2.concat(up2);
       ctx.beginPath();
       hull.forEach((q, i) => i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y));
       ctx.closePath();
-      ctx.fillStyle = 'rgba(255,146,43,0.42)'; ctx.fill();
-
+      ctx.fillStyle = alpha > 0.3 ? 'rgba(255,146,43,0.42)' : 'rgba(112,72,232,0.20)';
+      ctx.fill();
       // 两条端面圆边线
-      ctx.strokeStyle = '#d9480f'; ctx.lineWidth = 1.3;
+      ctx.strokeStyle = color; ctx.lineWidth = 1.3;
       [capA, capB].forEach(cap => {
         ctx.beginPath();
         cap.forEach((q, i) => i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y));
         ctx.closePath(); ctx.stroke();
       });
-      // 侧面轮廓母线（轮廓最外两点连线）
+      // 侧面轮廓母线
       const pA = project(Rc * ux - hl * ux, Rc * uy - hl * uy, z);
       const pB = project(Rc * ux + hl * ux, Rc * uy + hl * uy, z);
       const axl = pB.x - pA.x, ayl = pB.y - pA.y;
@@ -2271,21 +2618,40 @@ const App = {
       ctx.moveTo(capA[iMax].x, capA[iMax].y); ctx.lineTo(capB[iMax].x, capB[iMax].y);
       ctx.moveTo(capA[iMin].x, capA[iMin].y); ctx.lineTo(capB[iMin].x, capB[iMin].y);
       ctx.stroke();
+    };
 
-      ctx.strokeStyle = '#868e96'; ctx.lineWidth = 3; ctx.lineCap = 'round';
-      if (p.followerType === 'swing') {
-        // 摆动从动件：固定支点 + 摆臂，只有摆角随升程变化
-        const pivotR = Rb + (p.swingLen || 100);
-        const pivot = project(pivotR * Math.cos(th), pivotR * Math.sin(th), gg.z0);
-        ctx.beginPath(); ctx.moveTo(pivot.x, pivot.y); ctx.lineTo(rollerCenter.x, rollerCenter.y); ctx.stroke();
-        ctx.fillStyle = '#495057'; ctx.beginPath(); ctx.arc(pivot.x, pivot.y, 4, 0, Math.PI * 2); ctx.fill();
-      } else {
-        // 直动从动件：随动器杆沿轴向 +Z 伸出，不参与凸轮旋转
-        const rodEnd = project(X, Y, z + rodLen);
-        ctx.beginPath(); ctx.moveTo(rollerCenter.x, rollerCenter.y); ctx.lineTo(rodEnd.x, rodEnd.y); ctx.stroke();
-        ctx.fillStyle = '#5c6370'; ctx.beginPath(); ctx.arc(rodEnd.x, rodEnd.y, 3, 0, Math.PI * 2); ctx.fill();
+    vls.forEach((vl) => {
+      const g = vl.gg, pL = vl.p, ptsL = vl.pts, NPL = ptsL.length;
+      const nR = Math.max(1, pL.rollerCount || 1);
+      const liftAt = (worldDeg) => {
+        const phi = ((worldDeg - this.state.anim.phase) % 360 + 360) % 360;
+        const idx = Math.round(phi / 360 * (NPL - 1));
+        const q = ptsL[Math.min(Math.max(idx, 0), NPL - 1)];
+        return q ? q.z3d_th + g.z0 : g.z0;
+      };
+      for (let r = 0; r < nR; r++) {
+        const worldDeg = (pL.rollerAngles && pL.rollerAngles[r] != null && pL.rollerAngles[r] !== '')
+          ? Number(pL.rollerAngles[r]) : (360 / nR * r);
+        const th = worldDeg * Math.PI / 180;
+        const X = g.R * Math.cos(th), Y = g.R * Math.sin(th);
+        const z = liftAt(worldDeg);
+        const rollerCenter = project(X, Y, z);
+        drawRoller(th, z, pL.rollerDia, pL.rollerWidth, g.R,
+          vl.active ? '#d9480f' : '#7048e8', vl.active ? 0.5 : 0.2);
+        if (!vl.active) continue;
+        ctx.strokeStyle = '#868e96'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+        if (pL.followerType === 'swing') {
+          const pivotR = g.R + (pL.swingLen || 100);
+          const pivot = project(pivotR * Math.cos(th), pivotR * Math.sin(th), g.z0);
+          ctx.beginPath(); ctx.moveTo(pivot.x, pivot.y); ctx.lineTo(rollerCenter.x, rollerCenter.y); ctx.stroke();
+          ctx.fillStyle = '#495057'; ctx.beginPath(); ctx.arc(pivot.x, pivot.y, 4, 0, Math.PI * 2); ctx.fill();
+        } else {
+          const rodEnd = project(X, Y, z + rodLen);
+          ctx.beginPath(); ctx.moveTo(rollerCenter.x, rollerCenter.y); ctx.lineTo(rodEnd.x, rodEnd.y); ctx.stroke();
+          ctx.fillStyle = '#5c6370'; ctx.beginPath(); ctx.arc(rodEnd.x, rodEnd.y, 3, 0, Math.PI * 2); ctx.fill();
+        }
       }
-    }
+    });
 
     // 显示相位
     ctx.fillStyle = this.cssVar('--text'); ctx.font = '14px monospace'; ctx.textAlign = 'left';
@@ -2415,9 +2781,13 @@ const App = {
   /* -------- 数据存取 -------- */
   saveJSON() {
     const payload = {
-      format: 'cylindrical-cam-designer-v1',
+      format: 'cylindrical-cam-designer-v2',
+      camType: this.state.camType || 'single',
       params: this.state.params,
       segments: this.state.segments,
+      layers: (this.state.camType === 'compound' && this.state.layerStore[0] && this.state.layerStore[1])
+        ? this.state.layerStore.map(L => ({ params: L.params, segments: L.segments }))
+        : null,
       savedAt: new Date().toISOString()
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
@@ -2435,6 +2805,23 @@ const App = {
     reader.onload = () => {
       try {
         const data = JSON.parse(reader.result);
+        const comp = data.camType === 'compound' && Array.isArray(data.layers)
+          && data.layers[0] && data.layers[1];
+        if (comp) {
+          document.getElementById('p_camType').value = 'compound';
+          this.state.camType = 'compound';
+          this.state.layerStore = data.layers;
+          this.state.activeLayer = 0;
+          this.state.ptsByLayer = [null, null];
+          this.applyLayerToUI(data.layers[0]);
+          this.syncLayer2Derived();
+          this.compute();
+          return;
+        }
+        document.getElementById('p_camType').value = 'single';
+        this.state.camType = 'single';
+        this.state.layerStore = [null, null];
+        this.state.ptsByLayer = [null, null];
         if (data.segments) this.state.segments = data.segments;
         if (data.params) {
           const p = data.params;
@@ -2483,9 +2870,8 @@ const App = {
   },
 
   /* -------- 凸轮沟槽几何（STEP 导出与 3D 预览共用） -------- */
-  camGrooveGeom() {
-    const pts = this.state.points || [];
-    const p = this.state.params;
+  grooveGeomFor(p, pts) {
+    pts = pts || [];
     const R = p.baseDia / 2;
     const halfW = (p.rollerDia + 0.2) / 2;   // 沟槽轴向半宽（随动器直径 + 0.2 间隙）
     const depth = p.rollerWidth + 1.0;        // 沟槽径向深度（随动器宽度 + 1.0 间隙）
@@ -2508,57 +2894,95 @@ const App = {
     return { R, halfW, depth, rIn, zLow, zHigh, z0, sMin, sMax, overflow };
   },
 
+  camGrooveGeom() {
+    return this.grooveGeomFor(this.state.params, this.state.points || []);
+  },
+
+  /* 3D 显示用的层列表：单层 1 项，复合 2 项（第1层在外圈） */
+  vizLayers() {
+    const S = this.state.layerStore, P = this.state.ptsByLayer;
+    if (this.state.camType === 'compound' && S[0] && S[1] && P[0] && P[1]) {
+      const out = [];
+      for (let i = 0; i < 2; i++) {
+        out.push({
+          p: S[i].params, pts: P[i],
+          gg: this.grooveGeomFor(S[i].params, P[i]),
+          active: i === this.state.activeLayer, idx: i
+        });
+      }
+      return out;
+    }
+    return [{
+      p: this.state.params, pts: this.state.points || [],
+      gg: this.camGrooveGeom(), active: true, idx: 0
+    }];
+  },
+
   /* -------- STEP AP214 导出 -------- */
   exportSTEP() {
     const pts = this.state.points;
-    const p = this.state.params;
     if (!pts || pts.length === 0) { alert(this.t('needCompute')); return; }
 
-    /* ---- 生成带沟槽的凸轮实体（圆柱毛坯 − 沟槽）（mm）----
-       毛坯: 半径 R = 基圆直径/2，轴向 0..凸轮宽度
-       沟槽: 轴向宽 Wg = 随动器直径 + 间隙，径向深 Hd = 随动器宽度 + 间隙，
-             沿 (R·cosφ, R·sinφ, z0 + s(φ)) 整周扫掠，从外圆面向内切入
-       输出: AP214 实体 B-rep (MANIFOLD_SOLID_BREP → CLOSED_SHELL →
-             ADVANCED_FACE → FACE_OUTER_BOUND → EDGE_LOOP → ORIENTED_EDGE →
-             EDGE_CURVE(LINE) + VERTEX_POINT + CARTESIAN_POINT)
-       导出的就是成品凸轮（带沟槽的实体），不是沟槽空腔 */
-    const geom = this.camGrooveGeom();
-    if (geom.overflow) {
-      alert(this.t('alertGrooveOverflow', geom.overflow) + '\n' + this.t('sugGrooveOverflow', geom.overflow));
-      return;
-    }
-    const R = geom.R, halfW = geom.halfW, rIn = geom.rIn;
-    const zLow = geom.zLow, zHigh = geom.zHigh, z0 = geom.z0;
-    const N = 360; // 每 1° 一段
-    const sAt = (deg) => {
+    /* ---- 实体定义（mm）----
+       单层: 圆柱毛坯 − 沟槽（一条通道）
+       复合: 第1层 = 外套环（外径 R1、内孔 = 第2层外径 R2），沟槽自外圆切到近内孔；
+             第2层 = 内芯圆柱（外径 R2），沟槽自 R2 向内切 R2−d2
+       两者同轴、分别成体，写在同一个 STEP 文件里 */
+    const compound = this.state.camType === 'compound' && this.state.layerStore[0]
+      && this.state.layerStore[1] && this.state.ptsByLayer[0] && this.state.ptsByLayer[1];
+    const N = compound ? 240 : 360; // 每 1.5° / 1° 一段
+    const mkSAt = (arr) => (deg) => {
       const d = ((deg % 360) + 360) % 360;
-      const i = Math.min(pts.length - 2, Math.floor(d / 360 * (pts.length - 1)));
-      const a = pts[i], b = pts[i + 1] || a;
+      const i = Math.min(arr.length - 2, Math.floor(d / 360 * (arr.length - 1)));
+      const a = arr[i], b = arr[i + 1] || a;
       const t = (d - a.phi) / ((b.phi - a.phi) || 1);
       return a.s + (b.s - a.s) * Math.max(0, Math.min(1, t));
     };
-    // 每个角度站位 6 个截面点：0 外圆下 1 槽口下 2 槽底下 3 槽底上 4 槽口上 5 外圆上
-    const V = [];    // [i][k] = [x,y,z]
-    const vert = []; // 扁平顶点表：gi(i,k)=i*6+k，轴线两点追加在末尾
-    for (let i = 0; i < N; i++) {
-      const ph = i * 2 * Math.PI / N;
-      const zc = z0 + sAt(i * 360 / N);
-      const z1 = zc - halfW, z2 = zc + halfW;
-      const cx = Math.cos(ph), sy = Math.sin(ph);
-      const row = [
-        [R * cx, R * sy, zLow],
-        [R * cx, R * sy, z1],
-        [rIn * cx, rIn * sy, z1],
-        [rIn * cx, rIn * sy, z2],
-        [R * cx, R * sy, z2],
-        [R * cx, R * sy, zHigh]
-      ];
-      V.push(row);
-      for (let k = 0; k < 6; k++) vert.push(row[k]);
+
+    const bodies = [];
+    if (compound) {
+      const L1 = this.state.layerStore[0], L2 = this.state.layerStore[1];
+      const info = this.state.compoundInfo;
+      if (info && info.fit2 === false) {
+        alert(this.t('alertCompoundNoFit', info.fitInfo) + '\n' + this.t('sugCompoundNoFit', info.fitInfo));
+        return;
+      }
+      const g1 = this.grooveGeomFor(L1.params, this.state.ptsByLayer[0]);
+      const g2 = this.grooveGeomFor(L2.params, this.state.ptsByLayer[1]);
+      if (g1.overflow) {
+        alert(this.t('alertGrooveOverflow', g1.overflow) + '\n' + this.t('sugGrooveOverflow', g1.overflow));
+        return;
+      }
+      if (g2.overflow) {
+        alert(this.t('alertGrooveOverflow', g2.overflow) + '\n' + this.t('sugGrooveOverflow', g2.overflow));
+        return;
+      }
+      const floorGap = 0.1; // 外套环槽底与内孔之间的余量（保证环仍是一整块）
+      bodies.push({
+        name: 'CamLayer1_Ring', ring: true,
+        R_out: g1.R, R_in: g2.R, R_floor: Math.min(g1.R - 0.5, g2.R + floorGap),
+        halfW: g1.halfW, zLow: 0, zHigh: L1.params.camWidth, z0: g1.z0,
+        sAt: mkSAt(this.state.ptsByLayer[0])
+      });
+      bodies.push({
+        name: 'CamLayer2_Core', ring: false,
+        R_out: g2.R, R_in: g2.rIn,
+        halfW: g2.halfW, zLow: 0, zHigh: L2.params.camWidth, z0: g2.z0,
+        sAt: mkSAt(this.state.ptsByLayer[1])
+      });
+    } else {
+      const geom = this.camGrooveGeom();
+      if (geom.overflow) {
+        alert(this.t('alertGrooveOverflow', geom.overflow) + '\n' + this.t('sugGrooveOverflow', geom.overflow));
+        return;
+      }
+      bodies.push({
+        name: 'CamGroove', ring: false,
+        R_out: geom.R, R_in: geom.rIn,
+        halfW: geom.halfW, zLow: geom.zLow, zHigh: geom.zHigh, z0: geom.z0,
+        sAt: mkSAt(pts)
+      });
     }
-    const A0 = vert.length; vert.push([0, 0, zLow]);
-    const A1 = vert.length; vert.push([0, 0, zHigh]);
-    const gi = (i, k) => i * 6 + k;
 
     const lines = [];
     const push = (s = '') => lines.push(s);
@@ -2594,95 +3018,130 @@ const App = {
     push(`#${unc}=UNCERTAINTY_MEASURE_WITH_UNIT(LENGTH_MEASURE(0.001),#${u1},'distance_accuracy_value','');`);
     push(`#${ctx}=(GEOMETRIC_REPRESENTATION_CONTEXT(3) GLOBAL_UNCERTAINTY_ASSIGNED_CONTEXT((#${unc})) GLOBAL_UNIT_ASSIGNED_CONTEXT((#${u1},#${u2},#${u3})) REPRESENTATION_CONTEXT('',''));`);
 
-    // 顶点：CARTESIAN_POINT + VERTEX_POINT
-    const cpId = [], vpId = [];
-    for (let g = 0; g < vert.length; g++) {
-      const v = vert[g];
-      const cp = nid();
-      push(`#${cp}=CARTESIAN_POINT('',(${v[0].toFixed(4)},${v[1].toFixed(4)},${v[2].toFixed(4)}));`);
-      const vp = nid();
-      push(`#${vp}=VERTEX_POINT('',#${cp});`);
-      cpId.push(cp); vpId.push(vp);
-    }
-
-    // 棱：按"无向顶点对"去重，每条棱生成一次 EDGE_CURVE（低编号→高编号）
-    const edgeCache = new Map();
-    const getEdge = (a, b) => {
-      const lo = a < b ? a : b, hi = a < b ? b : a;
-      const key = lo + '_' + hi;
-      let e = edgeCache.get(key);
-      if (!e) {
-        const P = vert[lo], Q = vert[hi];
-        const dx = Q[0] - P[0], dy = Q[1] - P[1], dz = Q[2] - P[2];
-        const len = Math.hypot(dx, dy, dz) || 1e-9;
-        const dir = nid();
-        push(`#${dir}=DIRECTION('',(${(dx / len).toFixed(9)},${(dy / len).toFixed(9)},${(dz / len).toFixed(9)}));`);
-        const vec = nid();
-        push(`#${vec}=VECTOR('',#${dir},${len.toFixed(6)});`);
-        const line = nid();
-        push(`#${line}=LINE('',#${cpId[lo]},#${vec});`);
-        const ec = nid();
-        push(`#${ec}=EDGE_CURVE('',#${vpId[lo]},#${vpId[hi]},#${line},.T.);`);
-        e = { id: ec, from: lo };
-        edgeCache.set(key, e);
+    // ---- 逐体生成闭合 B-rep（每个体 = 闭合壳 + 若干平面三角面）----
+    const brepIds = [];
+    bodies.forEach((b) => {
+      const K = 8;
+      const isRing = !!b.ring;
+      const vert = [];
+      let axLow = -1, axHigh = -1;
+      if (!isRing) {
+        axLow = vert.length; vert.push([0, 0, b.zLow]);
+        axHigh = vert.length; vert.push([0, 0, b.zHigh]);
       }
-      return { id: e.id, same: a === e.from };
-    };
+      // 每个角度的截面多边形（逆时针）：外圆下 → 槽口下 → 槽底 → 槽口上 → 外圆上
+      const prof = (z1, z2) => isRing
+        ? [[b.R_in, b.zLow], [b.R_out, b.zLow], [b.R_out, z1], [b.R_floor, z1],
+           [b.R_floor, z2], [b.R_out, z2], [b.R_out, b.zHigh], [b.R_in, b.zHigh]]
+        : [[0, b.zLow], [b.R_out, b.zLow], [b.R_out, z1], [b.R_in, z1],
+           [b.R_in, z2], [b.R_out, z2], [b.R_out, b.zHigh], [0, b.zHigh]];
 
-    // 面：每个三角面 = EDGE_LOOP → FACE_OUTER_BOUND → ADVANCED_FACE(PLANE)
-    const faces = [];
-    const addTri = (ga, gb, gc) => {
-      const A = vert[ga], B = vert[gb], C = vert[gc];
-      let nx = (B[1] - A[1]) * (C[2] - A[2]) - (B[2] - A[2]) * (C[1] - A[1]);
-      let ny = (B[2] - A[2]) * (C[0] - A[0]) - (B[0] - A[0]) * (C[2] - A[2]);
-      let nz = (B[0] - A[0]) * (C[1] - A[1]) - (B[1] - A[1]) * (C[0] - A[0]);
-      const nl = Math.hypot(nx, ny, nz);
-      if (nl < 1e-12) return; // 退化三角（零面积）跳过
-      nx /= nl; ny /= nl; nz /= nl;
-      const mkOE = (u, w) => {
-        const ed = getEdge(u, w);
-        const oe = nid();
-        push(`#${oe}=ORIENTED_EDGE('',*,*,#${ed.id},${ed.same ? '.T.' : '.F.'});`);
-        return oe;
+      const vid = [];
+      for (let i = 0; i < N; i++) {
+        const ph = i * 2 * Math.PI / N;
+        const zc = b.z0 + b.sAt(i * 360 / N);
+        const z1 = zc - b.halfW, z2 = zc + b.halfW;
+        const cx = Math.cos(ph), sy = Math.sin(ph);
+        const row = prof(z1, z2);
+        vid[i] = [];
+        for (let k = 0; k < K; k++) {
+          const r = row[k][0], z = row[k][1];
+          if (r < 1e-9) vid[i][k] = (z <= b.zLow + 1e-9) ? axLow : axHigh;
+          else { vid[i][k] = vert.length; vert.push([r * cx, r * sy, z]); }
+        }
+      }
+
+      // 顶点：CARTESIAN_POINT + VERTEX_POINT
+      const cpId = [], vpId = [];
+      for (let g = 0; g < vert.length; g++) {
+        const v = vert[g];
+        const cp = nid();
+        push(`#${cp}=CARTESIAN_POINT('',(${v[0].toFixed(4)},${v[1].toFixed(4)},${v[2].toFixed(4)}));`);
+        const vp = nid();
+        push(`#${vp}=VERTEX_POINT('',#${cp});`);
+        cpId.push(cp); vpId.push(vp);
+      }
+
+      // 棱：按"无向顶点对"去重，每条棱生成一次 EDGE_CURVE（低编号→高编号）
+      const edgeCache = new Map();
+      const getEdge = (a, c) => {
+        const lo = a < c ? a : c, hi = a < c ? c : a;
+        const key = lo + '_' + hi;
+        let e = edgeCache.get(key);
+        if (!e) {
+          const P = vert[lo], Q = vert[hi];
+          const dx = Q[0] - P[0], dy = Q[1] - P[1], dz = Q[2] - P[2];
+          const len = Math.hypot(dx, dy, dz) || 1e-9;
+          const dir = nid();
+          push(`#${dir}=DIRECTION('',(${(dx / len).toFixed(9)},${(dy / len).toFixed(9)},${(dz / len).toFixed(9)}));`);
+          const vec = nid();
+          push(`#${vec}=VECTOR('',#${dir},${len.toFixed(6)});`);
+          const line = nid();
+          push(`#${line}=LINE('',#${cpId[lo]},#${vec});`);
+          const ec = nid();
+          push(`#${ec}=EDGE_CURVE('',#${vpId[lo]},#${vpId[hi]},#${line},.T.);`);
+          e = { id: ec, from: lo };
+          edgeCache.set(key, e);
+        }
+        return { id: e.id, same: a === e.from };
       };
-      const oe1 = mkOE(ga, gb), oe2 = mkOE(gb, gc), oe3 = mkOE(gc, ga);
-      const loop = nid();
-      push(`#${loop}=EDGE_LOOP('',(#${oe1},#${oe2},#${oe3}));`);
-      const bound = nid();
-      push(`#${bound}=FACE_OUTER_BOUND('',#${loop},.T.);`);
-      const ax = nid(), rf = nid();
-      const rl = Math.hypot(B[0] - A[0], B[1] - A[1], B[2] - A[2]) || 1;
-      push(`#${ax}=DIRECTION('',(${nx.toFixed(9)},${ny.toFixed(9)},${nz.toFixed(9)}));`);
-      push(`#${rf}=DIRECTION('',(${((B[0] - A[0]) / rl).toFixed(9)},${((B[1] - A[1]) / rl).toFixed(9)},${((B[2] - A[2]) / rl).toFixed(9)}));`);
-      const pl = nid();
-      push(`#${pl}=AXIS2_PLACEMENT_3D('',#${cpId[ga]},#${ax},#${rf});`);
-      const plane = nid();
-      push(`#${plane}=PLANE('',#${pl});`);
-      const face = nid();
-      push(`#${face}=ADVANCED_FACE('',(#${bound}),#${plane},.T.);`);
-      faces.push(face);
-    };
-    // 四边环带面片按 (A,B,C)+(A,C,D) 三角化，保证严格共面
-    const addQuad = (a, b, c, d) => {
-      addTri(gi(a[0], a[1]), gi(b[0], b[1]), gi(c[0], c[1]));
-      addTri(gi(a[0], a[1]), gi(c[0], c[1]), gi(d[0], d[1]));
-    };
-    for (let i = 0; i < N; i++) {
-      const j = (i + 1) % N;
-      addTri(A0, gi(j, 0), gi(i, 0));          // 前端面（-z）
-      addTri(A1, gi(i, 5), gi(j, 5));          // 后端面（+z）
-      addQuad([i, 0], [j, 0], [j, 1], [i, 1]); // 外圆面（沟槽下方）
-      addQuad([i, 1], [j, 1], [j, 2], [i, 2]); // 沟槽下侧壁
-      addQuad([i, 2], [j, 2], [j, 3], [i, 3]); // 沟槽底面
-      addQuad([i, 3], [j, 3], [j, 4], [i, 4]); // 沟槽上侧壁
-      addQuad([i, 4], [j, 4], [j, 5], [i, 5]); // 外圆面（沟槽上方）
-    }
 
-    const shell = nid();
-    push(`#${shell}=CLOSED_SHELL('',(${faces.map(f => '#' + f).join(',')}));`);
-    const brep = nid();
-    push(`#${brep}=MANIFOLD_SOLID_BREP('CamGroove',#${shell});`);
-    push(`#${rep}=ADVANCED_BREP_SHAPE_REPRESENTATION('CamGroove',(#${brep}),#${ctx});`);
+      // 面：每个三角面 = EDGE_LOOP → FACE_OUTER_BOUND → ADVANCED_FACE(PLANE)
+      const faces = [];
+      const addTri = (ga, gb, gc) => {
+        const A = vert[ga], B = vert[gb], C = vert[gc];
+        let nx = (B[1] - A[1]) * (C[2] - A[2]) - (B[2] - A[2]) * (C[1] - A[1]);
+        let ny = (B[2] - A[2]) * (C[0] - A[0]) - (B[0] - A[0]) * (C[2] - A[2]);
+        let nz = (B[0] - A[0]) * (C[1] - A[1]) - (B[1] - A[1]) * (C[0] - A[0]);
+        const nl = Math.hypot(nx, ny, nz);
+        if (nl < 1e-12) return; // 退化三角（零面积）跳过
+        nx /= nl; ny /= nl; nz /= nl;
+        const mkOE = (u, w) => {
+          const ed = getEdge(u, w);
+          const oe = nid();
+          push(`#${oe}=ORIENTED_EDGE('',*,*,#${ed.id},${ed.same ? '.T.' : '.F.'});`);
+          return oe;
+        };
+        const oe1 = mkOE(ga, gb), oe2 = mkOE(gb, gc), oe3 = mkOE(gc, ga);
+        const loop = nid();
+        push(`#${loop}=EDGE_LOOP('',(#${oe1},#${oe2},#${oe3}));`);
+        const bound = nid();
+        push(`#${bound}=FACE_OUTER_BOUND('',#${loop},.T.);`);
+        const ax = nid(), rf = nid();
+        const rl = Math.hypot(B[0] - A[0], B[1] - A[1], B[2] - A[2]) || 1;
+        push(`#${ax}=DIRECTION('',(${nx.toFixed(9)},${ny.toFixed(9)},${nz.toFixed(9)}));`);
+        push(`#${rf}=DIRECTION('',(${((B[0] - A[0]) / rl).toFixed(9)},${((B[1] - A[1]) / rl).toFixed(9)},${((B[2] - A[2]) / rl).toFixed(9)}));`);
+        const pl = nid();
+        push(`#${pl}=AXIS2_PLACEMENT_3D('',#${cpId[ga]},#${ax},#${rf});`);
+        const plane = nid();
+        push(`#${plane}=PLANE('',#${pl});`);
+        const face = nid();
+        push(`#${face}=ADVANCED_FACE('',(#${bound}),#${plane},.T.);`);
+        faces.push(face);
+      };
+
+      const isAxis = (v) => vert[v][0] === 0 && vert[v][1] === 0;
+      for (let i = 0; i < N; i++) {
+        const j = (i + 1) % N;
+        for (let k = 0; k < K; k++) {
+          const k2 = (k + 1) % K;
+          const ai = vid[i][k], aj = vid[j][k], bi = vid[i][k2], bj = vid[j][k2];
+          const aa = isAxis(ai), bb = isAxis(bi);
+          if (aa && bb) continue;          // 轴线上的退化条带
+          if (aa) addTri(ai, bj, bi);      // 极点扇形（端面）
+          else if (bb) addTri(ai, aj, bi);
+          else { addTri(ai, aj, bj); addTri(ai, bj, bi); }
+        }
+      }
+
+      const shell = nid();
+      push(`#${shell}=CLOSED_SHELL('',(${faces.map(f => '#' + f).join(',')}));`);
+      const brep = nid();
+      push(`#${brep}=MANIFOLD_SOLID_BREP('${b.name}',#${shell});`);
+      brepIds.push(brep);
+    });
+
+    push(`#${rep}=ADVANCED_BREP_SHAPE_REPRESENTATION('CamSolid',(${brepIds.map(x => '#' + x).join(',')}),#${ctx});`);
 
     push('ENDSEC;');
     push('END-ISO-10303-21;');
