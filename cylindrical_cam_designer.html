@@ -33,6 +33,7 @@
   --line-a: #f76707;
   --line-j: #2f9e44;
   --line-alpha: #7048e8;
+  --line-force: #0b7285;
   --cam-surface: #b8c0ff;
   --cam-edge: #4158d0;
   --roller: #ff922b;
@@ -344,17 +345,12 @@ hr.section { border: none; border-top: 1px solid var(--border); margin: 14px 0; 
     </div>
 
     <div class="panel">
-      <h2><span class="icon">📈</span><span data-i18n="secSegments">运动分段</span>
-        <button class="btn btn-secondary" onclick="App.addSegment()" style="margin-left:auto;padding:3px 10px;font-size:0.82em;">+ <span data-i18n="addSeg">新增</span></button>
-      </h2>
-      <div class="seg-list" id="segList"></div>
-      <div class="seg-sum sum-ok" id="segSum">Σ = 360° ✓</div>
-      <p class="panel-hint" data-i18n="segHint">各段负载质量留空则该段沿用工况中的默认负载质量。</p>
-    </div>
-
-    <div class="panel">
       <h2><span class="icon">⚡</span><span data-i18n="secForce">工况与受力</span></h2>
       <div class="param-grid">
+        <div class="form-row">
+          <label><span data-i18n="camSpeed">凸轮转速</span><span class="unit">rpm</span></label>
+          <input type="number" id="p_camSpeed" value="60" step="10" min="1">
+        </div>
         <div class="form-row">
           <label><span data-i18n="loadMass">负载质量</span><span class="unit">kg</span></label>
           <input type="number" id="p_loadMass" value="5" step="0.5" min="0">
@@ -372,6 +368,15 @@ hr.section { border: none; border-top: 1px solid var(--border); margin: 14px 0; 
           <input type="number" id="p_pressAngleLimit" value="30" step="1" min="5" max="90">
         </div>
       </div>
+    </div>
+
+    <div class="panel">
+      <h2><span class="icon">📈</span><span data-i18n="secSegments">运动分段</span>
+        <button class="btn btn-secondary" onclick="App.addSegment()" style="margin-left:auto;padding:3px 10px;font-size:0.82em;">+ <span data-i18n="addSeg">新增</span></button>
+      </h2>
+      <div class="seg-list" id="segList"></div>
+      <div class="seg-sum sum-ok" id="segSum">Σ = 360° ✓</div>
+      <p class="panel-hint" data-i18n="segHint">各段转速/负载质量留空则该段沿用工况中的默认值。</p>
     </div>
 
     <div class="panel">
@@ -567,10 +572,11 @@ Object.assign(I18N.zh, {
   titleSub: "v1.1",
   secFollower: "从动件", subTrans: "直动参数", subSwing: "摆动参数",
   rollerCount: "滚子数量", unitPcs: "个", rollerAngles: "相对角度",
+  camSpeed: "凸轮转速",
   phRollerAngles: "留空则自动均布，例如 0, 180",
-  segHint: "各段负载质量留空时沿用工况中的默认负载质量。",
+  segHint: "各段转速/负载质量留空时沿用工况中的默认值。",
   segNameLbl: "段名", segAngleLbl: "转角 (°)", segLiftLbl: "升程 (mm)",
-  segLawLbl: "运动规律", segSpeedLbl: "转速 (rpm)", segMassLbl: "负载质量 (kg)",
+  segLawLbl: "运动规律", segSpeedLbl: "凸轮转速 (rpm)", segMassLbl: "负载质量 (kg)",
   segCumLbl: "累计 (°)", segNo: "段",
   sumOk: "Σ = {sum}° ✓ 角度闭合", sumBad: "⚠ Σ = {sum}°（需 360°，差 {diff}°）",
   okNoAlerts: "参数有效，无警告。",
@@ -605,10 +611,11 @@ Object.assign(I18N.en, {
   titleSub: "v1.1",
   secFollower: "Follower", subTrans: "Translating", subSwing: "Oscillating",
   rollerCount: "Roller count", unitPcs: "pcs", rollerAngles: "Relative angles",
+  camSpeed: "Cam speed",
   phRollerAngles: "Blank = auto distribute, e.g. 0, 180",
-  segHint: "Leave a segment's load mass blank to use the default load mass.",
+  segHint: "Leave a segment's speed/load mass blank to use the default from Load & Force.",
   segNameLbl: "Name", segAngleLbl: "Angle (°)", segLiftLbl: "Lift (mm)",
-  segLawLbl: "Motion law", segSpeedLbl: "Speed (rpm)", segMassLbl: "Load mass (kg)",
+  segLawLbl: "Motion law", segSpeedLbl: "Cam speed (rpm)", segMassLbl: "Load mass (kg)",
   segCumLbl: "Cumulative (°)", segNo: "Seg",
   sumOk: "Σ = {sum}° ✓ angles closed", sumBad: "⚠ Σ = {sum}° (need 360°, off by {diff}°)",
   okNoAlerts: "Parameters valid, no warnings.",
@@ -643,10 +650,11 @@ Object.assign(I18N.ja, {
   titleSub: "v1.1",
   secFollower: "従節", subTrans: "直動パラメータ", subSwing: "揺動パラメータ",
   rollerCount: "ローラ数", unitPcs: "個", rollerAngles: "相対角度",
+  camSpeed: "カム回転数",
   phRollerAngles: "空欄なら自動等配、例：0, 180",
-  segHint: "区間の負荷質量を空欄にすると、既定の負荷質量を使用します。",
+  segHint: "区間の回転数/負荷質量を空欄にすると、荷重・力の既定値を使用します。",
   segNameLbl: "名前", segAngleLbl: "角度 (°)", segLiftLbl: "リフト (mm)",
-  segLawLbl: "運動法則", segSpeedLbl: "回転数 (rpm)", segMassLbl: "負荷質量 (kg)",
+  segLawLbl: "運動法則", segSpeedLbl: "カム回転数 (rpm)", segMassLbl: "負荷質量 (kg)",
   segCumLbl: "累積 (°)", segNo: "区間",
   sumOk: "Σ = {sum}° ✓ 角度閉合", sumBad: "⚠ Σ = {sum}°（360° 必要、差 {diff}°）",
   okNoAlerts: "パラメータは有効です。警告なし。",
@@ -993,6 +1001,7 @@ const App = {
     set('p_offset', 0);
     set('p_motionDir', 'vertical');
     set('p_tiltAngle', 0);
+    set('p_camSpeed', 60);
     set('p_loadMass', 5);
     set('p_springForce', 50);
     set('p_efficiency', 95);
@@ -1001,10 +1010,10 @@ const App = {
     set('p_rollerAngles', '');
     // 默认 4 段: 停歇 90° + 升程 120° + 停歇 60° + 回程 90°
     this.state.segments = [
-      { name: this.t('segDefaultDwell1'), angle: 90,  lift: 0,  law: 'dwell',      speed: 60, mass: null, transitionRatio: 0.125 },
-      { name: this.t('segDefaultRise'),   angle: 120, lift: 20, law: 'trap_cubic', speed: 60, mass: null, transitionRatio: 0.125 },
-      { name: this.t('segDefaultDwell2'), angle: 60,  lift: 20, law: 'dwell',      speed: 60, mass: null, transitionRatio: 0.125 },
-      { name: this.t('segDefaultFall'),   angle: 90,  lift: 0,  law: 'trap_cubic', speed: 60, mass: null, transitionRatio: 0.125 }
+      { name: this.t('segDefaultDwell1'), angle: 90,  lift: 0,  law: 'dwell',      speed: null, mass: null, transitionRatio: 0.125 },
+      { name: this.t('segDefaultRise'),   angle: 120, lift: 20, law: 'trap_cubic', speed: null, mass: null, transitionRatio: 0.125 },
+      { name: this.t('segDefaultDwell2'), angle: 60,  lift: 20, law: 'dwell',      speed: null, mass: null, transitionRatio: 0.125 },
+      { name: this.t('segDefaultFall'),   angle: 90,  lift: 0,  law: 'trap_cubic', speed: null, mass: null, transitionRatio: 0.125 }
     ];
     this.updateRollerAnglesAuto();
     this.renderSegTable();
@@ -1041,6 +1050,7 @@ const App = {
       fulcrumDist: n('p_fulcrumDist') || 80,
       swingInitAngle: n('p_swingInitAngle') || 30,
       loadMass: n('p_loadMass'),
+      camSpeed: n('p_camSpeed') || 60,
       springForce: n('p_springForce') || 0,
       efficiency: (n('p_efficiency') || 95) / 100,
       pressAngleLimit: n('p_pressAngleLimit') || 30,
@@ -1067,7 +1077,7 @@ const App = {
   addSegment() {
     this.state.segments.push({
       name: this.t('segNo') + (this.state.segments.length + 1),
-      angle: 60, lift: 10, law: 'trap_cubic', speed: 60, mass: null, transitionRatio: 0.125
+      angle: 60, lift: 10, law: 'trap_cubic', speed: null, mass: null, transitionRatio: 0.125
     });
     this.renderSegTable();
   },
@@ -1087,6 +1097,10 @@ const App = {
         `<option value="${k}" ${k === seg.law ? 'selected' : ''}>${lawLabel(k)}</option>`
       ).join('');
       const massVal = (seg.mass === null || seg.mass === undefined) ? '' : seg.mass;
+      const speedVal = (seg.speed === null || seg.speed === undefined) ? '' : seg.speed;
+      const defSpeed = parseFloat((document.getElementById('p_camSpeed') || {}).value) || 60;
+      const defMass = parseFloat((document.getElementById('p_loadMass') || {}).value);
+      const defMassVal = isNaN(defMass) ? '' : defMass;
       return `<div class="seg-card" data-idx="${i}">
         <div class="seg-head">
           <span class="seg-idx">${i + 1}</span>
@@ -1101,9 +1115,10 @@ const App = {
           <label class="seg-field"><span>${this.t('segLawLbl')}</span>
             <select onchange="App.state.segments[${i}].law=this.value">${lawOpts}</select></label>
           <label class="seg-field"><span>${this.t('segSpeedLbl')}</span>
-            <input type="number" value="${seg.speed}" step="10" min="1" onchange="App.state.segments[${i}].speed=+this.value"></label>
+            <input type="number" value="${speedVal}" step="10" min="1" placeholder="${defSpeed}"
+              onchange="App.state.segments[${i}].speed = (this.value==='' ? null : +this.value)"></label>
           <label class="seg-field"><span>${this.t('segMassLbl')}</span>
-            <input type="number" value="${massVal}" step="0.5" min="0" placeholder="—"
+            <input type="number" value="${massVal}" step="0.5" min="0" placeholder="${defMassVal}"
               onchange="App.state.segments[${i}].mass = (this.value==='' ? null : +this.value)"></label>
           <label class="seg-field"><span>${this.t('segCumLbl')}</span>
             <div class="seg-static">${i === 0 ? '—' : cum + '°'}</div></label>
@@ -1206,10 +1221,12 @@ const App = {
         // 直动竖直: 正压力 N = (F_load + F_spring + m_total·a_dyn) / cos(α)
         // 方向始终认为正值（分力朝上为正）
         const phi_r = phi_abs * Math.PI / 180;
-        const omega_rad = seg.speed * 2 * Math.PI / 60;
-        // 用实际速度 v_dyn (mm/s) = v_mm_per_deg * ω_deg_per_s
-        const v_dyn = (v * 180 / Math.PI) * omega_rad;  // 近似
-        const a_dyn = (a * 180 / Math.PI) * omega_rad * omega_rad; // 近似
+        const speedEff = (seg.speed === null || seg.speed === undefined) ? p.camSpeed : seg.speed;
+        const omega_rad = speedEff * 2 * Math.PI / 60;
+        const omegaDeg = omega_rad * 180 / Math.PI;   // °/s
+        // 实际线速度/加速度：v 单位 mm/°，a 单位 mm/°²
+        const v_dyn = v * omegaDeg;                   // mm/s
+        const a_dyn = a * omegaDeg * omegaDeg;        // mm/s²
         // 合力：重力（负载质量，按段可单独设置）+ 弹簧力 + 惯性力
         const g = 9.81;
         const segMass = (seg.mass === null || seg.mass === undefined) ? p.loadMass : seg.mass;
@@ -1419,7 +1436,8 @@ const App = {
       { key: 'v', label: 'v', unit: 'mm/°', v: '--line-v' },
       { key: 'a', label: 'a', unit: 'mm/°²', v: '--line-a' },
       { key: 'j', label: 'j', unit: 'mm/°³', v: '--line-j' },
-      { key: 'alphaDeg', label: 'α', unit: '°', v: '--line-alpha' }
+      { key: 'alphaDeg', label: 'α', unit: '°', v: '--line-alpha' },
+      { key: 'forceN', label: 'F', unit: 'N', v: '--line-force' }
     ];
     const nRows = rows.length;
     const rowH = plotH / nRows;
@@ -1829,6 +1847,7 @@ const App = {
           set('p_baseDia', p.baseDia); set('p_camWidth', p.camWidth);
           set('p_rollerDia', p.rollerDia); set('p_followerLen', p.followerLen);
           set('p_initialHt', p.initialHt); set('p_resolution', p.resolution);
+          set('p_camSpeed', p.camSpeed != null ? p.camSpeed : 60);
           set('p_followerType', p.followerType); set('p_handedness', p.handedness);
           set('p_offset', p.offset || 0); set('p_motionDir', p.motionDir);
           set('p_tiltAngle', p.tiltAngle || 0);
