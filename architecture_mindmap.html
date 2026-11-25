@@ -473,38 +473,79 @@ graph LR
   <!-- 5. 模块联动接口规范 -->
   <div class="card">
     <h2>五、模块联动接口规范（核心设计）</h2>
+
+    <p style="margin-bottom:15px;color:#555;line-height:1.7;">
+      每个计算模块都暴露 <b>统一 JSON Schema 输入 / 输出接口</b>。整机性能模块作为"调度中心"，按顺序调用子模块、传递参数、收集结果。
+      所有接口附带 <b>JSON Schema draft-07</b> 校验，调用前先验证参数范围与格式。
+    </p>
+
     <div class="mermaid">
-graph TB
-    subgraph 调用协议
-        direction LR
-        INPUT[统一输入接口<br/>JSON Schema]
-        OUTPUT[统一输出接口<br/>JSON Schema]
-        VALIDATE[数据校验层<br/>参数范围/格式]
+graph LR
+    subgraph STEP1["① 调用方准备参数"]
+        A[整机性能计算]
+        A_OUT[/输出 JSON<br/>功率kW · 转速rpm<br/>扭矩Nm · 使用系数/]
+        A --> A_OUT
     end
 
-    subgraph 示例：整机性能 → 齿轮传动
-        A[整机性能计算<br/>输出: 功率P=2kW<br/>转速n=1000rpm<br/>扭矩T=19.1N·m]
-        -->|标准JSON| B{数据校验}
-        B -->|通过| C[齿轮传动模块<br/>自动接收参数]
-        C -->|计算完成| D[返回: 齿轮参数<br/>模数/齿数/材料<br/>传动效率η=0.95]
-        D -->|标准JSON| E[整机性能模块<br/>更新总效率<br/>更新最终功率需求]
+    subgraph STEP2["② 校验层"]
+        V{JSON Schema<br/>数据校验}
     end
 
-    subgraph 接口文件结构
-        F[/interfaces/<br/>input_schema.json<br/>output_schema.json<br/>module_config.json/]
+    subgraph STEP3["③ 被调模块接收"]
+        B[齿轮传动模块]
+        B_IN[/输入 JSON<br/>模数 · 齿数 · 材料<br/>效率/]
+        B --> B_IN
     end
 
-    INPUT --- VALIDATE
-    OUTPUT --- VALIDATE
-    VALIDATE --- F
+    subgraph STEP4["④ 调用方消费结果"]
+        C[整机性能模块更新]
+        C_OUT[/返回 JSON<br/>齿轮效率η=0.96<br/>零件重量3.2kg<br/>传动比3/]
+        C --> C_OUT
+    end
 
-    style INPUT fill:#339af0,color:#fff
-    style OUTPUT fill:#51cf66,color:#fff
-    style VALIDATE fill:#ffd43b,color:#333
-    style A fill:#ff6b6b,color:#fff
-    style C fill:#51cf66,color:#fff
-    style E fill:#ff6b6b,color:#fff
-    style F fill:#9775fa,color:#fff
+    A_OUT -->|"校验通过 ✓"| V
+    V -->|"校验通过 ✓"| B_IN
+    B -.->|"计算完成"| B_IN
+    B_IN -->|"返回标准JSON"| C_OUT
+
+    style A fill:#ff6b6b,stroke:#c92a2a,color:#fff
+    style C fill:#ff6b6b,stroke:#c92a2a,color:#fff
+    style V fill:#ffd43b,stroke:#f59f00,color:#333
+    style B fill:#51cf66,stroke:#2f9e44,color:#fff
+    style A_OUT fill:#339af0,stroke:#1971c2,color:#fff
+    style B_IN fill:#339af0,stroke:#1971c2,color:#fff
+    style C_OUT fill:#339af0,stroke:#1971c2,color:#fff
+    </div>
+
+    <h3 style="margin:25px 0 10px;color:#764ba2;font-size:1.05em;">接口文件结构</h3>
+    <div class="mermaid">
+graph TD
+    ROOT["/interfaces/"]
+    ROOT --> M1["gear/"]
+    ROOT --> M2["main-performance/"]
+    ROOT --> M3["cam/"]
+    ROOT --> M4["motor/"]
+    ROOT --> M5["cost/"]
+    ROOT --> M6["..."]
+    M1 --> I1["input_schema.json"]
+    M1 --> O1["output_schema.json"]
+    M2 --> I2["input_schema.json"]
+    M2 --> O2["output_schema.json"]
+    M3 --> I3["input_schema.json"]
+    M3 --> O3["output_schema.json"]
+    style ROOT fill:#9775fa,color:#fff,stroke:#7048e8
+    style M1 fill:#51cf66,color:#fff,stroke:#2f9e44
+    style M2 fill:#ff6b6b,color:#fff,stroke:#c92a2a
+    style M3 fill:#51cf66,color:#fff,stroke:#2f9e44
+    style M4 fill:#51cf66,color:#fff,stroke:#2f9e44
+    style M5 fill:#ffd43b,color:#333,stroke:#f59f00
+    style M6 fill:#adb5bd,color:#333
+    style I1 fill:#e9ecef
+    style O1 fill:#e9ecef
+    style I2 fill:#e9ecef
+    style O2 fill:#e9ecef
+    style I3 fill:#e9ecef
+    style O3 fill:#e9ecef
     </div>
   </div>
 
