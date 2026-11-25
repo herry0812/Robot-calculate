@@ -426,6 +426,7 @@ hr.section { border: none; border-top: 1px solid var(--border); margin: 14px 0; 
 
       <div id="viz-line3d" class="viz-pane hidden">
         <div class="canvas-wrap"><canvas id="cv3D" width="900" height="520"></canvas></div>
+        <p class="panel-hint" data-i18n="view3dHint">拖动旋转视角 · 双击复位</p>
         <div class="anim-controls">
           <button class="anim-btn" onclick="App.animControl('stepRev')" data-i18n-title="tStepRev" title="步进反转">⏮</button>
           <button class="anim-btn" onclick="App.animControl('backward')" data-i18n-title="tBack" title="连续反转">◀</button>
@@ -554,6 +555,8 @@ Object.assign(I18N.zh, {
   transByLength: "长度",
   transTooShort: "过渡 {l} mm < 最小 {d} mm",
   transMin: "最小 {d} mm（≈{r}%）",
+  legS: "位置", legV: "速度", legA: "加速度", legJ: "跃度", legAlpha: "压力角", legF: "受力",
+  view3dHint: "拖动旋转视角 · 双击复位",
   alertTransShort: "第 {seg} 段梯形过渡长度 {l} mm 小于最小允许值 {d} mm（由滚子直径决定），当前 {cur}%，建议不小于 {r}%。",
   sugTransShort: "将过渡比例增大到 {r}% 以上，或增大该段转角/基圆直径，或减小滚子直径。",
   alertTransImpossible: "第 {seg} 段转角过小或滚子直径过大：最小过渡长度已超过该段弧长的 49%，无法形成有效梯形过渡（弧长 {arc} mm，滚子直径 {d} mm）。",
@@ -603,6 +606,8 @@ Object.assign(I18N.en, {
   transByLength: "Length",
   transTooShort: "Blend {l} mm < min {d} mm",
   transMin: "Min {d} mm (≈{r}%)",
+  legS: "Position", legV: "Velocity", legA: "Acceleration", legJ: "Jerk", legAlpha: "Pressure angle", legF: "Force",
+  view3dHint: "Drag to rotate · double-click to reset",
   alertTransShort: "Segment {seg}: trapezoid blend length {l} mm is below the minimum {d} mm (set by roller diameter); current {cur}%, recommended ≥ {r}%.",
   sugTransShort: "Increase the blend ratio to at least {r}%, or enlarge the segment angle / base diameter, or reduce the roller diameter.",
   alertTransImpossible: "Segment {seg}: the minimum blend length exceeds 49% of the segment arc, so a valid trapezoid cannot be formed (arc {arc} mm, roller dia {d} mm).",
@@ -652,6 +657,8 @@ Object.assign(I18N.ja, {
   transByLength: "長さ",
   transTooShort: "遷移 {l} mm < 最小 {d} mm",
   transMin: "最小 {d} mm（≈{r}%）",
+  legS: "位置", legV: "速度", legA: "加速度", legJ: "躍度", legAlpha: "圧力角", legF: "荷重",
+  view3dHint: "ドラッグで回転・ダブルクリックでリセット",
   alertTransShort: "第 {seg} 区間：台形の遷移長さ {l} mm が最小値 {d} mm（ローラ径で決定）未満です。現在 {cur}%、{r}% 以上を推奨。",
   sugTransShort: "遷移比率を {r}% 以上に増やすか、区間角度/基円径を大きくするか、ローラ径を小さくしてください。",
   alertTransImpossible: "第 {seg} 区間：最小遷移長さが区間弧長の 49% を超え、有効な台形遷移を形成できません（弧長 {arc} mm、ローラ径 {d} mm）。",
@@ -922,6 +929,7 @@ const App = {
     currentViz: 'curves',
     lang: 'zh',
     anim: { phase: 0, playing: true, dir: 1, lastT: 0 },
+    view3d: { alpha: Math.PI / 6, beta: Math.PI / 5 },
     dirty: false
   },
 
@@ -939,6 +947,7 @@ const App = {
     document.getElementById('p_offset').addEventListener('input', () => {
       document.getElementById('p_offset').dataset.userSet = '1';
     });
+    this.bind3DRotate();
     requestAnimationFrame((t) => this.animLoop(t));
     this.refreshUI();
   },
@@ -949,6 +958,36 @@ const App = {
     if (off.dataset.userSet === '1') return;
     const d = parseFloat(document.getElementById('p_baseDia').value);
     if (isFinite(d)) off.value = +(d / 2).toFixed(2);
+  },
+
+  // 3D 视图：拖动旋转视角，双击复位
+  bind3DRotate() {
+    const cv = document.getElementById('cv3D');
+    if (!cv) return;
+    let dragging = false, lx = 0, ly = 0;
+    cv.style.cursor = 'grab';
+    cv.addEventListener('pointerdown', (e) => {
+      dragging = true; lx = e.clientX; ly = e.clientY;
+      try { cv.setPointerCapture(e.pointerId); } catch (_) {}
+      cv.style.cursor = 'grabbing';
+    });
+    cv.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      const dx = e.clientX - lx, dy = e.clientY - ly;
+      lx = e.clientX; ly = e.clientY;
+      this.state.view3d.alpha += dx * 0.01;
+      this.state.view3d.beta = Math.max(-1.45, Math.min(1.45, this.state.view3d.beta + dy * 0.01));
+      if (this.state.currentViz === 'line3d') this.draw3D();
+    });
+    const stop = () => { dragging = false; cv.style.cursor = 'grab'; };
+    cv.addEventListener('pointerup', stop);
+    cv.addEventListener('pointercancel', stop);
+    cv.addEventListener('pointerleave', stop);
+    cv.addEventListener('dblclick', () => {
+      this.state.view3d.alpha = Math.PI / 6;
+      this.state.view3d.beta = Math.PI / 5;
+      if (this.state.currentViz === 'line3d') this.draw3D();
+    });
   },
 
   /* -------- 语言 -------- */
@@ -1046,11 +1085,13 @@ const App = {
     const rollerCount = Math.max(1, parseInt(s('p_rollerCount')) || 1);
     let rollerAngles = [];
     const raw = s('p_rollerAngles').trim();
-    if (raw) {
-      rollerAngles = raw.split(/[,;\s]+/).map(v => parseFloat(v)).filter(v => !isNaN(v));
+    const parsed = raw ? raw.split(/[,;\s]+/).map(v => parseFloat(v)).filter(v => !isNaN(v)) : [];
+    if (parsed.length >= rollerCount) {
+      rollerAngles = parsed.slice(0, rollerCount);
     } else {
-      // 自动均布
-      for (let i = 0; i < rollerCount; i++) rollerAngles.push((360 / rollerCount) * i);
+      // 第一个滚子固定在 0° 作为基准，其余为输入的相对角度，不足的自动均布补齐
+      rollerAngles = [0, ...parsed];
+      while (rollerAngles.length < rollerCount) rollerAngles.push((360 / rollerCount) * rollerAngles.length);
     }
     this.state.params = {
       baseDia: n('p_baseDia'),
@@ -1539,12 +1580,12 @@ const App = {
     const maxPhi = 360;
 
     const rows = [
-      { key: 's', label: 's', unit: 'mm', v: '--line-s' },
-      { key: 'v', label: 'v', unit: 'mm/°', v: '--line-v' },
-      { key: 'a', label: 'a', unit: 'mm/°²', v: '--line-a' },
-      { key: 'j', label: 'j', unit: 'mm/°³', v: '--line-j' },
-      { key: 'alphaDeg', label: 'α', unit: '°', v: '--line-alpha' },
-      { key: 'forceN', label: 'F', unit: 'N', v: '--line-force' }
+      { key: 's', label: 's', name: this.t('legS'), unit: 'mm', v: '--line-s' },
+      { key: 'v', label: 'v', name: this.t('legV'), unit: 'mm/°', v: '--line-v' },
+      { key: 'a', label: 'a', name: this.t('legA'), unit: 'mm/°²', v: '--line-a' },
+      { key: 'j', label: 'j', name: this.t('legJ'), unit: 'mm/°³', v: '--line-j' },
+      { key: 'alphaDeg', label: 'α', name: this.t('legAlpha'), unit: '°', v: '--line-alpha' },
+      { key: 'forceN', label: 'F', name: this.t('legF'), unit: 'N', v: '--line-force' }
     ];
     const nRows = rows.length;
     const rowH = plotH / nRows;
@@ -1583,16 +1624,16 @@ const App = {
       });
       ctx.stroke();
 
-      // 左侧图例：上行 符号 + 单位，下行 峰值，留足间距
+      // 左侧图例：上行 符号 + 中文说明，下行 单位 + 峰值
       const lx = 10;
       ctx.textAlign = 'left';
       ctx.font = '600 13px sans-serif'; ctx.fillStyle = this.cssVar(row.v);
       ctx.fillText(row.label, lx, y0 + 17);
       const lw = ctx.measureText(row.label).width;
-      ctx.font = '11px sans-serif'; ctx.fillStyle = dimC;
-      ctx.fillText(row.unit, lx + lw + 6, y0 + 17);
-      ctx.fillStyle = mutedC;
-      ctx.fillText('±' + vMax.toFixed(2), lx, y0 + 34);
+      ctx.font = '12px sans-serif'; ctx.fillStyle = dimC;
+      ctx.fillText(row.name, lx + lw + 6, y0 + 17);
+      ctx.font = '11px sans-serif'; ctx.fillStyle = mutedC;
+      ctx.fillText(row.unit + '  ±' + vMax.toFixed(2), lx, y0 + 34);
     });
 
     // 底部轴标签 + 刻度
@@ -1610,18 +1651,27 @@ const App = {
     const W = cv.width, H = cv.height;
     ctx.clearRect(0, 0, W, H);
 
-    const pad = { l: 60, r: 20, t: 30, b: 40 };
+    const pad = { l: 66, r: 24, t: 60, b: 44 };
     const pts = this.state.points;
     const p = this.state.params;
-    const Rb = p.baseDia / 2;
-    const dR = p.rollerDia / 2;
-    const camLen = Rb * 2 * Math.PI; // 一周弧长
-    const sMin = Math.min(...pts.map(p => p.s));
-    const sMax = Math.max(...pts.map(p => p.s));
+
+    // 收集理论/工作轮廓绝对坐标，自动适配范围，确保完整显示
+    let xMin = 0, xMax = 0, yMin = 0, yMax = 0;
+    pts.forEach(pt => {
+      const xw = pt.x_theory + (pt.x_work - pt.x_theory);
+      const yw = pt.s + (pt.y_work - pt.y_theory);
+      xMin = Math.min(xMin, pt.x_theory, xw);
+      xMax = Math.max(xMax, pt.x_theory, xw);
+      yMin = Math.min(yMin, pt.s, yw);
+      yMax = Math.max(yMax, pt.s, yw);
+    });
+    const xPad = (xMax - xMin) * 0.03 || 1;
+    const yPad = (yMax - yMin) * 0.08 || 1;
+    xMin -= xPad; xMax += xPad; yMin -= yPad; yMax += yPad;
 
     const plotW = W - pad.l - pad.r, plotH = H - pad.t - pad.b;
-    const xToPx = (arc) => pad.l + (arc / camLen) * plotW;
-    const yToPx = (s) => pad.t + plotH - ((s - sMin) / Math.max(sMax - sMin, 1)) * plotH;
+    const xToPx = (x) => pad.l + ((x - xMin) / (xMax - xMin)) * plotW;
+    const yToPx = (y) => pad.t + plotH - ((y - yMin) / (yMax - yMin)) * plotH;
     const gridC = this.cssVar('--grid');
     const textC = this.cssVar('--text');
     const mutedC = this.cssVar('--text-muted');
@@ -1649,9 +1699,6 @@ const App = {
     ctx.strokeStyle = '#c850c0'; ctx.lineWidth = 2; ctx.setLineDash([4, 3]);
     ctx.beginPath();
     pts.forEach((pt, i) => {
-      const x = xToPx(pt.x_theory);
-      const y = yToPx(pt.y_work + (pt.s - pt.y_theory)); // 因为 work 的 y 是相对 theory 法线偏移
-      // 修正：y_work 是工作轮廓相对 s 的偏移量
       const yAbs = pt.s + (pt.y_work - pt.y_theory);
       const xAbs = pt.x_theory + (pt.x_work - pt.x_theory);
       const px = xToPx(xAbs);
@@ -1661,25 +1708,26 @@ const App = {
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // 基圆参考线
+    // 基圆参考线（y = 0）
     ctx.strokeStyle = mutedC; ctx.lineWidth = 1; ctx.setLineDash([6, 4]);
     ctx.beginPath();
-    ctx.moveTo(xToPx(0), yToPx(0)); ctx.lineTo(xToPx(camLen), yToPx(0)); ctx.stroke();
+    ctx.moveTo(pad.l, yToPx(0)); ctx.lineTo(pad.l + plotW, yToPx(0)); ctx.stroke();
     ctx.setLineDash([]);
 
     // 滚子示意
-    const rollerX = xToPx(pts[Math.floor(pts.length / 2)].x_theory);
-    const rollerY = yToPx(pts[Math.floor(pts.length / 2)].s);
+    const mid = pts[Math.floor(pts.length / 2)];
+    const rollerX = xToPx(mid.x_theory);
+    const rollerY = yToPx(mid.s);
     ctx.fillStyle = '#ff922b'; ctx.beginPath();
-    ctx.arc(rollerX, rollerY, dR / Math.max(sMax - sMin, 1) * plotH * 0.08 + 6, 0, Math.PI * 2);
+    ctx.arc(rollerX, rollerY, 7, 0, Math.PI * 2);
     ctx.fill();
 
-    // 图例
+    // 图例（顶部独立区域，不与曲线重叠）
     ctx.font = '12px sans-serif'; ctx.textAlign = 'left';
-    ctx.fillStyle = '#4158d0'; ctx.fillRect(pad.l, 12, 16, 4);
-    ctx.fillStyle = textC; ctx.fillText(this.t('cvTheory'), pad.l + 22, 17);
-    ctx.fillStyle = '#c850c0'; ctx.fillRect(pad.l, 30, 16, 4);
-    ctx.fillStyle = textC; ctx.fillText(this.t('cvWork'), pad.l + 22, 35);
+    ctx.fillStyle = '#4158d0'; ctx.fillRect(pad.l, 14, 16, 4);
+    ctx.fillStyle = textC; ctx.fillText(this.t('cvTheory'), pad.l + 22, 19);
+    ctx.fillStyle = '#c850c0'; ctx.fillRect(pad.l, 36, 16, 4);
+    ctx.fillStyle = textC; ctx.fillText(this.t('cvWork'), pad.l + 22, 41);
 
     // 轴标签
     ctx.fillStyle = mutedC;
@@ -1701,20 +1749,31 @@ const App = {
     const Rb = p.baseDia / 2;
     const camLen = p.camWidth;
 
-    // 简单正交投影: 用 iso 旋转
-    const cx = W / 2, cy = H / 2;
-    const scale = Math.min(W, H) / (Rb * 2.5 + camLen);
-    const alpha = Math.PI / 6; // 水平旋转
-    const beta = Math.PI / 5;  // 垂直旋转
+    // 正交投影 + 自动适配画布 + 手动视角（拖动旋转）
+    const { alpha, beta } = this.state.view3d;
     const cosA = Math.cos(alpha), sinA = Math.sin(alpha);
     const cosB = Math.cos(beta), sinB = Math.sin(beta);
 
+    const maxLift = pts.reduce((m, pt) => Math.max(m, pt.z3d_th), 0);
+    const swing = p.followerType === 'swing';
+    const Rmax = Math.max(Rb + p.initialHt + 20, swing ? Rb + (p.swingLen || 100) : Rb);
+    const zTop = p.initialHt + maxLift + (swing ? 0 : (p.followerLen || 80));
+    const zOff = Rb * 0.3;
+    const z1min = -zOff, z1max = zTop - zOff;
+    const y2min = -z1max * cosB - Rmax * sinB;
+    const y2max = -z1min * cosB + Rmax * sinB;
+    const bw = 2 * Rmax;
+    const bh = Math.max(y2max - y2min, 1);
+    const margin = 26;
+    const scale = Math.min((W - 2 * margin) / bw, (H - 2 * margin) / bh);
+    const cx = W / 2;
+    const cy = H / 2 - ((y2min + y2max) / 2) * scale;
+
     // 把 3D 点投影到 2D
     const project = (X, Y, Z) => {
-      // 世界 -> 相机
       const x1 = X * cosA - Y * sinA;
       const y1 = X * sinA + Y * cosA;
-      const z1 = Z - Rb * 0.3;  // 稍微下移让凸轮中心在视线下方
+      const z1 = Z - zOff;
       const x2 = x1;
       const y2 = -z1 * cosB + y1 * sinB;
       return { x: cx + x2 * scale, y: cy + y2 * scale };
