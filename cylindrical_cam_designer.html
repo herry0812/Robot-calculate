@@ -3268,6 +3268,10 @@ const App = {
     const ctx = cv.getContext('2d');
     const W = cv.width, H = cv.height;
     ctx.clearRect(0, 0, W, H);
+    const camCompound = this.state.camType === 'compound'
+      && this.state.layerStore && this.state.layerStore[0] && this.state.layerStore[1];
+    const L0 = camCompound ? this.state.layerStore[0].params : null;
+    const L1 = camCompound ? this.state.layerStore[1].params : null;
     const p = this.state.params;
     if (!p) return;
 
@@ -3276,22 +3280,44 @@ const App = {
     const mutedC = this.cssVar('--text-muted');
     const accent = this.cssVar('--primary');
 
-    const cx = W * 0.36, cy = H * 0.55;
+    const cx = W * 0.38;
+    const baseDia0 = camCompound ? L0.baseDia : p.baseDia;
     const scale = Math.min(
-      (W * 0.42) / Math.max(p.camWidth, 10),
-      (H - 150) / Math.max(p.baseDia, 10),
-      (H - 170) / Math.max(p.initialHt + 40, 20)
+      (W * 0.32) / Math.max(p.camWidth, 10),
+      (H - 180) / Math.max(baseDia0, 10),
+      (H - 180) / Math.max(p.initialHt + 30, 20)
     );
+    const cy = H * 0.50;
     const w = p.camWidth * scale;
-    const h = p.baseDia * scale;
+    const h0 = baseDia0 * scale;
+    const h1 = camCompound ? L1.baseDia * scale : 0;
+    const hMax = Math.max(h0, h1 || 0);
     const r = Math.max(5, (p.rollerDia / 2) * scale);
+    const rOuter0 = h0 / 2;
+    const rOuter1 = camCompound ? h1 / 2 : 0;
+    const rIn1 = camCompound ? Math.max(8, rOuter1 - 2 * (p.rollerWidth * scale + 4)) : 0;
 
-    // 凸轮柱体（正视矩形 + 椭圆端面示意）
-    ctx.fillStyle = 'rgba(184,192,255,0.28)';
+    // 画凸轮（单层圆柱；复合画两层径向嵌套 —— 外套环 + 内芯）
     ctx.strokeStyle = '#6b7bff'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.rect(cx - w / 2, cy - h / 2, w, h); ctx.fill(); ctx.stroke();
-    ctx.beginPath(); ctx.ellipse(cx, cy - h / 2, w / 2, h * 0.10, 0, 0, Math.PI * 2); ctx.stroke();
-    ctx.beginPath(); ctx.ellipse(cx, cy + h / 2, w / 2, h * 0.10, 0, 0, Math.PI * 2); ctx.stroke();
+    if (camCompound) {
+      // 第1层：外套环（环形截面，上下椭圆仍画全椭圆示意）
+      ctx.fillStyle = 'rgba(184,192,255,0.28)';
+      ctx.beginPath(); ctx.rect(cx - w / 2, cy - h0 / 2, w, h0); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(cx, cy - h0 / 2, w / 2, h0 * 0.10, 0, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(cx, cy + h0 / 2, w / 2, h0 * 0.10, 0, 0, Math.PI * 2); ctx.stroke();
+
+      // 第2层：内芯（更小直径，圆柱，位于第1层内部）
+      ctx.strokeStyle = '#e67700';
+      ctx.fillStyle = 'rgba(255,146,43,0.22)';
+      ctx.beginPath(); ctx.rect(cx - w / 2, cy - h1 / 2, w, h1); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(cx, cy - h1 / 2, w / 2, h1 * 0.10, 0, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(cx, cy + h1 / 2, w / 2, h1 * 0.10, 0, 0, Math.PI * 2); ctx.stroke();
+    } else {
+      ctx.fillStyle = 'rgba(184,192,255,0.28)';
+      ctx.beginPath(); ctx.rect(cx - w / 2, cy - h0 / 2, w, h0); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(cx, cy - h0 / 2, w / 2, h0 * 0.10, 0, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(cx, cy + h0 / 2, w / 2, h0 * 0.10, 0, 0, Math.PI * 2); ctx.stroke();
+    }
 
     // 尺寸标注工具
     const tick = (x, y) => { ctx.beginPath(); ctx.moveTo(x - 4, y - 4); ctx.lineTo(x + 4, y + 4); ctx.stroke(); };
@@ -3299,23 +3325,39 @@ const App = {
       ctx.strokeStyle = accent; ctx.lineWidth = 1;
       ctx.beginPath(); ctx.moveTo(x, y1); ctx.lineTo(x, y2); ctx.stroke();
       tick(x, y1); tick(x, y2);
-      ctx.save(); ctx.translate(x - 8, (y1 + y2) / 2); ctx.rotate(-Math.PI / 2);
+      const midY = (y1 + y2) / 2;
+      ctx.save();
+      ctx.translate(x - 10, midY); ctx.rotate(-Math.PI / 2);
       ctx.fillStyle = dimC; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-      ctx.fillText(label, 0, 0); ctx.restore(); ctx.textBaseline = 'alphabetic';
+      ctx.font = '11px sans-serif';
+      ctx.fillText(label, 0, 0);
+      ctx.restore(); ctx.textBaseline = 'alphabetic';
     };
     const dimH = (y, x1, x2, label) => {
       ctx.strokeStyle = accent; ctx.lineWidth = 1;
       ctx.beginPath(); ctx.moveTo(x1, y); ctx.lineTo(x2, y); ctx.stroke();
       tick(x1, y); tick(x2, y);
-      ctx.fillStyle = dimC; ctx.textAlign = 'center'; ctx.fillText(label, (x1 + x2) / 2, y + 16);
+      ctx.fillStyle = dimC; ctx.font = '11px sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+      ctx.fillText(label, (x1 + x2) / 2, y + 6);
+      ctx.textBaseline = 'alphabetic';
     };
 
-    // 基圆直径（竖向）
-    dimV(cx - w / 2 - 28, cy - h / 2, cy + h / 2, `${this.t('baseDia')} ${p.baseDia} mm`);
-    // 凸轮高度（横向）
-    dimH(cy + h / 2 + 34, cx - w / 2, cx + w / 2, `${this.t('camWidth')} ${p.camWidth} mm`);
+    // === 尺寸 ===
+    // 单层：基圆直径 / 凸轮高度（以 p.baseDia / p.camWidth 为准）
+    // 复合：两层基圆各标注（左侧竖向两条；高度共用 camWidth）
+    if (camCompound) {
+      // 第1层基圆
+      dimV(cx - w / 2 - 36, cy - h0 / 2, cy + h0 / 2, `${this.t('baseDia')}₁ ${L0.baseDia} mm`);
+      // 第2层基圆（更靠左一点，避免和第1层重叠）
+      dimV(cx - w / 2 - 72, cy - h1 / 2, cy + h1 / 2, `${this.t('baseDia')}₂ ${L1.baseDia} mm`);
+    } else {
+      dimV(cx - w / 2 - 28, cy - h0 / 2, cy + h0 / 2, `${this.t('baseDia')} ${p.baseDia} mm`);
+    }
+    // 凸轮高度（横向）：y 留足 58px 给 label，避免贴底
+    dimH(cy + h0 / 2 + 58, cx - w / 2, cx + w / 2, `${this.t('camWidth')} ${p.camWidth} mm`);
 
-    // 随动器（宽度沿凸轮轴向，高度为直径）
+    // 随动器（只画当前层的滚子 + 杆）
     const rx = cx + w / 2 + 90;
     const rollerCy = cy;
     const wR = Math.max(8, p.rollerWidth * scale);
@@ -3326,21 +3368,31 @@ const App = {
     ctx.strokeStyle = '#868e96'; ctx.lineWidth = 4; ctx.lineCap = 'round';
     ctx.beginPath(); ctx.moveTo(rx, rollerCy); ctx.lineTo(rx, rodTop); ctx.stroke();
     ctx.lineCap = 'butt';
-    // 宽度（横向）
-    dimH(rollerCy + r + 16, rx - wR / 2, rx + wR / 2, `${this.t('rollerWidth')} ${p.rollerWidth} mm`);
-    // 直径（竖向）
+    // 滚子宽度（横向）：留足 22px
+    dimH(rollerCy + r + 22, rx - wR / 2, rx + wR / 2, `${this.t('rollerWidth')} ${p.rollerWidth} mm`);
+    // 滚子直径（竖向）
     dimV(rx + wR / 2 + 26, rollerCy - r, rollerCy + r, `${this.t('rollerDia')} ${p.rollerDia} mm`);
 
-    // 初始高度（凸轮内向上）
-    const liftY = cy + h / 2 - p.initialHt * scale;
+    // 初始高度（凸轮内向上）：单层用 p.initialHt；复合用当前活动层参数
+    const liftHt = p.initialHt;
+    const liftY = cy + h0 / 2 - liftHt * scale;
     ctx.strokeStyle = '#2f9e44'; ctx.lineWidth = 1; ctx.setLineDash([4, 3]);
     ctx.beginPath(); ctx.moveTo(cx - w / 2, liftY); ctx.lineTo(cx + w / 2, liftY); ctx.stroke();
     ctx.setLineDash([]);
-    dimV(cx + w / 2 + 16, liftY, cy + h / 2, `${this.t('initialHt')} ${p.initialHt} mm`);
+    const liftLabel = camCompound
+      ? `${this.t('initialHt')}（${this.t('layer1')}${this.state.activeLayer === 1 ? '₂' : '₁'}）${liftHt} mm`
+      : `${this.t('initialHt')} ${liftHt} mm`;
+    dimV(cx + w / 2 + 16, liftY, cy + h0 / 2, liftLabel);
 
-    // 标题
-    ctx.fillStyle = mutedC; ctx.textAlign = 'left'; ctx.font = '12px sans-serif';
-    ctx.fillText(`φ = 360°`, 14, H - 14);
+    // 复合模式右下角加一行提示
+    if (camCompound) {
+      ctx.fillStyle = mutedC; ctx.textAlign = 'right'; ctx.font = '12px sans-serif';
+      ctx.fillText(this.t('cvLayerBoth') + ' —— ' + this.t('cvLayer1') + ' + ' + this.t('cvLayer2'),
+        W - 14, H - 14);
+    } else {
+      ctx.fillStyle = mutedC; ctx.textAlign = 'left'; ctx.font = '12px sans-serif';
+      ctx.fillText(`φ = 360°`, 14, H - 14);
+    }
   },
 
   /* -------- 数据存取 -------- */
