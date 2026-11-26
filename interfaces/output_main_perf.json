@@ -1,0 +1,39 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "整机性能计算 - 输出接口",
+  "type": "object",
+  "properties": {
+    "traction_force_n": { "type": "number", "description": "所需牵引力 (N)" },
+    "total_power_kw": { "type": "number", "description": "总功率需求 (kW)" },
+    "motor_power_kw": { "type": "number", "description": "电机功率需求 (kW)" },
+    "motor_torque_nm": { "type": "number", "description": "电机输出扭矩 (N·m)" },
+    "motor_speed_rpm": { "type": "number", "description": "电机工作转速 (rpm)" },
+    "gear_ratio": { "type": "number", "description": "总传动比" },
+    "battery_capacity_ah": { "type": "number", "description": "所需电池容量 (Ah)" },
+    "battery_voltage_v": { "type": "number", "description": "推荐电池电压 (V)" },
+    "gradeability_verified": { "type": "boolean", "description": "爬坡能力是否满足" },
+    "stability_factor": { "type": "number", "description": "稳定性安全系数 (>1.5 合格)" },
+    "center_of_gravity": {
+      "type": "object",
+      "properties": {
+        "x_mm": { "type": "number" },
+        "y_mm": { "type": "number" },
+        "z_mm": { "type": "number" }
+      }
+    },
+    "submodule_results": {
+      "type": "object",
+      "description": "联动调用各子模块的计算结果",
+      "additionalProperties": true
+    },
+    "calculation_meta": {
+      "type": "object",
+      "properties": {
+        "version": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "efficiency_assumption": { "type": "number" }
+      }
+    }
+  },
+  "additionalProperties": false
+}

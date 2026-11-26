@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>仓储物流机器人计算工具 - 页面规划</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(135deg, #4158D0 0%, #C850C0 46%, #FFCC70 100%);
+    min-height: 100vh;
+    padding: 30px 20px;
+  }
+  .container { max-width: 1400px; margin: 0 auto; }
+  h1 {
+    text-align: center; color: #fff; font-size: 2.2em; margin-bottom: 6px;
+    text-shadow: 2px 2px 6px rgba(0,0,0,0.25);
+  }
+  .subtitle {
+    text-align: center; color: rgba(255,255,255,0.9);
+    font-size: 1.05em; margin-bottom: 30px;
+  }
+  .card {
+    background: rgba(255,255,255,0.98);
+    border-radius: 18px; padding: 30px; margin-bottom: 25px;
+    box-shadow: 0 12px 45px rgba(0,0,0,0.18);
+    backdrop-filter: blur(10px);
+  }
+  .card h2 {
+    color: #4158D0; font-size: 1.4em; margin-bottom: 20px;
+    padding-bottom: 12px; border-bottom: 3px solid #4158D0;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .card h2::before {
+    content: ''; width: 8px; height: 30px;
+    background: linear-gradient(180deg, #4158D0, #C850C0);
+    border-radius: 4px;
+  }
+  .card h3 {
+    color: #C850C0; font-size: 1.1em; margin: 20px 0 12px;
+  }
+  .mermaid { display: flex; justify-content: center; overflow-x: auto; }
+  table.page-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.93em; }
+  table.page-table th, table.page-table td {
+    padding: 12px 14px; text-align: left; border-bottom: 1px solid #eee; vertical-align: top;
+  }
+  table.page-table th {
+    background: linear-gradient(135deg, #4158D0, #C850C0);
+    color: #fff; font-weight: 600;
+  }
+  table.page-table tr:hover td { background: #f8f9ff; }
+  .pg-url {
+    font-family: 'Courier New', monospace;
+    background: #f1f3f5; color: #d6336c;
+    padding: 2px 8px; border-radius: 4px; font-size: 0.88em;
+  }
+  .pg-tag {
+    display: inline-block; padding: 3px 10px; border-radius: 12px;
+    font-size: 0.8em; font-weight: 500; color: #fff; margin-right: 4px;
+  }
+  .tag-home { background: linear-gradient(135deg, #4158D0, #C850C0); }
+  .tag-core { background: #ff6b6b; }
+  .tag-mech { background: #51cf66; }
+  .tag-elec { background: #339af0; }
+  .tag-cost { background: #ffd43b; color: #333; }
+  .tag-ui { background: #9775fa; }
+  .pg-desc { color: #555; line-height: 1.6; }
+  .pg-desc ul { margin-top: 4px; padding-left: 20px; }
+  .pg-desc li { margin-bottom: 2px; }
+
+  /* 页面卡片网格 */
+  .page-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 18px; margin-top: 10px;
+  }
+  .page-card {
+    border: 2px solid transparent; border-radius: 14px; padding: 20px;
+    background: #fafbff; transition: all 0.2s;
+  }
+  .page-card:hover {
+    border-color: #4158D0; transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(65,88,208,0.2);
+  }
+  .page-card.home { border-left: 5px solid #4158D0; }
+  .page-card.core { border-left: 5px solid #ff6b6b; }
+  .page-card.mech { border-left: 5px solid #51cf66; }
+  .page-card.elec { border-left: 5px solid #339af0; }
+  .page-card.cost { border-left: 5px solid #ffd43b; }
+
+  .page-card h4 { font-size: 1.05em; margin-bottom: 8px; color: #333; }
+  .page-card .page-url {
+    font-family: monospace; background: #fff; color: #4158D0;
+    padding: 3px 10px; border-radius: 6px; font-size: 0.82em;
+    display: inline-block; margin-bottom: 10px; border: 1px dashed #4158D0;
+  }
+  .page-card .page-features { list-style: none; padding: 0; }
+  .page-card .page-features li {
+    padding: 4px 0 4px 16px; position: relative; font-size: 0.88em; color: #555;
+  }
+  .page-card .page-features li::before {
+    content: '▸'; position: absolute; left: 0; color: #4158D0;
+  }
+  .page-card .badge-row { margin-bottom: 10px; }
+  .page-card .dep-row {
+    margin-top: 12px; padding-top: 10px; border-top: 1px dashed #ddd;
+    font-size: 0.82em; color: #888;
+  }
+  .page-card .dep-row b { color: #C850C0; }
+  .page-card .link-badge {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    font-size: 0.72em; background: #e9ecef; color: #495057; margin: 2px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <h1>🤖 仓储物流机器人计算工具 - 网页规划</h1>
+  <p class="subtitle">Robot Design Calculation Platform · 页面结构 · 导航流程 · 模块联动</p>
+
+  <!-- 一、站点导航结构 -->
+  <div class="card">
+    <h2>一、站点导航结构（Sitemap）</h2>
+    <div class="mermaid">
+graph TD
+    subgraph 顶部导航栏 NAV BAR
+        HOME[🏠 整机性能<br/>主页]
+        GEAR[⚙️ 齿轮传动]
+        CAM[🔵 凸轮设计]
+        MOTOR[🔌 电机选型]
+        BEAR[🔩 轴承与轴]
+        BELT[🔗 链/皮带]
+        BATT[🔋 电池]
+        COST[💰 成本评估]
+    end
+
+    subgraph HOME_PAGE["主页 /index.html（整机性能计算）"]
+        H_REQ[用户需求输入卡片<br/>载重/速度/爬坡/续航]
+        H_ENV[环境参数卡片<br/>地面/阻力/风速]
+        H_OPT[高级选项<br/>车轮半径/自重]
+        H_TRIGGER[🚀 一键联动计算]
+        H_RESULT[结果面板<br/>牵引力/功率/扭矩<br/>传动比/电池容量<br/>稳定性系数]
+        H_CHAIN[🔗 联动结果折叠区<br/>齿轮/电机/电池<br/>自动计算结果]
+        H_BOM[📋 BOM 清单汇总<br/>联动产生]
+    end
+
+    subgraph MODULE_PAGE["通用模块页模板 /modules/*.html"]
+        M_INPUT[输入表单卡片<br/>该模块专属参数]
+        M_SHARED[📥 接收主页参数<br/>或手动独立输入]
+        M_CALC[计算按钮]
+        M_OUTPUT[输出结果卡片<br/>该模块所有计算结果]
+        M_CHART[📊 可视化图表<br/>可选]
+        M_EXPORT[📤 导出BOM<br/>分享JSON]
+    end
+
+    HOME -->|点击| GEAR
+    HOME -->|点击| CAM
+    HOME -->|点击| MOTOR
+    HOME -->|点击| BEAR
+    HOME -->|点击| BELT
+    HOME -->|点击| BATT
+    HOME -->|点击| COST
+    GEAR -.->|跳转| MODULE_PAGE
+    CAM -.->|跳转| MODULE_PAGE
+    MOTOR -.->|跳转| MODULE_PAGE
+    BEAR -.->|跳转| MODULE_PAGE
+    BELT -.->|跳转| MODULE_PAGE
+    BATT -.->|跳转| MODULE_PAGE
+    COST -.->|跳转| MODULE_PAGE
+
+    style HOME fill:#4158D0,color:#fff
+    style H_REQ fill:#fff,stroke:#4158D0
+    style H_ENV fill:#fff,stroke:#4158D0
+    style H_OPT fill:#fff,stroke:#4158D0
+    style H_TRIGGER fill:#C850C0,color:#fff,stroke:#9c36b5
+    style H_RESULT fill:#51cf66,color:#fff,stroke:#2f9e44
+    style H_CHAIN fill:#ff6b6b,color:#fff,stroke:#c92a2a
+    style H_BOM fill:#ffd43b,color:#333,stroke:#f59f00
+    style MODULE_PAGE fill:#adb5bd,color:#333,stroke:#868e96
+    </div>
+  </div>
+
+  <!-- 二、页面详情规划 -->
+  <div class="card">
+    <h2>二、页面清单与功能详情</h2>
+
+    <div class="page-grid">
+
+      <!-- 主页 -->
+      <div class="page-card home">
+        <div class="badge-row">
+          <span class="pg-tag tag-home">主页</span>
+          <span class="pg-tag tag-core">核心入口</span>
+        </div>
+        <h4>整机性能计算（主页）</h4>
+        <span class="page-url">/index.html</span>
+        <ul class="page-features">
+          <li>🎯 三卡片布局：用户需求 + 环境参数 + 高级选项</li>
+          <li>⚡ 点击"一键联动"自动调用齿轮/电机/电池模块</li>
+          <li>📱 结果面板展示牵引力、总功率、扭矩、传动比、稳定性系数</li>
+          <li>🔗 折叠区展示各子模块返回的详细结果</li>
+          <li>📋 汇总 BOM 清单，可导出</li>
+          <li>💡 独立使用：只填参数不点联动，也能出整机结果</li>
+        </ul>
+        <div class="dep-row">
+          <b>联动调用：</b>
+          <span class="link-badge">gear</span>
+          <span class="link-badge">motor</span>
+          <span class="link-badge">battery</span>
+          <span class="link-badge">bearing</span>
+          <span class="link-badge">cost</span>
+        </div>
+      </div>
+
+      <!-- 齿轮 -->
+      <div class="page-card mech">
+        <div class="badge-row"><span class="pg-tag tag-mech">机械</span></div>
+        <h4>⚙️ 齿轮传动选型</h4>
+        <span class="page-url">/modules/gear.html</span>
+        <ul class="page-features">
+          <li>输入：功率 kW、输入/输出转速、使用系数、中心距约束</li>
+          <li>支持直齿/斜齿/行星/蜗轮蜗杆四种类型</li>
+          <li>输出：模数、齿数、螺旋角、材料、效率、重量、寿命</li>
+          <li>📊 强度校核图 + 传动比分配可视化</li>
+          <li>🛠️ 独立可用：手动填参数直接出结果</li>
+        </ul>
+        <div class="dep-row"><b>被联动：</b>主页、成本评估</div>
+      </div>
+
+      <!-- 凸轮 -->
+      <div class="page-card mech">
+        <div class="badge-row"><span class="pg-tag tag-mech">机械</span></div>
+        <h4>🔵 凸轮设计计算</h4>
+        <span class="page-url">/modules/cam.html</span>
+        <ul class="page-features">
+          <li>输入：类型（盘形/移动/球面）、行程、转速、运动规律</li>
+          <li>支持等速/修正正弦/修正梯形/摆线运动规律</li>
+          <li>输出：基圆半径、压力角、速度/加速度/跃度</li>
+          <li>📈 轮廓曲线 SVG 实时绘制</li>
+          <li>📤 导出 DXF / 坐标点 CSV</li>
+          <li>🛠️ 独立可用</li>
+        </ul>
+        <div class="dep-row"><b>被联动：</b>主页、成本评估</div>
+      </div>
+
+      <!-- 电机 -->
+      <div class="page-card elec">
+        <div class="badge-row"><span class="pg-tag tag-elec">电气</span></div>
+        <h4>🔌 电机选型</h4>
+        <span class="page-url">/modules/motor.html</span>
+        <ul class="page-features">
+          <li>输入：所需功率、扭矩、转速、电源电压、负载持续率</li>
+          <li>支持伺服/步进/无刷直流/异步感应四种</li>
+          <li>输出：选定类型 + 推荐得分 + 规格参数</li>
+          <li>📊 备选方案对比表（优缺点）</li>
+          <li>🛠️ 独立可用</li>
+        </ul>
+        <div class="dep-row"><b>被联动：</b>主页、齿轮、成本</div>
+      </div>
+
+      <!-- 轴承与轴 -->
+      <div class="page-card mech">
+        <div class="badge-row"><span class="pg-tag tag-mech">机械</span></div>
+        <h4>🔩 轴承与轴计算</h4>
+        <span class="page-url">/modules/bearing.html</span>
+        <ul class="page-features">
+          <li>输入：载荷、转速、轴材料、工作温度</li>
+          <li>支持深沟球/圆锥滚子/调心球等类型</li>
+          <li>输出：轴承型号、L10 寿命、轴径、临界转速</li>
+          <li>🛠️ 独立可用</li>
+        </ul>
+        <div class="dep-row"><b>被联动：</b>主页、成本</div>
+      </div>
+
+      <!-- 链皮带 -->
+      <div class="page-card mech">
+        <div class="badge-row"><span class="pg-tag tag-mech">机械</span></div>
+        <h4>🔗 链/皮带传动</h4>
+        <span class="page-url">/modules/belt.html</span>
+        <ul class="page-features">
+          <li>输入：功率、转速、中心距、环境</li>
+          <li>支持同步带/V 带/滚子链</li>
+          <li>输出：型号、节距、张紧力、效率</li>
+          <li>🛠️ 独立可用</li>
+        </ul>
+        <div class="dep-row"><b>被联动：</b>主页、成本</div>
+      </div>
+
+      <!-- 电池 -->
+      <div class="page-card elec">
+        <div class="badge-row"><span class="pg-tag tag-elec">电气</span></div>
+        <h4>🔋 电池容量计算</h4>
+        <span class="page-url">/modules/battery.html</span>
+        <ul class="page-features">
+          <li>输入：功率消耗、续航时间、电压、充电方案</li>
+          <li>支持磷酸铁锂/三元锂/铅酸对比</li>
+          <li>输出：容量 Ah、重量、循环寿命、充电时间</li>
+          <li>🛠️ 独立可用</li>
+        </ul>
+        <div class="dep-row"><b>被联动：</b>主页、成本</div>
+      </div>
+
+      <!-- 成本 -->
+      <div class="page-card cost">
+        <div class="badge-row"><span class="pg-tag tag-cost">经济</span></div>
+        <h4>💰 成本评估</h4>
+        <span class="page-url">/modules/cost.html</span>
+        <ul class="page-features">
+          <li>输入：年产量、加工费率、是否含装配/管理费</li>
+          <li>接收各机械模块返回的零件清单</li>
+          <li>输出：总成本 + 分项（材料/机加工/标准件/装配）</li>
+          <li>📊 敏感性分析（材料±10%、产量±50%）</li>
+          <li>💡 自动生成降本建议</li>
+          <li>🛠️ 独立可用：手动输入零件清单</li>
+        </ul>
+        <div class="dep-row"><b>接收所有模块结果</b></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 三、模块联动交互流程 -->
+  <div class="card">
+    <h2>三、主页一键联动交互流程</h2>
+    <div class="mermaid">
+graph LR
+    subgraph 用户在主页操作
+        A[填写需求参数<br/>载重=500kg<br/>速度=1.5m/s<br/>爬坡=5°<br/>续航=8h]
+    end
+
+    subgraph 主页自动调用
+        C[① 整机性能计算] --> D[输出: 功率=3.2kW<br/>扭矩=30.5N·m<br/>转速=1000rpm]
+        D --> E[② 调用电机选型]
+        D --> F[③ 调用齿轮传动]
+        D --> G[④ 调用电池容量]
+    end
+
+    subgraph 子模块返回
+        E -->|伺服电机 4kW<br/>48V · 42kg| H
+        F -->|模数2.5<br/>减速比3<br/>效率0.96| H
+        G -->|240Ah / 48V<br/>35kg| H
+    end
+
+    subgraph 主页汇总
+        H[⑤ 综合更新<br/>总系统效率=0.91<br/>最终电池=260Ah<br/>稳定性=1.8 ✓]
+        H --> I[显示完整方案<br/>📋 导出 BOM]
+    end
+
+    A --> C
+    E -.->|"返回结果"| H
+    F -.->|"返回结果"| H
+    G -.->|"返回结果"| H
+
+    style A fill:#4158D0,color:#fff
+    style C fill:#C850C0,color:#fff
+    style H fill:#51cf66,color:#fff
+    style I fill:#ffd43b,color:#333
+    </div>
+  </div>
+
+  <!-- 四、技术栈建议 -->
+  <div class="card">
+    <h2>四、技术方案（推荐路线）</h2>
+    <table class="page-table">
+      <thead>
+        <tr><th>层级</th><th>方案</th><th>理由</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><b>框架</b></td>
+          <td>纯 HTML + Tailwind CDN + Alpine.js / Vue CDN</td>
+          <td>零构建依赖，直接打开即可运行，每个模块独立 html 文件互不干扰</td>
+        </tr>
+        <tr>
+          <td><b>图表</b></td>
+          <td>ECharts（性能曲线、成本柱状图）+ SVG 手绘（凸轮轮廓）</td>
+          <td>ECharts 功能强、CDN 可直接引；凸轮轮廓用原生 SVG 实时绘制无依赖</td>
+        </tr>
+        <tr>
+          <td><b>计算逻辑</b></td>
+          <td>原生 JS 封装为独立计算函数（math.js 做矩阵/方程可选）</td>
+          <td>机械公式纯函数实现，方便单元测试和模块间调用</td>
+        </tr>
+        <tr>
+          <td><b>联动机制</b></td>
+          <td>主页 fetch() 各模块计算函数 / 或直接 import 同一份 math.js</td>
+          <td>简单方案：计算函数放在 /js/calc/ 目录，主页和各模块 import</td>
+        </tr>
+        <tr>
+          <td><b>部署</b></td>
+          <td>GitHub Pages / traesite 静态部署</td>
+          <td>纯静态站点，GitHub Pages 免费托管，开发阶段用 traesite 快速预览</td>
+        </tr>
+        <tr>
+          <td><b>文件结构</b></td>
+          <td><code>/index.html</code> + <code>/modules/*.html</code> + <code>/js/calc/*.js</code> + <code>/data/*.json</code></td>
+          <td>每个 html 独立，计算逻辑复用，数据层与之前 feat/shared-params 对应</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+  mermaid.initialize({ startOnLoad: true, theme: 'default', flowchart: { useMaxWidth: true, htmlLabels: true, curve: 'basis' } });
+</script>
+</body>
+</html>

@@ -1,0 +1,29 @@
+{
+  "standard_modules": [
+    { "module_mm": 0.5, "pitch_mm": 1.571, "module_series": "first" },
+    { "module_mm": 1.0, "pitch_mm": 3.142, "module_series": "first" },
+    { "module_mm": 1.5, "pitch_mm": 4.712, "module_series": "first" },
+    { "module_mm": 2.0, "pitch_mm": 6.283, "module_series": "first" },
+    { "module_mm": 2.5, "pitch_mm": 7.854, "module_series": "first" },
+    { "module_mm": 3.0, "pitch_mm": 9.425, "module_series": "first" },
+    { "module_mm": 4.0, "pitch_mm": 12.566, "module_series": "first" },
+    { "module_mm": 5.0, "pitch_mm": 15.708, "module_series": "first" },
+    { "module_mm": 6.0, "pitch_mm": 18.850, "module_series": "first" },
+    { "module_mm": 8.0, "pitch_mm": 25.133, "module_series": "first" },
+    { "module_mm": 10.0, "pitch_mm": 31.416, "module_series": "first" }
+  ],
+  "standard_pressure_angles": [14.5, 20, 22.5, 25],
+  "standard_helix_angles_deg": [0, 15, 20, 23, 30],
+  "minimum_teeth_by_module": {
+    "20_deg_pressure_angle": {
+      "spur_gear": 17,
+      "helical_gear_beta20": 14,
+      "helical_gear_beta30": 11
+    }
+  },
+  "face_width_ratios": {
+    "conservative": 8,
+    "normal": 12,
+    "aggressive": 16
+  }
+}

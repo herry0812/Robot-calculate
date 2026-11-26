@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "凸轮设计计算 - 输出接口",
+  "type": "object",
+  "properties": {
+    "base_circle_radius_mm": { "type": "number", "description": "基圆半径 (mm)" },
+    "actual_pressure_angle_deg": { "type": "number", "description": "实际最大压力角 (度)" },
+    "pressure_angle_ok": { "type": "boolean", "description": "压力角是否满足要求" },
+    "minimum_prime_circle_mm": { "type": "number", "description": "最小 prime 圆 (mm)" },
+    "tooth_profile_offset_mm": { "type": "number", "description": "轮廓偏移量 (mm)" },
+    "max_velocity_mps": { "type": "number", "description": "从动件最大速度 (m/s)" },
+    "max_acceleration_mps2": { "type": "number", "description": "从动件最大加速度 (m/s²)" },
+    "maximum_jerk_mps3": { "type": "number", "description": "最大跃度 (m/s³)" },
+    "mass_kg": { "type": "number", "description": "凸轮估算重量 (kg)" },
+    "contour_points": {
+      "type": "array",
+      "description": "轮廓坐标点 (用于 CAD 生成)",
+      "items": {
+        "type": "object",
+        "properties": {
+          "angle_deg": { "type": "number" },
+          "radius_mm": { "type": "number" },
+          "x_mm": { "type": "number" },
+          "y_mm": { "type": "number" }
+        }
+      }
+    },
+    "calculation_meta": {
+      "type": "object",
+      "properties": {
+        "version": { "type": "string" },
+        "timestamp": { "type": "string" }
+      }
+    }
+  },
+  "additionalProperties": false
+}

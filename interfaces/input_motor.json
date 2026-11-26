@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "电机选型 - 输入接口",
+  "type": "object",
+  "required": ["required_power_kw", "required_torque_nm", "rated_speed_rpm"],
+  "properties": {
+    "required_power_kw": {
+      "type": "number",
+      "description": "所需额定功率 (kW)",
+      "minimum": 0.05
+    },
+    "required_torque_nm": {
+      "type": "number",
+      "description": "所需额定扭矩 (N·m)",
+      "minimum": 0.1
+    },
+    "rated_speed_rpm": {
+      "type": "number",
+      "description": "目标额定转速 (rpm)",
+      "minimum": 100
+    },
+    "motor_type_preference": {
+      "type": "string",
+      "enum": ["servo", "stepper", "brushless_dc", "ac_induction", "auto"],
+      "default": "auto"
+    },
+    "supply_voltage_v": {
+      "type": "number",
+      "description": "电源电压 (V)",
+      "enum": [12, 24, 48, 72, 220, 380],
+      "default": 48
+    },
+    "duty_cycle": {
+      "type": "number",
+      "description": "负载持续率 (0-1)",
+      "minimum": 0.1,
+      "maximum": 1,
+      "default": 0.6
+    },
+    "overload_factor": {
+      "type": "number",
+      "description": "过载系数",
+      "default": 1.5
+    },
+    "environment_temp_c": {
+      "type": "number",
+      "description": "环境温度 (°C)",
+      "default": 25
+    }
+  },
+  "additionalProperties": false
+}

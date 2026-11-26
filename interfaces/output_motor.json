@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "电机选型 - 输出接口",
+  "type": "object",
+  "properties": {
+    "selected_type": {
+      "type": "string",
+      "description": "选定电机类型"
+    },
+    "recommendation_score": {
+      "type": "number",
+      "description": "推荐得分 (0-100)"
+    },
+    "rated_power_kw": { "type": "number" },
+    "rated_torque_nm": { "type": "number" },
+    "rated_speed_rpm": { "type": "number" },
+    "max_speed_rpm": { "type": "number" },
+    "rated_current_a": { "type": "number" },
+    "efficiency": { "type": "number" },
+    "weight_kg": { "type": "number" },
+    "mounting_flange": { "type": "string" },
+    "price_cny": { "type": "number", "description": "估算价格 (人民币)" },
+    "alternatives": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": { "type": "string" },
+          "power_kw": { "type": "number" },
+          "pros": { "type": "array", "items": { "type": "string" } },
+          "cons": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "calculation_meta": {
+      "type": "object",
+      "properties": {
+        "version": { "type": "string" },
+        "timestamp": { "type": "string" }
+      }
+    }
+  },
+  "additionalProperties": false
+}

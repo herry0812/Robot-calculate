@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>圆柱凸轮设计工具 - 项目框架</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh; padding: 30px 20px;
+  }
+  .container { max-width: 1400px; margin: 0 auto; }
+  h1 { text-align: center; color: #fff; font-size: 2em; margin-bottom: 8px; text-shadow: 2px 2px 6px rgba(0,0,0,0.25); }
+  .subtitle { text-align: center; color: rgba(255,255,255,0.88); font-size: 1.05em; margin-bottom: 30px; }
+  .card {
+    background: #fff; border-radius: 16px; padding: 28px; margin-bottom: 22px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+  }
+  .card h2 {
+    color: #667eea; font-size: 1.3em; margin-bottom: 18px;
+    padding-bottom: 10px; border-bottom: 3px solid #667eea;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .card h2::before { content:''; width:6px; height:26px; background:linear-gradient(180deg,#667eea,#764ba2); border-radius:3px; }
+  .card h3 { color: #764ba2; font-size: 1.05em; margin: 18px 0 10px; }
+  .mermaid { display: flex; justify-content: center; overflow-x: auto; }
+
+  /* 需求分类 grid */
+  .req-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px; margin-top: 10px;
+  }
+  .req-item {
+    background: #f8f9ff; border-radius: 10px; padding: 12px 14px;
+    border-left: 4px solid #667eea; font-size: 0.88em; line-height: 1.5;
+  }
+  .req-item.batch1 { border-left-color: #51cf66; }
+  .req-item.batch2 { border-left-color: #ff6b6b; }
+  .req-item .tag {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    font-size: 0.72em; margin-right: 6px; color: #fff;
+  }
+  .tag-b1 { background: #51cf66; }
+  .tag-b2 { background: #ff6b6b; }
+  .req-item b { color: #333; }
+
+  table.arch-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9em; }
+  table.arch-table th, table.arch-table td {
+    padding: 12px 14px; text-align: left; border-bottom: 1px solid #eee; vertical-align: top;
+  }
+  table.arch-table th { background: #f8f9ff; color: #667eea; font-weight: 600; }
+  code.p { background: #f1f3f5; color: #d6336c; padding: 2px 6px; border-radius: 4px; font-size: 0.88em; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <h1>🔵 圆柱凸轮设计工具 — 项目框架</h1>
+  <p class="subtitle">Cylindrical Cam Designer · 提示词整理 · 模块划分 · 技术形态</p>
+
+  <!-- 一、提示词整理总览 -->
+  <div class="card">
+    <h2>一、提示词整理（全部接收）</h2>
+
+    <h3>📦 第 1 批 · 基础功能（V1 核心）</h3>
+    <div class="req-grid">
+      <div class="req-item batch1"><span class="tag tag-b1">B1</span><b>参数输入</b>：基圆直径/半径、凸轮宽度、从动件类型、滚子半径、旋向、分度分辨率</div>
+      <div class="req-item batch1"><span class="tag tag-b1">B1</span><b>运动分段表</b>：段名/转角/升程/运动规律；增删调序；校验角度和=360°</div>
+      <div class="req-item batch1"><span class="tag tag-b1">B1</span><b>运动规律</b>：等速、等加速等减速、余弦、正弦、3-4-5 多项式、停歇</div>
+      <div class="req-item batch1"><span class="tag tag-b1">B1</span><b>从动件参数</b>：直动偏置/摆动摆杆+支点位置</div>
+      <div class="req-item batch1"><span class="tag tag-b1">B1</span><b>曲线生成表</b>：s/v/a/j/α/轮廓坐标；滚动；导出 CSV</div>
+      <div class="req-item batch1"><span class="tag tag-b1">B1</span><b>可视化</b>：s/v/a/j 曲线 + 展开图/3D 线框；实时重绘</div>
+      <div class="req-item batch1"><span class="tag tag-b1">B1</span><b>参数存取</b>：JSON 文件保存/加载</div>
+      <div class="req-item batch1"><span class="tag tag-b1">B1</span><b>校验提示</b>：压力角超限、角度和≠360°、滚子自交；文字警告</div>
+      <div class="req-item batch1"><span class="tag tag-b1">B1</span><b>技术形态</b>：单文件 HTML、离线、零依赖</div>
+      <div class="req-item batch1"><span class="tag tag-b1">B1</span><b>代码结构</b>：数学模块独立，可被 SolidWorks 建模脚本调用</div>
+    </div>
+
+    <h3>🚀 第 2 批 · 扩展功能 + 修改指令</h3>
+    <div class="req-grid">
+      <div class="req-item batch2"><span class="tag tag-b2">B2</span><b>浅灰主题</b>：#f2f3f5 背景，禁深色；曲线/3D 重新配色</div>
+      <div class="req-item batch2"><span class="tag tag-b2">B2</span><b>多语言切换</b>：English / 日本語 / 中文；默认中文；localStorage；枚举本地化+JSON 英文</div>
+      <div class="req-item batch2"><span class="tag tag-b2">B2</span><b>3D 参数示意</b>：每个参数标注几何位置；可在图上编辑/定位</div>
+      <div class="req-item batch2"><span class="tag tag-b2">B2</span><b>STEP 导出</b>：直接生成 STEP AP214，不接 SolidWorks</div>
+      <div class="req-item batch2"><span class="tag tag-b2">B2</span><b>新增参数</b>：滚子随动器长度（沟槽深度）、初始高度</div>
+      <div class="req-item batch2"><span class="tag tag-b2">B2</span><b>分段累计角度</b>：除第一段外每段显示累计转角</div>
+      <div class="req-item batch2"><span class="tag tag-b2">B2</span><b>修正梯形</b>：两端三次过渡+可设过渡区+滚子限制最小值</div>
+      <div class="req-item batch2"><span class="tag tag-b2">B2</span><b>旋转速度</b>：每段可设凸轮转速；正压力 + 输入扭矩曲线</div>
+      <div class="req-item batch2"><span class="tag tag-b2">B2</span><b>传动效率</b>：凸轮传动效率参数参与扭矩计算</div>
+      <div class="req-item batch2"><span class="tag tag-b2">B2</span><b>运动方向</b>：竖直/水平/倾斜；负载=质量+弹簧复位力</div>
+      <div class="req-item batch2"><span class="tag tag-b2">B2</span><b>曲线压力角行</b>：运动曲线新增一行显示压力角</div>
+      <div class="req-item batch2"><span class="tag tag-b2">B2</span><b>警告+解决建议</b>：所有警告后附建议文字</div>
+      <div class="req-item batch2"><span class="tag tag-b2">B2</span><b>连续曲面</b>：输出连续曲面，可直接加工</div>
+      <div class="req-item batch2"><span class="tag tag-b2">B2</span><b>多滚子 3D</b>：滚子数量、安装角度、旋转动画（正/反/步进/停止/进度条）</div>
+      <div class="req-item batch2"><span class="tag tag-b2">B2</span><b>滚子连杆</b>：滚子外连同直径同长度杆（朝向运动方向，不旋转）</div>
+      <div class="req-item batch2"><span class="tag tag-b2">B2</span><b>分段负载质量</b>：按运动分段分别设置</div>
+    </div>
+  </div>
+
+  <!-- 二、技术形态选择 -->
+  <div class="card">
+    <h2>二、技术形态</h2>
+    <table class="arch-table">
+      <thead><tr><th>方案</th><th>结论</th><th>理由</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><b>技术栈</b></td>
+          <td><b>单文件 HTML + 纯原生 JavaScript</b>（纯 Canvas 2D 画所有图）</td>
+          <td>离线运行、零依赖、免安装、易分享；数学模块导出为独立 .js 可被后续 Python/SolidWorks 脚本 import 或翻译重写</td>
+        </tr>
+        <tr>
+          <td><b>3D 线框</b></td>
+          <td>纯 Canvas 2D + 手写 3D 投影</td>
+          <td>不引 Three.js，保持零依赖；线框显示完全够用</td>
+        </tr>
+        <tr>
+          <td><b>STEP 导出</b></td>
+          <td>手写 STEP AP214 文本生成器（ISO 10303-21）</td>
+          <td>圆柱凸轮曲面可用 B-样条曲面表达，STEP 文本格式可直接手写生成</td>
+        </tr>
+        <tr>
+          <td><b>运行方式</b></td>
+          <td>直接双击 <code class="p">index.html</code> 浏览器打开</td>
+          <td>纯前端方案的常规启动方式，无需安装</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 三、代码框架 -->
+  <div class="card">
+    <h2>三、代码框架（模块划分）</h2>
+    <div class="mermaid">
+graph TD
+    subgraph INDEX["index.html 单文件入口"]
+        UI["UI 层<br/>参数输入表单<br/>分段表编辑器<br/>语言切换<br/>3D 参数示意"]
+    end
+
+    subgraph CORE["核心计算模块 (可独立复用)"]
+        MOTION["motion-laws.js<br/>六种运动规律<br/>通用 s/v/a/j 求解<br/>纯函数 · 无 UI 依赖"]
+        PROFILE["profile-generator.js<br/>理论/工作轮廓生成<br/>曲率半径计算<br/>连续曲面 B-spline<br/>直动/摆动两种模式"]
+        FORCE["force-torque.js<br/>正压力 N(φ)<br/>输入扭矩 T(φ)<br/>传动效率 η<br/>分段转速 ω<br/>弹簧复位力"]
+        VALIDATOR["validator.js<br/>压力角超限<br/>曲率半径自交<br/>段角度≠360°<br/>跃度不连续<br/>+ 解决建议文字"]
+    end
+
+    subgraph RENDER["可视化模块"]
+        CHART_SVG["chart-canvas.js<br/>s/v/a/j/α 曲线<br/>同轴或分面切换<br/>浅灰主题配色"]
+        CAM_3D["cam3d.js<br/>圆柱轮廓展开图<br/>3D 线框预览<br/>多滚子+连杆<br/>旋转动画控制<br/>进度条拖动"]
+        PARAM_VIZ["param-indicator.js<br/>3D 参数示意<br/>每个参数几何标注<br/>点击编辑/定位"]
+    end
+
+    subgraph IO["数据与导出"]
+        JSON_IO["json-config.js<br/>参数 JSON 保存/加载<br/>枚举英中互转<br/>localStorage 语言记忆"]
+        CSV["csv-export.js<br/>逐点数据表导出 CSV"]
+        STEP["step214-exporter.js<br/>STEP AP214 文本生成<br/>B-spline 曲面<br/>不接 SolidWorks"]
+    end
+
+    subgraph I18N["国际化"]
+        LANG["i18n.js<br/>en.json / zh.json / ja.json<br/>所有界面文案覆盖<br/>枚举值本地化"]
+    end
+
+    UI --> MOTION
+    UI --> PROFILE
+    UI --> FORCE
+    UI --> VALIDATOR
+    UI --> CHART_SVG
+    UI --> CAM_3D
+    UI --> PARAM_VIZ
+    UI --> JSON_IO
+    UI --> CSV
+    UI --> STEP
+    UI --> LANG
+    MOTION --> PROFILE
+    PROFILE --> FORCE
+    PROFILE --> VALIDATOR
+    PROFILE --> STEP
+
+    style CORE fill:#ff6b6b,color:#fff,stroke:#c92a2a
+    style RENDER fill:#51cf66,color:#fff,stroke:#2f9e44
+    style IO fill:#339af0,color:#fff,stroke:#1971c2
+    style I18N fill:#9775fa,color:#fff,stroke:#7048e8
+    style INDEX fill:#212529,color:#fff,stroke:#000
+    </div>
+  </div>
+
+  <!-- 四、文件结构 -->
+  <div class="card">
+    <h2>四、文件结构（逻辑组织）</h2>
+    <div class="mermaid">
+graph TD
+    ROOT["cylindrical-cam-designer/"]
+    ROOT --> HTML["index.html<br/>单文件入口<br/>包含 UI + 所有模块内联"]
+    ROOT --> CORE_JS["/core/<br/>（纯函数 · 可独立复用）"]
+    ROOT --> VIS_JS["/visualize/<br/>（Canvas 绘制）"]
+    ROOT --> IO_JS["/io/<br/>（JSON/CSV/STEP）"]
+    ROOT --> ASSETS["/assets/<br/>默认参数 JSON<br/>翻译字典 JSON"]
+
+    CORE_JS --> C1["motion-laws.js<br/>六种运动规律"]
+    CORE_JS --> C2["profile-generator.js<br/>轮廓生成"]
+    CORE_JS --> C3["force-torque.js<br/>受力扭矩"]
+    CORE_JS --> C4["validator.js<br/>校验+建议"]
+
+    VIS_JS --> V1["chart-canvas.js<br/>运动曲线图"]
+    VIS_JS --> V2["cam3d.js<br/>3D 线框+动画"]
+    VIS_JS --> V3["param-indicator.js<br/>参数几何示意"]
+
+    IO_JS --> I1["json-config.js"]
+    IO_JS --> I2["csv-export.js"]
+    IO_JS --> I3["step214-exporter.js"]
+
+    ASSETS --> A1["default-params.json"]
+    ASSETS --> A2["i18n/zh.json"]
+    ASSETS --> A3["i18n/en.json"]
+    ASSETS --> A4["i18n/ja.json"]
+
+    style ROOT fill:#212529,color:#fff
+    style HTML fill:#ff6b6b,color:#fff
+    style CORE_JS fill:#ff6b6b,color:#fff
+    style VIS_JS fill:#51cf66,color:#fff
+    style IO_JS fill:#339af0,color:#fff
+    style ASSETS fill:#9775fa,color:#fff
+    </div>
+  </div>
+
+  <!-- 五、依赖关系与调用链 -->
+  <div class="card">
+    <h2>五、核心调用链（参数 → 结果 → 可视化）</h2>
+    <div class="mermaid">
+graph LR
+    subgraph 输入
+        A[参数表单<br/>基础参数+分段+工况<br/>+多滚子+分段负载]
+    end
+
+    subgraph 计算
+        B[motion-laws.js<br/>逐段求解 s,v,a,j] --> C[profile-generator.js<br/>理论轮廓 + 工作轮廓<br/>曲率半径检查]
+        C --> D[force-torque.js<br/>正压力 + 扭矩 + 效率]
+        C --> E[validator.js<br/>所有校验 + 解决建议]
+    end
+
+    subgraph 输出
+        F[运动曲线表+CSV]
+        G[s/v/a/j/α 曲线图]
+        H[展开图]
+        I[3D 线框+动画]
+        J[STEP 曲面文件]
+        K[警告+建议]
+    end
+
+    A --> B
+    D --> F
+    D --> G
+    D --> H
+    C --> I
+    C --> J
+    E --> K
+    B --> F
+    C --> F
+
+    style A fill:#4158D0,color:#fff
+    style B fill:#ff6b6b,color:#fff
+    style C fill:#ff6b6b,color:#fff
+    style D fill:#ff6b6b,color:#fff
+    style E fill:#ff6b6b,color:#fff
+    style F fill:#51cf66,color:#fff
+    style G fill:#51cf66,color:#fff
+    style H fill:#51cf66,color:#fff
+    style I fill:#51cf66,color:#fff
+    style J fill:#339af0,color:#fff
+    style K fill:#ffd43b,color:#333
+    </div>
+  </div>
+
+  <!-- 六、实施顺序 -->
+  <div class="card">
+    <h2>六、实施顺序（建议按此迭代）</h2>
+    <table class="arch-table">
+      <thead><tr><th>里程碑</th><th>内容</th><th>关键交付</th></tr></thead>
+      <tbody>
+        <tr><td><b>M1 · 核心计算</b></td><td>运动规律 + 轮廓生成 + 受力扭矩 + 校验</td><td>/core/ 下 4 个模块全部就位，纯函数可单测</td></tr>
+        <tr><td><b>M2 · 基础 UI</b></td><td>参数表单 + 分段表 + 曲线表 + CSV 导出 + 警告</td><td>单文件 HTML 可打开运行</td></tr>
+        <tr><td><b>M3 · 可视化</b></td><td>s/v/a/j 曲线图 + 展开图 + 3D 线框 + 浅灰主题</td><td>所有图随参数实时重绘，浅灰底清晰</td></tr>
+        <tr><td><b>M4 · 扩展功能</b></td><td>3D 参数示意 + 图上编辑 + 多语言 + 多滚子 + 动画 + STEP</td><td>功能全部可用，三种语言无遗漏</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+<script>
+  mermaid.initialize({ startOnLoad: true, theme: 'default', flowchart: { useMaxWidth: true, htmlLabels: true, curve: 'basis' } });
+</script>
+</body>
+</html>

@@ -1,0 +1,78 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "整机性能计算 - 输入接口",
+  "type": "object",
+  "required": ["payload_kg", "max_speed_mps", "climb_angle_deg"],
+  "properties": {
+    "payload_kg": {
+      "type": "number",
+      "description": "额定载重 (kg)",
+      "minimum": 1,
+      "maximum": 5000
+    },
+    "max_speed_mps": {
+      "type": "number",
+      "description": "最大行驶速度 (m/s)",
+      "minimum": 0.1,
+      "maximum": 10
+    },
+    "max_acceleration_mps2": {
+      "type": "number",
+      "description": "最大加速度 (m/s²)",
+      "minimum": 0.1,
+      "maximum": 3,
+      "default": 0.5
+    },
+    "climb_angle_deg": {
+      "type": "number",
+      "description": "最大爬坡角度 (度)",
+      "minimum": 0,
+      "maximum": 30
+    },
+    "continuous_hours": {
+      "type": "number",
+      "description": "续航时间要求 (小时)",
+      "minimum": 1,
+      "maximum": 24,
+      "default": 8
+    },
+    "robot_weight_kg": {
+      "type": "number",
+      "description": "机器人自重 (kg), 留空则自动估算"
+    },
+    "wheel_radius_mm": {
+      "type": "number",
+      "description": "车轮半径 (mm)"
+    },
+    "environment": {
+      "type": "object",
+      "properties": {
+        "floor_type": {
+          "type": "string",
+          "enum": ["concrete", "epoxy", "steel", "carpet", "gravel"],
+          "default": "epoxy"
+        },
+        "rolling_resistance_coeff": {
+          "type": "number",
+          "description": "滚动阻力系数",
+          "default": 0.02
+        },
+        "wind_speed_mps": {
+          "type": "number",
+          "description": "环境风速 (m/s)",
+          "default": 0
+        }
+      }
+    },
+    "call_modules": {
+      "type": "array",
+      "description": "需要自动联动调用的子模块列表",
+      "items": {
+        "type": "string",
+        "enum": ["gear", "motor", "bearing", "battery", "cam", "cost"]
+      },
+      "default": ["gear", "motor", "battery"]
+    }
+  },
+  "additionalProperties": false
+}

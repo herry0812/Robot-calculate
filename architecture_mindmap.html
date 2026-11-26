@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>仓储物流机器人计算工具 - 架构思维导图</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 30px 20px;
+  }
+  .container {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  h1 {
+    text-align: center;
+    color: #fff;
+    font-size: 2em;
+    margin-bottom: 10px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+  }
+  .subtitle {
+    text-align: center;
+    color: rgba(255,255,255,0.85);
+    font-size: 1.1em;
+    margin-bottom: 30px;
+  }
+  .card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 30px;
+    margin-bottom: 25px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+  }
+  .card h2 {
+    color: #667eea;
+    font-size: 1.4em;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 3px solid #667eea;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .card h2::before {
+    content: '';
+    width: 8px;
+    height: 28px;
+    background: linear-gradient(180deg, #667eea, #764ba2);
+    border-radius: 4px;
+  }
+  .mermaid {
+    display: flex;
+    justify-content: center;
+    overflow-x: auto;
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-top: 20px;
+    justify-content: center;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.88em;
+    color: #555;
+  }
+  .legend-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+  }
+  .branch-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+  }
+  .branch-table th, .branch-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+  }
+  .branch-table th {
+    background: #f8f9ff;
+    color: #667eea;
+    font-weight: 600;
+  }
+  .branch-table tr:hover {
+    background: #f8f9ff;
+  }
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 0.82em;
+    font-weight: 500;
+  }
+  .badge-core { background: #ff6b6b; color: #fff; }
+  .badge-module { background: #51cf66; color: #fff; }
+  .badge-data { background: #339af0; color: #fff; }
+  .badge-ui { background: #ffd43b; color: #333; }
+  code {
+    background: #f1f3f5;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    color: #d6336c;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <h1>🤖 仓储物流机器人计算工具架构</h1>
+  <p class="subtitle">Robot Design Calculation Platform — 模块化 · 可联动 · 独立分支开发</p>
+
+  <!-- 1. 整体功能模块思维导图 -->
+  <div class="card">
+    <h2>一、功能模块架构</h2>
+    <div class="mermaid">
+mindmap
+  root((仓储物流机器人<br/>计算平台))
+    核心主控层
+      整机性能计算
+        牵引力计算
+        速度/加速度
+        爬坡能力
+        续航里程
+        功率平衡
+        重心与稳定性
+      任务调度引擎
+        模块调用编排
+        参数传递管理
+        结果聚合输出
+    机械设计模块
+      齿轮传动选型
+        直齿轮/斜齿轮
+        行星齿轮
+        蜗轮蜗杆
+        强度校核
+        寿命计算
+        效率计算
+      凸轮设计
+        盘形凸轮
+        移动凸轮
+        轮廓曲线
+        压力角校核
+        动力学分析
+      电机选型
+        伺服/步进/直流
+        功率扭矩匹配
+        转速范围
+        过载能力
+      轴承与轴
+        轴承类型选择
+        寿命校核 L10
+        轴径计算
+        挠度与临界转速
+      链条/皮带传动
+        同步带/链传动
+        张紧力计算
+        传动效率
+      轮式底盘
+        车轮半径
+        轮距/轴距
+        接地比压
+        转向半径
+    电气与控制
+      电池容量计算
+      电机驱动匹配
+      控制器选型
+      传感器配置
+    成本评估
+      BOM 成本估算
+        零件材料成本
+        加工成本
+        标准件成本
+      装配与测试
+      批量折扣模型
+      成本敏感性分析
+    数据与接口层
+      标准参数库
+        材料属性
+        标准齿轮表
+        轴承型号库
+        电机规格库
+      模块间联动接口
+        统一输入格式
+        统一输出格式
+        数据校验
+    输出与文档
+      计算说明书
+      选型清单 BOM
+      性能报告
+      优化建议
+    用户界面
+      Web 交互界面
+      参数输入表单
+      结果可视化图表
+      历史版本对比
+    开发支撑
+      Git 分支管理
+      单元测试框架
+      文档生成
+      CI/CD
+    </div>
+  </div>
+
+  <!-- 2. 模块联动数据流 -->
+  <div class="card">
+    <h2>二、模块联动数据流（以整机性能为中心）</h2>
+    <div class="mermaid">
+graph TD
+    subgraph 用户输入
+        A[用户需求参数<br/>载重/速度/爬坡/续航]
+    end
+
+    subgraph 核心主控模块
+        B[整机性能计算]
+    end
+
+    subgraph 自动调用的子模块
+        C[电机选型计算]
+        D[齿轮传动选型]
+        E[凸轮设计计算]
+        F[轴承与轴计算]
+        G[电池容量计算]
+        H[成本评估计算]
+    end
+
+    subgraph 共享参数库
+        I[(材料/标准件库)]
+        J[(行业标准/规范)]
+    end
+
+    subgraph 输出结果
+        K[完整设计方案]
+        L[BOM 清单]
+        M[性能报告]
+        N[成本报告]
+    end
+
+    A --> B
+    B -->|1. 计算所需扭矩/功率| C
+    B -->|2. 输出转速/扭矩需求| D
+    B -->|3. 动作循环/节拍| E
+    B -->|4. 载荷/转速| F
+    B -->|5. 功率消耗| G
+    C -->|电机参数| D
+    D -->|传动效率| B
+    C -->|重量/尺寸| H
+    D -->|零件数/材料| H
+    E -->|零件复杂度| H
+    F -->|零件规格| H
+    G -->|电池参数| H
+    I -.-> C
+    I -.-> D
+    I -.-> E
+    I -.-> F
+    I -.-> H
+    J -.-> B
+    J -.-> D
+    B --> K
+    C --> K
+    D --> K
+    E --> K
+    F --> K
+    G --> K
+    H --> N
+    D --> L
+    E --> L
+    F --> L
+    C --> L
+    G --> L
+    B --> M
+
+    style B fill:#ff6b6b,stroke:#c92a2a,color:#fff
+    style C fill:#51cf66,stroke:#2f9e44,color:#fff
+    style D fill:#51cf66,stroke:#2f9e44,color:#fff
+    style E fill:#51cf66,stroke:#2f9e44,color:#fff
+    style F fill:#51cf66,stroke:#2f9e44,color:#fff
+    style G fill:#51cf66,stroke:#2f9e44,color:#fff
+    style H fill:#ffd43b,stroke:#f59f00,color:#333
+    style I fill:#339af0,stroke:#1971c2,color:#fff
+    style J fill:#339af0,stroke:#1971c2,color:#fff
+    style K fill:#9775fa,stroke:#7048e8,color:#fff
+    style L fill:#9775fa,stroke:#7048e8,color:#fff
+    style M fill:#9775fa,stroke:#7048e8,color:#fff
+    style N fill:#9775fa,stroke:#7048e8,color:#fff
+    </div>
+  </div>
+
+  <!-- 3. Git 分支策略 -->
+  <div class="card">
+    <h2>三、Git 分支策略</h2>
+    <div class="mermaid">
+graph LR
+    subgraph 长期分支
+        MAIN[main<br/>主分支 · 稳定可用]
+    end
+
+    subgraph 功能开发分支
+        direction TB
+        F1[feat/main-performance<br/>整机性能计算]
+        F2[feat/gear-design<br/>齿轮传动选型]
+        F3[feat/cam-design<br/>凸轮设计计算]
+        F4[feat/motor-selection<br/>电机选型]
+        F5[feat/bearing-shaft<br/>轴承与轴]
+        F6[feat/belt-chain<br/>链条/皮带传动]
+        F7[feat/battery<br/>电池容量计算]
+        F8[feat/cost-estimation<br/>成本评估]
+        F9[feat/shared-params<br/>共享参数库]
+        F10[feat/integration<br/>集成联调]
+    end
+
+    subgraph 辅助分支
+        H1[feature/ui<br/>Web 界面]
+        H2[feature/tests<br/>测试框架]
+        H3[docs/api<br/>API 文档]
+    end
+
+    MAIN --> F1
+    MAIN --> F2
+    MAIN --> F3
+    MAIN --> F4
+    MAIN --> F5
+    MAIN --> F6
+    MAIN --> F7
+    MAIN --> F8
+    MAIN --> F9
+    MAIN --> F10
+    F10 -->|合并后| MAIN
+    H1 -.-> F10
+    H2 -.-> F10
+    H3 -.-> F10
+
+    style MAIN fill:#212529,stroke:#000,color:#fff
+    style F1 fill:#ff6b6b,color:#fff
+    style F2 fill:#51cf66,color:#fff
+    style F3 fill:#51cf66,color:#fff
+    style F4 fill:#51cf66,color:#fff
+    style F5 fill:#51cf66,color:#fff
+    style F6 fill:#51cf66,color:#fff
+    style F7 fill:#51cf66,color:#fff
+    style F8 fill:#ffd43b,color:#333
+    style F9 fill:#339af0,color:#fff
+    style F10 fill:#9775fa,color:#fff
+    style H1 fill:#adb5bd,color:#333
+    style H2 fill:#adb5bd,color:#333
+    style H3 fill:#adb5bd,color:#333
+    </div>
+
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#212529"></div>main 主分支</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b"></div>核心主控模块</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#51cf66"></div>机械计算模块</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#ffd43b"></div>经济评估模块</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#339af0"></div>数据支撑层</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#9775fa"></div>集成联调</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#adb5bd"></div>辅助工具</div>
+    </div>
+  </div>
+
+  <!-- 4. 分支详情表 -->
+  <div class="card">
+    <h2>四、分支详细规划表</h2>
+    <table class="branch-table">
+      <thead>
+        <tr>
+          <th>分支名</th>
+          <th>模块名称</th>
+          <th>类型</th>
+          <th>功能描述</th>
+          <th>依赖关系</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>main</code></td>
+          <td>主分支</td>
+          <td><span class="badge badge-core">核心</span></td>
+          <td>稳定发布版，所有模块合并后的最终版本</td>
+          <td>无</td>
+        </tr>
+        <tr>
+          <td><code>feat/main-performance</code></td>
+          <td>整机性能计算</td>
+          <td><span class="badge badge-core">核心</span></td>
+          <td>牵引力、速度、爬坡、续航、稳定性等综合计算；调度调用其他模块</td>
+          <td>齿轮、电机、电池</td>
+        </tr>
+        <tr>
+          <td><code>feat/gear-design</code></td>
+          <td>齿轮传动选型</td>
+          <td><span class="badge badge-module">模块</span></td>
+          <td>直/斜齿轮、行星轮、蜗轮蜗杆设计与强度校核</td>
+          <td>共享参数库</td>
+        </tr>
+        <tr>
+          <td><code>feat/cam-design</code></td>
+          <td>凸轮设计计算</td>
+          <td><span class="badge badge-module">模块</span></td>
+          <td>盘形/移动凸轮轮廓曲线设计、压力角校核、动力学分析</td>
+          <td>共享参数库</td>
+        </tr>
+        <tr>
+          <td><code>feat/motor-selection</code></td>
+          <td>电机选型</td>
+          <td><span class="badge badge-module">模块</span></td>
+          <td>伺服/步进/直流电机功率扭矩匹配、转速范围、过载能力</td>
+          <td>整机性能、共享参数库</td>
+        </tr>
+        <tr>
+          <td><code>feat/bearing-shaft</code></td>
+          <td>轴承与轴</td>
+          <td><span class="badge badge-module">模块</span></td>
+          <td>轴承类型选择、寿命校核 L10、轴径计算、临界转速</td>
+          <td>齿轮传动、共享参数库</td>
+        </tr>
+        <tr>
+          <td><code>feat/belt-chain</code></td>
+          <td>链条/皮带传动</td>
+          <td><span class="badge badge-module">模块</span></td>
+          <td>同步带/链传动设计、张紧力计算、传动效率</td>
+          <td>电机选型、共享参数库</td>
+        </tr>
+        <tr>
+          <td><code>feat/battery</code></td>
+          <td>电池容量计算</td>
+          <td><span class="badge badge-module">模块</span></td>
+          <td>基于功率消耗计算电池容量、续航里程、充电方案</td>
+          <td>整机性能、电机选型</td>
+        </tr>
+        <tr>
+          <td><code>feat/cost-estimation</code></td>
+          <td>成本评估</td>
+          <td><span class="badge badge-module">模块</span></td>
+          <td>BOM 成本、加工成本、批量折扣、敏感性分析</td>
+          <td>所有机械模块</td>
+        </tr>
+        <tr>
+          <td><code>feat/shared-params</code></td>
+          <td>共享参数库</td>
+          <td><span class="badge badge-data">数据层</span></td>
+          <td>材料属性、标准齿轮表、轴承型号、电机规格等公共数据</td>
+          <td>无（基础层）</td>
+        </tr>
+        <tr>
+          <td><code>feat/integration</code></td>
+          <td>集成联调</td>
+          <td><span class="badge badge-core">核心</span></td>
+          <td>模块间接口对接、联动测试、数据传递验证</td>
+          <td>所有模块</td>
+        </tr>
+        <tr>
+          <td><code>feature/ui</code></td>
+          <td>Web 交互界面</td>
+          <td><span class="badge badge-ui">辅助</span></td>
+          <td>参数输入表单、结果可视化图表、方案对比</td>
+          <td>集成联调</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 5. 模块联动接口规范 -->
+  <div class="card">
+    <h2>五、模块联动接口规范（核心设计）</h2>
+
+    <p style="margin-bottom:15px;color:#555;line-height:1.7;">
+      每个计算模块都暴露 <b>统一 JSON Schema 输入 / 输出接口</b>。整机性能模块作为"调度中心"，按顺序调用子模块、传递参数、收集结果。
+      所有接口附带 <b>JSON Schema draft-07</b> 校验，调用前先验证参数范围与格式。
+    </p>
+
+    <div class="mermaid">
+graph LR
+    subgraph STEP1["① 调用方准备参数"]
+        A[整机性能计算]
+        A_OUT[/输出 JSON<br/>功率kW · 转速rpm<br/>扭矩Nm · 使用系数/]
+        A --> A_OUT
+    end
+
+    subgraph STEP2["② 校验层"]
+        V{JSON Schema<br/>数据校验}
+    end
+
+    subgraph STEP3["③ 被调模块接收"]
+        B[齿轮传动模块]
+        B_IN[/输入 JSON<br/>模数 · 齿数 · 材料<br/>效率/]
+        B --> B_IN
+    end
+
+    subgraph STEP4["④ 调用方消费结果"]
+        C[整机性能模块更新]
+        C_OUT[/返回 JSON<br/>齿轮效率η=0.96<br/>零件重量3.2kg<br/>传动比3/]
+        C --> C_OUT
+    end
+
+    A_OUT -->|"校验通过 ✓"| V
+    V -->|"校验通过 ✓"| B_IN
+    B -.->|"计算完成"| B_IN
+    B_IN -->|"返回标准JSON"| C_OUT
+
+    style A fill:#ff6b6b,stroke:#c92a2a,color:#fff
+    style C fill:#ff6b6b,stroke:#c92a2a,color:#fff
+    style V fill:#ffd43b,stroke:#f59f00,color:#333
+    style B fill:#51cf66,stroke:#2f9e44,color:#fff
+    style A_OUT fill:#339af0,stroke:#1971c2,color:#fff
+    style B_IN fill:#339af0,stroke:#1971c2,color:#fff
+    style C_OUT fill:#339af0,stroke:#1971c2,color:#fff
+    </div>
+
+    <h3 style="margin:25px 0 10px;color:#764ba2;font-size:1.05em;">接口文件结构</h3>
+    <div class="mermaid">
+graph TD
+    ROOT["/interfaces/"]
+    ROOT --> M1["gear/"]
+    ROOT --> M2["main-performance/"]
+    ROOT --> M3["cam/"]
+    ROOT --> M4["motor/"]
+    ROOT --> M5["cost/"]
+    ROOT --> M6["..."]
+    M1 --> I1["input_schema.json"]
+    M1 --> O1["output_schema.json"]
+    M2 --> I2["input_schema.json"]
+    M2 --> O2["output_schema.json"]
+    M3 --> I3["input_schema.json"]
+    M3 --> O3["output_schema.json"]
+    style ROOT fill:#9775fa,color:#fff,stroke:#7048e8
+    style M1 fill:#51cf66,color:#fff,stroke:#2f9e44
+    style M2 fill:#ff6b6b,color:#fff,stroke:#c92a2a
+    style M3 fill:#51cf66,color:#fff,stroke:#2f9e44
+    style M4 fill:#51cf66,color:#fff,stroke:#2f9e44
+    style M5 fill:#ffd43b,color:#333,stroke:#f59f00
+    style M6 fill:#adb5bd,color:#333
+    style I1 fill:#e9ecef
+    style O1 fill:#e9ecef
+    style I2 fill:#e9ecef
+    style O2 fill:#e9ecef
+    style I3 fill:#e9ecef
+    style O3 fill:#e9ecef
+    </div>
+  </div>
+
+</div>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'default',
+    mindmap: { padding: 10 },
+    flowchart: { useMaxWidth: true, htmlLabels: true, curve: 'basis' }
+  });
+</script>
+</body>
+</html>

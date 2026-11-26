@@ -1,0 +1,75 @@
+{
+  "format": "cylindrical-cam-designer-v1",
+  "params": {
+    "baseDia": 100,
+    "camWidth": 60,
+    "rollerDia": 19,
+    "rollerWidth": 11,
+    "initialHt": 20,
+    "resolution": 3600,
+    "followerType": "trans",
+    "handedness": "rh",
+    "offset": 50,
+    "motionDir": "vertical",
+    "tiltAngle": 0,
+    "swingLen": 100,
+    "fulcrumDist": 80,
+    "swingInitAngle": 30,
+    "loadMass": 5,
+    "camSpeed": 30,
+    "springForce": 50,
+    "efficiency": 0.95,
+    "pressAngleLimit": 30,
+    "rollerCount": 3,
+    "rollerAngles": [
+      0,
+      120,
+      240
+    ]
+  },
+  "segments": [
+    {
+      "name": "停歇1",
+      "angle": 90,
+      "lift": 0,
+      "law": "dwell",
+      "speed": null,
+      "mass": null,
+      "transitionRatio": 0.125
+    },
+    {
+      "name": "升程",
+      "angle": 120,
+      "lift": 20,
+      "law": "trap_cubic",
+      "speed": null,
+      "mass": null,
+      "transitionRatio": 0.1814,
+      "transitionMode": "length",
+      "transitionLength": 19,
+      "transAuto": true
+    },
+    {
+      "name": "停歇2",
+      "angle": 60,
+      "lift": 20,
+      "law": "dwell",
+      "speed": null,
+      "mass": null,
+      "transitionRatio": 0.125
+    },
+    {
+      "name": "回程",
+      "angle": 90,
+      "lift": 0,
+      "law": "trap_cubic",
+      "speed": null,
+      "mass": null,
+      "transitionRatio": 0.2419,
+      "transitionMode": "length",
+      "transitionLength": 19,
+      "transAuto": true
+    }
+  ],
+  "savedAt": "2026-11-25T08:39:36.335Z"
+}

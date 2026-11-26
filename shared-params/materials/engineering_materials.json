@@ -1,0 +1,121 @@
+{
+  "materials": [
+    {
+      "code": "HT200",
+      "name": "灰铸铁 HT200",
+      "density_gcm3": 7.2,
+      "tensile_strength_mpa": 200,
+      "hardness_hb": 170,
+      "young_modulus_gpa": 100,
+      "cost_index": 1.0,
+      "applications": ["gear_housing", "bed"],
+      "standard": "GB/T 9439"
+    },
+    {
+      "code": "QT600-3",
+      "name": "球墨铸铁 QT600-3",
+      "density_gcm3": 7.3,
+      "tensile_strength_mpa": 600,
+      "yield_strength_mpa": 370,
+      "hardness_hb": 230,
+      "young_modulus_gpa": 173,
+      "cost_index": 1.5,
+      "applications": ["gear", "cam", "crankshaft"],
+      "standard": "GB/T 1348"
+    },
+    {
+      "code": "45#",
+      "name": "45号钢",
+      "density_gcm3": 7.85,
+      "tensile_strength_mpa": 600,
+      "yield_strength_mpa": 355,
+      "hardness_hb": 170,
+      "young_modulus_gpa": 210,
+      "cost_index": 1.3,
+      "applications": ["gear", "shaft", "cam"],
+      "standard": "GB/T 699"
+    },
+    {
+      "code": "45#_HARDENED",
+      "name": "45号钢 淬火",
+      "density_gcm3": 7.85,
+      "tensile_strength_mpa": 980,
+      "yield_strength_mpa": 785,
+      "hardness_hb": 280,
+      "young_modulus_gpa": 210,
+      "cost_index": 1.6,
+      "applications": ["gear_tooth", "cam_surface"],
+      "standard": "GB/T 699"
+    },
+    {
+      "code": "20CrMnTi",
+      "name": "20CrMnTi 渗碳淬火",
+      "density_gcm3": 7.8,
+      "tensile_strength_mpa": 1100,
+      "yield_strength_mpa": 850,
+      "hardness_hb": 58,
+      "young_modulus_gpa": 210,
+      "cost_index": 2.5,
+      "applications": ["high_speed_gear", "automotive_gear"],
+      "standard": "GB/T 3077"
+    },
+    {
+      "code": "40Cr",
+      "name": "40Cr 调质",
+      "density_gcm3": 7.85,
+      "tensile_strength_mpa": 980,
+      "yield_strength_mpa": 785,
+      "hardness_hb": 220,
+      "young_modulus_gpa": 210,
+      "cost_index": 1.8,
+      "applications": ["shaft", "gear_key"],
+      "standard": "GB/T 3077"
+    },
+    {
+      "code": "6061_AL",
+      "name": "铝合金 6061-T6",
+      "density_gcm3": 2.7,
+      "tensile_strength_mpa": 310,
+      "yield_strength_mpa": 276,
+      "hardness_hb": 95,
+      "young_modulus_gpa": 70,
+      "cost_index": 2.0,
+      "applications": ["frame", "cover", "heat_sink"],
+      "standard": "GB/T 3190"
+    },
+    {
+      "code": "7075_AL",
+      "name": "铝合金 7075-T6",
+      "density_gcm3": 2.81,
+      "tensile_strength_mpa": 570,
+      "yield_strength_mpa": 505,
+      "hardness_hb": 150,
+      "young_modulus_gpa": 71,
+      "cost_index": 4.0,
+      "applications": ["structural_part", "high_load_frame"],
+      "standard": "GB/T 3190"
+    },
+    {
+      "code": "POM",
+      "name": "聚甲醛 POM (赛钢)",
+      "density_gcm3": 1.42,
+      "tensile_strength_mpa": 70,
+      "hardness_hb": 120,
+      "young_modulus_gpa": 2.8,
+      "cost_index": 0.8,
+      "applications": ["plastic_gear", "bearing_race"],
+      "standard": "GB/T 208"
+    },
+    {
+      "code": "PA66",
+      "name": "尼龙 PA66",
+      "density_gcm3": 1.14,
+      "tensile_strength_mpa": 60,
+      "hardness_hb": 80,
+      "young_modulus_gpa": 3.0,
+      "cost_index": 0.7,
+      "applications": ["gear", "bushing"],
+      "standard": "GB/T 1040"
+    }
+  ]
+}

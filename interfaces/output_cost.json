@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "成本评估 - 输出接口",
+  "type": "object",
+  "properties": {
+    "total_cost_cny": { "type": "number", "description": "总成本 (人民币)" },
+    "material_cost_cny": { "type": "number" },
+    "machining_cost_cny": { "type": "number" },
+    "standard_parts_cost_cny": { "type": "number" },
+    "assembly_cost_cny": { "type": "number" },
+    "overhead_cost_cny": { "type": "number" },
+    "per_unit_cost_cny": { "type": "number", "description": "单台成本" },
+    "cost_breakdown": {
+      "type": "array",
+      "description": "按模块分类的成本明细",
+      "items": {
+        "type": "object",
+        "properties": {
+          "module": { "type": "string" },
+          "cost_cny": { "type": "number" },
+          "percentage": { "type": "number" }
+        }
+      }
+    },
+    "sensitivity_analysis": {
+      "type": "array",
+      "description": "敏感性分析 (材料±10%, 产量±50%)",
+      "items": {
+        "type": "object",
+        "properties": {
+          "scenario": { "type": "string" },
+          "total_cost_cny": { "type": "number" },
+          "change_pct": { "type": "number" }
+        }
+      }
+    },
+    "cost_reduction_tips": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "calculation_meta": {
+      "type": "object",
+      "properties": {
+        "version": { "type": "string" },
+        "timestamp": { "type": "string" }
+      }
+    }
+  },
+  "additionalProperties": false
+}
