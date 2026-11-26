@@ -282,8 +282,6 @@ main{display:grid;grid-template-columns:404px minmax(0,1fr);gap:10px;padding:10p
     <span id="dirty" class="dirty" hidden data-i18n="unsaved">未保存</span>
   </div>
   <div class="acts">
-    <select id="exampleSel" class="sel" title="内置示例"></select>
-    <button id="btnExample" data-i18n="btnExample">载入示例</button>
     <span class="sep"></span>
     <button id="btnSave" data-i18n="btnSaveScheme">保存</button>
     <button id="btnSaveAs" data-i18n="btnSaveAs">另存为</button>
@@ -1389,10 +1387,6 @@ const App = {
     this.renderAllViz();
     if (this.renderCards) this.renderCards();
     if (this.updateStatus) this.updateStatus();
-    const exSel = document.getElementById('exampleSel');
-    if (exSel && this.EXAMPLES) {
-      exSel.innerHTML = this.EXAMPLES.map(ex => '<option value="' + ex.key + '">' + this.t(ex.nameKey) + '</option>').join('');
-    }
   },
 
   // 默认分段名（停歇/升程/回程）随语言切换，用户自定义名称保持不动
@@ -3807,12 +3801,6 @@ Object.assign(App, {
   DRAFT_KEY: 'cam_draft',
   SCHEMA: 'cylindricalcam',
 
-  EXAMPLES: [
-    { key: 'std', nameKey: 'exStd', params: {}, segLift: 20 },
-    { key: 'high', nameKey: 'exHigh', params: { p_camSpeed: 150, p_loadMass: 2, p_springForce: 30, p_pressAngleLimit: 32 }, segLift: 16 },
-    { key: 'long', nameKey: 'exLong', params: { p_baseDia: 100, p_camWidth: 90, p_rollerWidth: 22, p_loadMass: 8, p_initialHt: 25 }, segLift: 35 }
-  ],
-
   /* ---------- 基础工具 ---------- */
   toast(msg) {
     const el = $id('toast');
@@ -4214,28 +4202,7 @@ Object.assign(App, {
     this.toast(this.t('msgImported', { n }));
   },
 
-  /* ---------- 示例 / 重置 ---------- */
-  loadExample(key) {
-    const ex = this.EXAMPLES.find(e => e.key === key) || this.EXAMPLES[0];
-    this.loadDefault();
-    Object.keys(ex.params || {}).forEach(id => { const el = $id(id); if (el) el.value = ex.params[id]; });
-    if (ex.segLift != null) {
-      this.state.segments.forEach(s => {
-        if (s.law !== 'dwell') s.lift = ex.segLift;
-      });
-      this.state.segments.forEach(s => { if (s.law === 'trap_cubic' || s.law === 'mod_trap') this.applyMinTransition(s); });
-    }
-    const off = $id('p_offset');
-    if (off) off.dataset.userSet = '1';
-    this.renderSegTable();
-    this.onFollowerTypeChange();
-    this.compute();
-    this.state.curId = null;
-    this.setSchemeName(this.t(ex.nameKey));
-    this.markDirty(true);
-    this.toast(this.t('msgExample', { n: this.t(ex.nameKey) }));
-  },
-
+  /* ---------- 重置 ---------- */
   resetAll() {
     // 回到默认的单层结构，清空复合层缓存，避免残留上一层参数
     const sel = $id('p_camType');
@@ -4347,11 +4314,7 @@ Object.assign(App, {
     on('btnStep', 'click', () => this.exportSTEP());
     on('btnPrint', 'click', () => this.printDoc());
     on('btnReset', 'click', () => this.resetAll());
-    on('btnExample', 'click', () => this.loadExample(($id('exampleSel') || {}).value));
     on('langSel', 'change', (e) => this.setLang(e.target.value));
-
-    const exSel = $id('exampleSel');
-    if (exSel) exSel.innerHTML = this.EXAMPLES.map(e => '<option value="' + e.key + '">' + escHtml(this.t(e.nameKey)) + '</option>').join('');
 
     const nm = $id('schemeName');
     if (nm) {
