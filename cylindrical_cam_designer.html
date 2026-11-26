@@ -4078,6 +4078,14 @@ Object.assign(App, {
   },
 
   resetAll() {
+    // 回到默认的单层结构，清空复合层缓存，避免残留上一层参数
+    const sel = $id('p_camType');
+    if (sel) sel.value = 'single';
+    this.state.camType = 'single';
+    this.state.activeLayer = 0;
+    this.state.layerStore = [null, null];
+    this.state.ptsByLayer = [null, null];
+    this.state.compoundInfo = null;
     this.loadDefault();
     this.state.curId = null;
     this.setSchemeName('未命名方案');
