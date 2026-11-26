@@ -22,7 +22,7 @@
   --r:4px;
   --canvas-bg:#ffffff; --axis:#8b95a5; --grid:#e6ebf2;
   --line-s:#14568f; --line-v:#0b7285; --line-a:#b45309; --line-j:#1c7a45;
-  --line-alpha:#6d28d9; --line-force:#0f766e; --line-norm:#b33326;
+  --line-alpha:#6d28d9; --line-force:#0f766e; --line-norm:#b33326; --line-torque:#c026d3;
   --cam-surface:#c9d9e8; --cam-edge:#14568f; --roller:#c2410c; --follower-rod:#8b95a5;
   --stroke-good:#1c7a45; --stroke-warn:#9a6b12; --stroke-info:#14568f;
 }
@@ -506,6 +506,7 @@ main{display:grid;grid-template-columns:404px minmax(0,1fr);gap:10px;padding:10p
             <label class="rt-chip"><input type="checkbox" data-row="alphaDeg" checked><span data-i18n="legAlpha">压力角</span></label>
             <label class="rt-chip"><input type="checkbox" data-row="forceAxial" checked><span data-i18n="legFaxial">沿运动方向</span></label>
             <label class="rt-chip"><input type="checkbox" data-row="forceN" checked><span data-i18n="legN">法向正压力</span></label>
+            <label class="rt-chip"><input type="checkbox" data-row="torqueNmm" checked><span data-i18n="legTorque">输入扭矩</span></label>
           </div>
           <div class="canvas-wrap"><canvas id="cvCurves" width="900" height="1260"></canvas></div>
           <p class="panel-hint" data-i18n="cvProbeHint">在曲线上移动或拖动鼠标，查看该角度各参数数值</p>
@@ -664,7 +665,8 @@ Object.assign(I18N.zh, {
   transTooShort: "过渡 {l} mm < 最小 {d} mm",
   transMin: "最小 {d} mm（≈{r}%）",
   legS: "位置", legV: "速度", legA: "加速度", legJ: "跃度", legAlpha: "压力角", legF: "受力",
-  legFaxial: "沿运动方向", legN: "法向正压力",
+  legFaxial: "沿运动方向", legN: "法向正压力", legTorque: "输入扭矩",
+  cvLayer1: "第1层", cvLayer2: "第2层", cvLayerBoth: "两层合计",
   view3dHint: "拖动旋转视角 · 双击复位",
   alertGrooveOverflow: "沟槽轴向范围超出凸轮高度：至少需要 {need} mm（随动器直径 {rd} mm + 升程 {lift} mm），当前凸轮高度仅 {w} mm。",
   sugGrooveOverflow: "将「凸轮高度」增大到 {need} mm 以上，或减小升程/初始高度，或减小随动器直径。",
@@ -769,7 +771,8 @@ Object.assign(I18N.en, {
   transTooShort: "Blend {l} mm < min {d} mm",
   transMin: "Min {d} mm (≈{r}%)",
   legS: "Position", legV: "Velocity", legA: "Acceleration", legJ: "Jerk", legAlpha: "Pressure angle", legF: "Force",
-  legFaxial: "Axial (motion)", legN: "Normal force",
+  legFaxial: "Axial (motion)", legN: "Normal force", legTorque: "Input torque",
+  cvLayer1: "Layer 1", cvLayer2: "Layer 2", cvLayerBoth: "Combined",
   view3dHint: "Drag to rotate · double-click to reset",
   alertGrooveOverflow: "Groove axial span exceeds cam height: at least {need} mm is required (follower dia {rd} mm + lift {lift} mm), but cam height is only {w} mm.",
   sugGrooveOverflow: "Increase cam height to at least {need} mm, or reduce the lift/initial height, or reduce the follower diameter.",
@@ -874,7 +877,8 @@ Object.assign(I18N.ja, {
   transTooShort: "遷移 {l} mm < 最小 {d} mm",
   transMin: "最小 {d} mm（≈{r}%）",
   legS: "位置", legV: "速度", legA: "加速度", legJ: "躍度", legAlpha: "圧力角", legF: "荷重",
-  legFaxial: "運動方向", legN: "法線方向の荷重",
+  legFaxial: "運動方向", legN: "法線方向の荷重", legTorque: "入力トルク",
+  cvLayer1: "第1段", cvLayer2: "第2段", cvLayerBoth: "両段合計",
   view3dHint: "ドラッグで回転・ダブルクリックでリセット",
   alertGrooveOverflow: "溝の軸方向範囲がカム高さを超えています：最低 {need} mm 必要（フォロワ径 {rd} mm ＋ リフト {lift} mm）ですが、カム高さは {w} mm です。",
   sugGrooveOverflow: "カム高さを {need} mm 以上に増やすか、リフト／初期高さを小さくするか、フォロワ径を小さくしてください。",
@@ -2482,14 +2486,16 @@ const App = {
     const cv = document.getElementById('cvCurves');
     const W = cv.width;
     const vis = this.state.visibleRows || {};
-    const nVis = ['s', 'v_s', 'a_s', 'j_s', 'alphaDeg', 'forceAxial', 'forceN']
-      .filter(k => vis[k] !== false).length || 1;
-    const targetH = 68 + 170 * nVis;
+    const rowCfg = this._curveRowCfg();
+    const nVis = rowCfg.filter(r => vis[r.key] !== false).length || 1;
+    const isCompound = this._curveIsCompound();
+    const targetH = isCompound ? (56 + 132 * nVis) : (68 + 170 * nVis);
     if (cv.height !== targetH) cv.height = targetH;
     const H = cv.height;
     const ctx = cv.getContext('2d');
-    const visKey = Object.keys(vis).filter(k => vis[k] === false).join(',');
-    const key = W + 'x' + H + 'x' + this.state.lang + 'x' + this.state.dataVersion + 'x' + visKey;
+    const visKey = Object.keys(vis).filter(k => vis[k] === false).sort().join(',');
+    const key = W + 'x' + H + 'x' + this.state.lang + 'x' + this.state.dataVersion + 'x'
+      + visKey + 'x' + (isCompound ? 'CPD' : 'SGL');
     if (!this._curveCache || this._curveCache.key !== key) {
       const off = document.createElement('canvas');
       off.width = W; off.height = H;
@@ -2501,54 +2507,98 @@ const App = {
     this.drawProbe(ctx);
   },
 
-  paintCurves(ctx, W, H) {
-    const pad = { l: 108, r: 22, t: 26, b: 42 };
-    const plotW = W - pad.l - pad.r, plotH = H - pad.t - pad.b;
+  _curveIsCompound() {
+    const L0 = this.state.ptsByLayer && this.state.ptsByLayer[0];
+    const L1 = this.state.ptsByLayer && this.state.ptsByLayer[1];
+    return this.state.camType === 'compound' && L0 && L1 && L0.length && L1.length;
+  },
 
-    const pts = this.state.points;
+  _curveRowCfg() {
+    const t = (k) => this.t(k);
+    return [
+      { key: 's', label: 's', name: t('legS'), unit: 'mm',  v: '--line-s' },
+      { key: 'v_s', label: 'v', name: t('legV'), unit: 'mm/s', v: '--line-v' },
+      { key: 'a_s', label: 'a', name: t('legA'), unit: 'mm/s²', v: '--line-a' },
+      { key: 'j_s', label: 'j', name: t('legJ'), unit: 'mm/s³', v: '--line-j' },
+      { key: 'alphaDeg', label: 'α', name: t('legAlpha'), unit: '°', v: '--line-alpha', nonNeg: true },
+      { key: 'forceAxial', label: 'F', name: t('legFaxial'), unit: 'N', v: '--line-force', nonNeg: true, fold: true },
+      { key: 'forceN', label: 'N', name: t('legN'), unit: 'N', v: '--line-norm', nonNeg: true, fold: true },
+      { key: 'torqueNmm', label: 'T', name: t('legTorque'), unit: 'Nm', v: '--line-torque', foldT: true }
+    ];
+  },
+
+  // 把底层 pts 原始值（单层或 L0）、上层 L1 值（复合）、以及复合时两层求和扭矩
+  // 统一规范化到 row 显示值；torque 行需从 N·mm 转 N·m
+  _curveVal(row, pt, ptL1) {
+    if (!pt) return NaN;
+    if (row.key === 'torqueNmm') {
+      const t0 = (pt.torqueNmm || 0) / 1000;
+      const t1 = ptL1 ? (ptL1.torqueNmm || 0) / 1000 : 0;
+      return t0 + t1;
+    }
+    return pt[row.key];
+  },
+  _curveLayerVal(row, pt) {
+    if (!pt) return NaN;
+    if (row.key === 'torqueNmm') return (pt.torqueNmm || 0) / 1000;
+    return pt[row.key];
+  },
+
+  paintCurves(ctx, W, H) {
+    const pad = { l: 126, r: 22, t: 26, b: 42 };
+    const plotW = W - pad.l - pad.r, plotH = H - pad.t - pad.b;
     const maxPhi = 360;
 
-    const rows = [
-      { key: 's', label: 's', name: this.t('legS'), unit: 'mm', v: '--line-s' },
-      { key: 'v_s', label: 'v', name: this.t('legV'), unit: 'mm/s', v: '--line-v' },
-      { key: 'a_s', label: 'a', name: this.t('legA'), unit: 'mm/s²', v: '--line-a' },
-      { key: 'j_s', label: 'j', name: this.t('legJ'), unit: 'mm/s³', v: '--line-j' },
-      { key: 'alphaDeg', label: 'α', name: this.t('legAlpha'), unit: '°', v: '--line-alpha', nonNeg: true },
-      { key: 'forceAxial', label: 'F', name: this.t('legFaxial'), unit: 'N', v: '--line-force', nonNeg: true, fold: true },
-      { key: 'forceN', label: 'N', name: this.t('legN'), unit: 'N', v: '--line-norm', nonNeg: true, fold: true }
-    ].filter(r => (this.state.visibleRows || {})[r.key] !== false);
+    const isCompound = this._curveIsCompound();
+    const L0 = this.state.ptsByLayer && this.state.ptsByLayer[0];
+    const L1 = this.state.ptsByLayer && this.state.ptsByLayer[1];
+    const pts = isCompound ? L0 : this.state.points;
+    if (!pts || !pts.length) return;
+
+    const rows = this._curveRowCfg().filter(r => (this.state.visibleRows || {})[r.key] !== false);
     if (rows.length === 0) return;
+
     const totalWeight = rows.reduce((a, r) => a + (r.weight || 1), 0);
     const unitH = plotH / totalWeight;
     const gridC = this.cssVar('--grid');
     const borderC = this.cssVar('--border');
     const dimC = this.cssVar('--text-dim');
     const mutedC = this.cssVar('--text-muted');
+    const layer1Col = '#14568f';
+    const layer2Col = '#b33326';
 
     const xToPx = (phi) => pad.l + (phi / maxPhi) * plotW;
 
     let rowY = pad.t;
-    rows.forEach((row, idx) => {
+    rows.forEach((row) => {
       const rowH = unitH * (row.weight || 1);
       const y0 = rowY;
       rowY += rowH;
       const y1 = y0 + rowH - 3;
 
-      // 行浅色背景（按曲线颜色着色，区分各参数行）
+      // 行浅色背景
       ctx.fillStyle = this.withAlpha(this.cssVar(row.v), 0.07);
       ctx.fillRect(0, y0, W, rowH);
-      // 行分隔线
       ctx.beginPath(); ctx.strokeStyle = borderC; ctx.lineWidth = 1;
       ctx.moveTo(0, y0); ctx.lineTo(W, y0); ctx.stroke();
 
-      const vals = pts.map(p => p[row.key]);
-      const vRealMax = Math.max(...vals);
-      const vMax = Math.max(...vals.map(Math.abs), 0.01);
-      const vMin = Math.min(...vals);
-      // 对称量（s/v/a/j）：零线居中；非负量（α）：零线在底部；
-      // 折叠量（F/N）：纵轴自最小值起，省去 0~min 的大片空白
+      // 取值：单层直接 state.points；复合逐点分别 L0 和 L1；torque 行走 _curveVal 求和
+      const vals = pts.map((p, i) => {
+        const p1 = isCompound ? (L1 && L1[i]) : null;
+        return this._curveVal(row, p, p1);
+      });
+      // 联合值域（复合非 torque 行），用 L0+L1 的值合起来算 min/max
+      let joinedVals = vals;
+      if (isCompound && row.key !== 'torqueNmm') {
+        const v2 = L1.map(p => this._curveLayerVal(row, p));
+        joinedVals = vals.concat(v2);
+      }
+      const vRealMax = Math.max(...joinedVals);
+      const vMax = Math.max(...joinedVals.map(Math.abs), 0.01);
+      const vMin = Math.min(...joinedVals);
+
       let yToPx, zeroY;
-      if (row.fold) {
+      if (row.fold || row.foldT) {
         const span = Math.max(vMax - vMin, 1e-9);
         yToPx = (v) => y0 + rowH - 3 - ((v - vMin) / span) * (rowH - 8);
         zeroY = null;
@@ -2568,34 +2618,85 @@ const App = {
         const x = pad.l + (k / 6) * plotW;
         ctx.beginPath(); ctx.moveTo(x, y0); ctx.lineTo(x, y1); ctx.stroke();
       }
-      // 零点轴
       if (zeroY !== null) {
         ctx.beginPath(); ctx.strokeStyle = borderC;
         ctx.moveTo(pad.l, zeroY); ctx.lineTo(pad.l + plotW, zeroY); ctx.stroke();
       }
 
-      // 曲线
-      ctx.strokeStyle = this.cssVar(row.v); ctx.lineWidth = 2;
+      // 曲线（可能两条：L0 实线，L1 虚线；torque 复合只一条实线）
+      const colL0 = this.cssVar(row.v);
+      const colL1 = this.withAlpha(colL0, 0.45);
+      const lineIsLayerCombo = row.key === 'torqueNmm'; // 复合 torque 是求和
+      // --- L0 ---
+      ctx.strokeStyle = colL0;
+      ctx.lineWidth = (isCompound && !lineIsLayerCombo) ? 1.8 : 2;
+      ctx.setLineDash([]);
       ctx.beginPath();
       pts.forEach((pt, i) => {
-        const x = xToPx(pt.phi);
-        const y = yToPx(pt[row.key]);
+        const v = this._curveLayerVal(row, pt);
+        const x = xToPx(pt.phi), y = yToPx(v);
         if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
       });
       ctx.stroke();
+      // --- L1（仅复合 && 非 torque 行）---
+      if (isCompound && !lineIsLayerCombo && L1) {
+        ctx.strokeStyle = colL1; ctx.lineWidth = 1.6;
+        ctx.setLineDash([5, 3]);
+        ctx.beginPath();
+        L1.forEach((pt, i) => {
+          const v = this._curveLayerVal(row, pt);
+          const x = xToPx(pt.phi), y = yToPx(v);
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
 
-      // 左侧图例：垂直居中于本行
+      // 左侧图例
       const lx = 10;
-      const cy = y0 + rowH / 2;
-      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-      ctx.font = '600 13px sans-serif'; ctx.fillStyle = this.cssVar(row.v);
-      ctx.fillText(row.label, lx, cy - 18);
-      const lw = ctx.measureText(row.label).width;
-      ctx.font = '12px sans-serif'; ctx.fillStyle = dimC;
-      ctx.fillText(row.name, lx + lw + 6, cy - 18);
-      ctx.font = '11px sans-serif'; ctx.fillStyle = mutedC;
-      ctx.fillText(this.t('cvFoldMin') + ' ' + this.fmtProbe(vMin) + ' ' + row.unit, lx, cy);
-      ctx.fillText(this.t('cvFoldMax') + ' ' + this.fmtProbe(vRealMax) + ' ' + row.unit, lx, cy + 18);
+      ctx.textAlign = 'left';
+      if (isCompound) {
+        // 两行：top L1 / bottom L2；torque 行用 "Σ"
+        ctx.textBaseline = 'middle';
+        if (row.key === 'torqueNmm') {
+          ctx.font = '600 13px sans-serif'; ctx.fillStyle = colL0;
+          ctx.fillText('Σ ' + row.label, lx, y0 + rowH * 0.28);
+          const lw = ctx.measureText('Σ ' + row.label).width;
+          ctx.font = '12px sans-serif'; ctx.fillStyle = dimC;
+          ctx.fillText(this.t('cvLayerBoth'), lx + lw + 6, y0 + rowH * 0.28);
+          ctx.font = '11px sans-serif'; ctx.fillStyle = mutedC;
+          ctx.fillText(this.t('cvFoldMin') + ' ' + this.fmtProbe(vMin) + ' ' + row.unit, lx, y0 + rowH * 0.62);
+          ctx.fillText(this.t('cvFoldMax') + ' ' + this.fmtProbe(vRealMax) + ' ' + row.unit, lx, y0 + rowH * 0.86);
+        } else {
+          // L1 (top)
+          ctx.font = '600 12px sans-serif'; ctx.fillStyle = colL0;
+          ctx.fillText(row.label + '₁', lx, y0 + rowH * 0.28);
+          let lw = ctx.measureText(row.label + '₁').width;
+          ctx.font = '11px sans-serif'; ctx.fillStyle = dimC;
+          ctx.fillText(this.t('cvLayer1'), lx + lw + 4, y0 + rowH * 0.28);
+          // L2 (bottom)
+          ctx.font = '600 12px sans-serif'; ctx.fillStyle = colL1;
+          ctx.fillText(row.label + '₂', lx, y0 + rowH * 0.62);
+          lw = ctx.measureText(row.label + '₂').width;
+          ctx.font = '11px sans-serif'; ctx.fillStyle = dimC;
+          ctx.fillText(this.t('cvLayer2'), lx + lw + 4, y0 + rowH * 0.62);
+          // joint name + min/max
+          ctx.font = '10px sans-serif'; ctx.fillStyle = mutedC;
+          ctx.fillText(row.name, lx, y0 + rowH * 0.86);
+        }
+      } else {
+        // 单层：原布局
+        const cy = y0 + rowH / 2;
+        ctx.textBaseline = 'middle';
+        ctx.font = '600 13px sans-serif'; ctx.fillStyle = this.cssVar(row.v);
+        ctx.fillText(row.label, lx, cy - 18);
+        const lw = ctx.measureText(row.label).width;
+        ctx.font = '12px sans-serif'; ctx.fillStyle = dimC;
+        ctx.fillText(row.name, lx + lw + 6, cy - 18);
+        ctx.font = '11px sans-serif'; ctx.fillStyle = mutedC;
+        ctx.fillText(this.t('cvFoldMin') + ' ' + this.fmtProbe(vMin) + ' ' + row.unit, lx, cy);
+        ctx.fillText(this.t('cvFoldMax') + ' ' + this.fmtProbe(vRealMax) + ' ' + row.unit, lx, cy + 18);
+      }
       ctx.textBaseline = 'alphabetic';
     });
 
@@ -2623,14 +2724,22 @@ const App = {
   },
 
   drawProbe(ctx) {
-    const geo = this._curveGeom, rows = this._curveRows, pts = this.state.points;
+    const geo = this._curveGeom, rows = this._curveRows;
     const phi = this.state.probePhi;
-    if (!geo || !rows || !pts || phi === null || phi === undefined) return;
-    let best = pts[0], bd = Infinity;
-    for (const p of pts) {
-      const d = Math.abs(p.phi - phi);
-      if (d < bd) { bd = d; best = p; }
+    if (!geo || !rows || phi === null || phi === undefined) return;
+
+    const isCompound = this._curveIsCompound();
+    const L0 = isCompound ? this.state.ptsByLayer[0] : (this.state.points || []);
+    const L1 = isCompound ? (this.state.ptsByLayer[1] || []) : null;
+    if (!L0 || !L0.length) return;
+
+    // 在 L0 中找最近 phi（两层 phi 序列相同）
+    let best = L0[0], bd = Infinity, bestIdx = 0;
+    for (let i = 0; i < L0.length; i++) {
+      const d = Math.abs(L0[i].phi - phi);
+      if (d < bd) { bd = d; best = L0[i]; bestIdx = i; }
     }
+    const best1 = isCompound ? L1[bestIdx] : null;
     const x = geo.pad.l + (best.phi / geo.maxPhi) * geo.plotW;
     const right = geo.pad.l + geo.plotW;
     const rr = (c, bx, by, bw, bh, rad) => {
@@ -2651,11 +2760,19 @@ const App = {
     // 各曲线取值圆点
     rows.forEach(r => {
       if (!r.yToPx) return;
-      ctx.beginPath(); ctx.fillStyle = this.cssVar(r.v);
-      ctx.arc(x, r.yToPx(best[r.key]), 3.6, 0, Math.PI * 2); ctx.fill();
+      const colL0 = this.cssVar(r.v);
+      // L0 圆点（所有行都画）
+      ctx.beginPath(); ctx.fillStyle = colL0;
+      ctx.arc(x, r.yToPx(this._curveLayerVal(r, best)), 3.6, 0, Math.PI * 2); ctx.fill();
+      // L1 圆点（复合非 torque）
+      if (isCompound && r.key !== 'torqueNmm' && best1) {
+        const colL1 = this.withAlpha(colL0, 0.55);
+        ctx.beginPath(); ctx.fillStyle = colL1;
+        ctx.arc(x, r.yToPx(this._curveLayerVal(r, best1)), 3.0, 0, Math.PI * 2); ctx.fill();
+      }
     });
 
-    // 角度标签：跟随鼠标水平位置
+    // 角度标签
     const head = best.phi.toFixed(1) + '°';
     ctx.font = '600 12px sans-serif';
     const hw = ctx.measureText(head).width + 16;
@@ -2667,25 +2784,59 @@ const App = {
     ctx.fillStyle = '#fff'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
     ctx.fillText(head, hx + 8, hy + 10);
 
-    // 每行数值：显示在本行内，颜色与曲线一致，水平跟随鼠标
+    // 每行数值框
     rows.forEach(r => {
       if (!r.yToPx) return;
-      const col = this.cssVar(r.v);
-      const txt = r.label + ' ' + this.fmtProbe(best[r.key]) + ' ' + r.unit;
+      const colL0 = this.cssVar(r.v);
+      const colL1 = this.withAlpha(colL0, 0.7);
+      const vL0 = this._curveLayerVal(r, best);
+      const vL1 = isCompound && best1 ? this._curveLayerVal(r, best1) : null;
+      const vSum = isCompound ? this._curveVal(r, best, best1) : null;
+
+      let lines = []; // [{prefix, val, col}]
+      if (isCompound) {
+        if (r.key === 'torqueNmm') {
+          lines.push({ p: 'Σ' + r.label + ' ', v: vSum, col: colL0 });
+        } else {
+          lines.push({ p: r.label + '₁ ', v: vL0, col: colL0 });
+          lines.push({ p: r.label + '₂ ', v: vL1, col: colL1 });
+        }
+      } else {
+        lines.push({ p: r.label + ' ', v: vL0, col: colL0 });
+      }
+
       ctx.font = '600 12px sans-serif';
-      const tw = ctx.measureText(txt).width + 18;
+      const textBody = lines.map(l => l.p + this.fmtProbe(l.v) + ' ' + r.unit).join('  ');
+      const tw = ctx.measureText(textBody).width + 22;
+      const boxH = isCompound && r.key !== 'torqueNmm' ? 30 : 20;
       let tx = x + 10; if (tx + tw > right) tx = x - tw - 10;
       if (tx < 4) tx = 4;
-      const yv = r.yToPx(best[r.key]);
-      const top = r.rowY0 + 2, bot = r.rowY0 + r.rowH - 24;
-      const ty = Math.max(top, Math.min(bot, yv - 10));
+
+      const yvL0 = r.yToPx(vL0);
+      const top = r.rowY0 + 2, bot = r.rowY0 + r.rowH - boxH - 2;
+      const yvRef = r.key === 'torqueNmm' && isCompound
+        ? r.yToPx(vSum) : yvL0;
+      const ty = Math.max(top, Math.min(bot, yvRef - boxH / 2));
+
       ctx.fillStyle = 'rgba(255,255,255,0.96)';
       ctx.strokeStyle = 'rgba(0,0,0,0.12)'; ctx.lineWidth = 1;
-      rr(ctx, tx, ty, tw, 20, 4); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = col;
-      ctx.fillRect(tx + 1, ty + 3, 3, 14);
-      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-      ctx.fillText(txt, tx + 10, ty + 10);
+      rr(ctx, tx, ty, tw, boxH, 4); ctx.fill(); ctx.stroke();
+      ctx.textAlign = 'left';
+      if (lines.length === 1) {
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = lines[0].col;
+        ctx.fillRect(tx + 1, ty + 3, 3, 14);
+        ctx.fillText(lines[0].p + this.fmtProbe(lines[0].v) + ' ' + r.unit, tx + 10, ty + 10);
+      } else {
+        ctx.fillStyle = colL0;
+        ctx.fillRect(tx + 1, ty + 3, 3, 10);
+        ctx.fillRect(tx + 1, ty + 16, 3, 10);
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = colL0;
+        ctx.fillText(lines[0].p + this.fmtProbe(lines[0].v) + ' ' + r.unit, tx + 10, ty + 9);
+        ctx.fillStyle = colL1;
+        ctx.fillText(lines[1].p + this.fmtProbe(lines[1].v) + ' ' + r.unit, tx + 10, ty + 21);
+      }
     });
     ctx.restore();
   },
@@ -3275,7 +3426,7 @@ const App = {
     const rows = pts.map((pt, i) => [
       i, pt.phi.toFixed(4), pt.s.toFixed(4), pt.v.toFixed(5), pt.a.toFixed(5), pt.j.toFixed(6),
       pt.v_s.toFixed(4), pt.a_s.toFixed(4), pt.j_s.toFixed(3),
-      pt.alphaDeg.toFixed(3), pt.torqueNmm.toFixed(3), pt.forceN.toFixed(3), pt.forceAxial.toFixed(3),
+      pt.alphaDeg.toFixed(3), (pt.torqueNmm / 1000).toFixed(3), pt.forceN.toFixed(3), pt.forceAxial.toFixed(3),
       pt.x_theory.toFixed(4), pt.y_theory.toFixed(4), pt.x_work.toFixed(4), pt.y_work.toFixed(4),
       pt.segIdx, pt.segName
     ]);
@@ -3805,18 +3956,26 @@ Object.assign(App, {
 
   /* ---------- 指标 / 卡片 / 状态 ---------- */
   metrics() {
-    const pts = this.state.points || [];
-    if (!pts.length) return null;
-    let amax = 0, tmax = 0, nmax = 0, smin = Infinity, smax = -Infinity;
-    pts.forEach(q => {
-      amax = Math.max(amax, Math.abs(q.alphaDeg || 0));
-      tmax = Math.max(tmax, Math.abs(q.torqueNmm || 0));
-      nmax = Math.max(nmax, Math.abs(q.forceN || 0));
-      smin = Math.min(smin, q.s); smax = Math.max(smax, q.s);
+    const single = this.state.points || [];
+    const compound = this._curveIsCompound();
+    const P0 = compound ? (this.state.ptsByLayer[0] || []) : [];
+    const P1 = compound ? (this.state.ptsByLayer[1] || []) : [];
+    const layers = compound ? [P0, P1] : [single];
+    let amax = 0, tmaxNmm = 0, nmax = 0, smin = Infinity, smax = -Infinity, ptsCount = 0;
+    layers.forEach(pts => {
+      if (!pts || !pts.length) return;
+      ptsCount += pts.length;
+      pts.forEach(q => {
+        amax = Math.max(amax, Math.abs(q.alphaDeg || 0));
+        tmaxNmm += Math.abs(q.torqueNmm || 0);   // 复合两层扭矩相加（同一输入轴）
+        nmax = Math.max(nmax, Math.abs(q.forceN || 0));
+        smin = Math.min(smin, q.s); smax = Math.max(smax, q.s);
+      });
     });
+    if (ptsCount === 0) return null;
     const al = this.state.alerts || [];
     return {
-      amax, tmax: tmax / 1000, nmax, stroke: smax - smin, points: pts.length,
+      amax, tmax: tmaxNmm / 1000, nmax, stroke: smax - smin, points: compound ? ptsCount : (this.state.points || []).length,
       e: al.filter(a => a.level === 'E').length,
       w: al.filter(a => a.level === 'W').length,
       limit: (this.state.params && this.state.params.pressAngleLimit) || 30
