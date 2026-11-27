@@ -1,0 +1,1945 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Reliability Workbench · 可靠性计算工作台</title>
+<meta name="description" content="浏览器端可靠性工程计算工具：RBD、MTBF/失效率换算、可靠性预计与分配。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%234d6bfe'/%3E%3Ccircle cx='20' cy='22' r='5' fill='white'/%3E%3Ccircle cx='44' cy='22' r='5' fill='white'/%3E%3Ccircle cx='32' cy='44' r='5' fill='white'/%3E%3Cpath d='M24 25l6 14m10-14-6 14M25 22h14' stroke='white' stroke-width='2.5' fill='none'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#f7f9fd; --surface:#fff; --surface2:#f3f6fc; --surface3:#e9eef9;
+  --text:#111827; --text2:#4b5567; --text3:#8a94a6;
+  --line:#e6ebf5; --line2:#d5deee;
+  --brand:#4d6bfe; --brand2:#7d94ff; --brand-soft:rgba(77,107,254,.1);
+  --ok:#12a06f; --warn:#c07a12; --danger:#e0443e;
+  --glow-1:rgba(77,107,254,.13); --glow-2:rgba(125,148,255,.1);
+  --glass:rgba(255,255,255,.78);
+  --shadow:0 1px 2px rgba(16,24,40,.04),0 10px 30px rgba(77,107,254,.08);
+  --shadow-lg:0 24px 64px rgba(15,23,42,.16);
+  --radius:24px;
+  --mono:"SF Mono",ui-monospace,Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+}
+html[data-theme=dark]{
+  --bg:#0d121c; --surface:#121a28; --surface2:#172133; --surface3:#1e2a3f;
+  --text:#eaf0fb; --text2:#aab6cc; --text3:#77839b;
+  --line:#1e2a3d; --line2:#2a3850;
+  --brand:#6799fe; --brand2:#8cb2ff; --brand-soft:rgba(103,153,254,.14);
+  --ok:#34c48c; --warn:#dba14a; --danger:#f0615c;
+  --glow-1:rgba(103,153,254,.16); --glow-2:rgba(103,153,254,.08);
+  --glass:rgba(13,18,28,.74);
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 16px 40px rgba(0,0,0,.34);
+  --shadow-lg:0 30px 70px rgba(0,0,0,.5);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:88px}
+body{
+  margin:0;background:var(--bg);color:var(--text);font:14px/1.55 var(--sans);
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  background-image:radial-gradient(900px 420px at 88% -12%,var(--glow-1),transparent 60%),radial-gradient(760px 360px at -8% 2%,var(--glow-2),transparent 55%);
+  background-attachment:fixed;
+}
+[hidden]{display:none!important}
+button{font-family:inherit}
+a{color:inherit;text-decoration:none}
+::selection{background:var(--brand-soft)}
+input,select{font-family:inherit;color:var(--text)}
+/* ---------- top bar ---------- */
+.topbar{position:fixed;inset:0 0 auto;height:64px;z-index:60;display:flex;align-items:center;
+  background:var(--glass);backdrop-filter:blur(18px) saturate(1.6);-webkit-backdrop-filter:blur(18px) saturate(1.6);
+  border-bottom:1px solid var(--line)}
+.topbar-in{width:100%;max-width:1320px;margin:0 auto;padding:0 24px;display:flex;align-items:center;gap:18px}
+.brand{display:flex;align-items:center;gap:11px;min-width:0}
+.brand-mark{width:34px;height:34px;border-radius:11px;background:var(--brand);display:grid;place-items:center;color:#fff;flex:none;
+  box-shadow:0 6px 16px rgba(77,107,254,.32)}
+.brand-mark svg{width:18px;height:18px}
+.brand b{display:block;font-size:14.5px;letter-spacing:-.2px;line-height:1.15;white-space:nowrap}
+.brand small{display:block;color:var(--text3);font-size:10.5px;letter-spacing:.4px;margin-top:2px}
+.top-actions{margin-left:auto;display:flex;align-items:center;gap:8px}
+.save-pill{font:10.5px var(--mono);color:var(--text3);padding:5px 9px;border:1px solid var(--line);border-radius:999px;background:var(--surface2);white-space:nowrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:38px;padding:0 16px;border-radius:13px;
+  border:1px solid transparent;background:transparent;color:var(--text);font-size:12.5px;font-weight:600;cursor:pointer;
+  transition:background .18s,border-color .18s,box-shadow .18s,transform .18s;white-space:nowrap}
+.btn:active{transform:translateY(1px)}
+.btn-primary{background:var(--brand);color:#fff;box-shadow:0 8px 20px rgba(77,107,254,.28)}
+html[data-theme=dark] .btn-primary{color:#0b1220}
+.btn-primary:hover{background:var(--brand2)}
+.btn-ghost{border-color:var(--line2);background:var(--surface);color:var(--text2)}
+.btn-ghost:hover{border-color:var(--brand);color:var(--brand);background:var(--brand-soft)}
+.btn-sm{height:32px;padding:0 12px;border-radius:10px;font-size:11.5px}
+.theme-btn{width:38px;height:38px;border-radius:12px;border:1px solid var(--line2);background:var(--surface);display:grid;place-items:center;cursor:pointer;color:var(--text2);transition:.18s}
+.theme-btn:hover{color:var(--brand);border-color:var(--brand)}
+.theme-btn svg{width:16px;height:16px}
+html[data-theme=light] .icon-moon{display:none}
+html[data-theme=dark] .icon-sun{display:none}
+/* ---------- shell ---------- */
+.shell{max-width:1320px;margin:0 auto;padding:88px 24px 72px;display:grid;grid-template-columns:224px minmax(0,1fr);gap:30px;align-items:start}
+.side{position:sticky;top:88px;display:flex;flex-direction:column;gap:6px}
+.side-label{font:9.5px var(--mono);letter-spacing:1.4px;color:var(--text3);padding:0 12px 8px}
+.nav-item{display:flex;gap:11px;align-items:flex-start;padding:10px 12px;border-radius:14px;color:var(--text2);
+  border:1px solid transparent;transition:.18s}
+.nav-item i{font:9.5px var(--mono);color:var(--text3);border:1px solid var(--line);border-radius:7px;padding:2px 5px;margin-top:1px;flex:none}
+.nav-item b{display:block;font-size:12.5px;font-weight:600;letter-spacing:-.1px}
+.nav-item small{display:block;font-size:10px;color:var(--text3);margin-top:1px}
+.nav-item:hover{background:var(--surface2);color:var(--text)}
+.nav-item.active{background:var(--surface);border-color:var(--line);color:var(--text);box-shadow:var(--shadow)}
+.nav-item.active i{color:var(--brand);border-color:var(--brand-soft);background:var(--brand-soft)}
+.side-note{margin-top:14px;padding:12px 14px;border:1px dashed var(--line2);border-radius:14px;color:var(--text3);font-size:10px;line-height:1.6}
+/* ---------- hero ---------- */
+.hero{padding:6px 2px 22px}
+.eyebrow{font:9.5px var(--mono);letter-spacing:2px;color:var(--brand);text-transform:uppercase}
+.hero h1{margin:10px 0 8px;font-size:32px;line-height:1.18;letter-spacing:-1px;font-weight:700}
+.hero p{margin:0;color:var(--text2);font-size:12.5px;max-width:620px}
+.hero .chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px}
+.chip{font:10px var(--mono);color:var(--text2);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:5px 10px}
+/* ---------- cards ---------- */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px;margin-bottom:20px;scroll-margin-top:88px}
+.module-head{display:flex;align-items:flex-start;gap:14px;margin-bottom:18px}
+.module-no{font:10px var(--mono);color:var(--brand);background:var(--brand-soft);border-radius:9px;padding:6px 8px;margin-top:1px}
+.module-head h2{margin:0;font-size:17px;letter-spacing:-.3px;font-weight:650}
+.module-head p{margin:3px 0 0;color:var(--text3);font-size:11px}
+.module-head .badge{margin-left:auto}
+.badge{font:10px var(--mono);color:var(--brand);background:var(--brand-soft);border:1px solid transparent;padding:5px 10px;border-radius:999px;white-space:nowrap}
+.badge.warn{color:var(--warn);background:rgba(192,122,18,.12)}
+.badge.ok{color:var(--ok);background:rgba(18,160,111,.12)}
+/* RBD layout */
+.rbd-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(280px,.75fr);gap:16px}
+.panel{background:var(--surface2);border:1px solid var(--line);border-radius:18px;padding:16px}
+.panel-label{display:flex;justify-content:space-between;align-items:baseline;font:10px var(--mono);letter-spacing:1px;color:var(--text3);margin:0 0 10px;text-transform:uppercase}
+.panel-label:not(:first-child){margin-top:18px}
+.panel-label .hint{letter-spacing:0;text-transform:none;font-family:var(--sans);color:var(--text3);font-size:10px}
+.choice-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.choice{display:flex;flex-direction:column;gap:2px;text-align:left;padding:11px 12px;border-radius:14px;border:1px solid var(--line);
+  background:var(--surface);cursor:pointer;transition:.18s;color:var(--text2)}
+.choice:hover{border-color:var(--brand);color:var(--text)}
+.choice.active{border-color:var(--brand);background:var(--brand-soft);color:var(--text);box-shadow:0 0 0 3px var(--brand-soft)}
+.choice b{font-size:12px;font-weight:650;letter-spacing:-.1px;display:flex;align-items:center;gap:7px}
+.choice small{font-size:10px;color:var(--text3)}
+.choice-icon{font:10px var(--mono);width:20px;height:20px;border-radius:6px;display:inline-grid;place-items:center;background:var(--surface3);color:var(--text2);flex:none}
+.choice.active .choice-icon{background:var(--brand);color:#fff}
+html[data-theme=dark] .choice.active .choice-icon{color:#0b1220}
+.unit-row{display:grid;grid-template-columns:minmax(0,1fr) 96px 30px;gap:8px;align-items:center;margin-bottom:8px}
+.unit-row .unit-name{font-size:12px;color:var(--text2);display:flex;align-items:center;gap:8px;min-width:0}
+.unit-row .unit-name span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.unit-tag{font:9px var(--mono);color:var(--text3);border:1px solid var(--line2);border-radius:6px;padding:2px 5px;flex:none}
+.del{width:30px;height:30px;border-radius:9px;border:1px solid var(--line2);background:var(--surface);color:var(--text3);cursor:pointer;font-size:13px;line-height:1;display:grid;place-items:center;transition:.15s}
+.del:hover{color:var(--danger);border-color:var(--danger)}
+.add-row{display:flex;gap:8px;margin-top:10px}
+.add-row button{flex:1;height:34px;border:1px dashed var(--line2);border-radius:10px;background:transparent;color:var(--text3);font-size:11px;cursor:pointer;transition:.15s}
+.add-row button:hover{color:var(--brand);border-color:var(--brand);background:var(--brand-soft)}
+.input-wrap{position:relative;display:flex;align-items:center}
+.input-wrap input,.input-wrap select{width:100%;height:38px;border:1px solid var(--line2);border-radius:11px;background:var(--surface);
+  padding:0 11px;font-size:12.5px;outline:none;transition:border-color .15s,box-shadow .15s}
+.input-wrap input{font-family:var(--mono);font-size:12px}
+.input-wrap input:focus,.input-wrap select:focus{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft)}
+.input-wrap input.invalid{border-color:var(--danger);box-shadow:0 0 0 3px rgba(224,68,62,.12)}
+.input-wrap i{position:absolute;right:10px;font:9px var(--mono);color:var(--text3);font-style:normal;pointer-events:none}
+.input-wrap select{appearance:none;padding-right:28px;cursor:pointer;font-size:11.5px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238a94a6' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 9px center}
+.field{display:block;min-width:0}
+.field>span{display:block;font-size:10.5px;color:var(--text3);margin-bottom:6px}
+.field .err,.err{display:block;font-size:10px;color:var(--danger);min-height:14px;line-height:1.4;margin-top:3px}
+.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px}
+.form-grid .span2{grid-column:span 2}
+/* result panel */
+.result-panel{position:relative;overflow:hidden;border-radius:20px;border:1px solid var(--line);padding:20px;
+  background:linear-gradient(155deg,var(--brand-soft),transparent 62%),var(--surface)}
+.result-panel:before{content:"";position:absolute;right:-40px;top:-60px;width:170px;height:170px;border-radius:50%;background:radial-gradient(circle,var(--brand-soft),transparent 70%)}
+.result-label{font-size:10.5px;color:var(--text2);letter-spacing:.2px}
+.big-metric{display:block;font:600 46px/1.05 var(--mono);letter-spacing:-2px;margin:8px 0 4px;color:var(--text);font-variant-numeric:tabular-nums}
+.result-sub{font-size:10.5px;color:var(--text3);display:block;min-height:15px}
+.time-strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:18px;position:relative}
+.time-chip{padding:8px 10px;border:1px solid var(--line);border-radius:11px;background:var(--surface);min-width:0}
+.time-chip span{display:block;color:var(--text3);font:9px var(--mono);white-space:nowrap}
+.time-chip strong{display:block;font:600 15px var(--mono);letter-spacing:-.4px;margin-top:2px;font-variant-numeric:tabular-nums}
+/* chart */
+.chart-card{background:var(--surface2);border:1px solid var(--line);border-radius:18px;padding:14px 16px 10px;margin-top:16px}
+.chart-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px}
+.chart-head b{font-size:11.5px;font-weight:650;color:var(--text2)}
+.chart-head b small{font:9px var(--mono);color:var(--text3);margin-left:4px}
+.legend{display:flex;gap:12px;font:9px var(--mono);color:var(--text3);align-items:center;flex-wrap:wrap}
+.legend i{display:inline-block;width:14px;height:0;border-top:2px solid var(--brand);margin-right:4px;vertical-align:middle}
+.legend i.hollow{width:8px;height:8px;border:2px solid var(--brand);border-radius:50%;background:var(--surface);vertical-align:middle}
+.chart-box{position:relative;height:212px}
+.chart-box.tall{height:238px}
+.chart-box canvas{width:100%;height:100%;display:block}
+.chart-tip{font:9.5px var(--mono);color:var(--text3);padding:4px 2px 2px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+/* importance */
+.rank-card{margin-top:16px;background:var(--surface2);border:1px solid var(--line);border-radius:18px;padding:14px 16px}
+.rank-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+.rank-head b{font-size:11.5px;font-weight:650}
+.rank-head span{font:9px var(--mono);color:var(--text3)}
+.rank-row{display:grid;grid-template-columns:64px minmax(0,1fr) 58px;gap:10px;align-items:center;margin-bottom:8px}
+.rank-row span{font:10px var(--mono);color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rank-row .track{height:6px;border-radius:99px;background:var(--surface3);overflow:hidden}
+.rank-row .track i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--brand),var(--brand2))}
+.rank-row em{font:10px var(--mono);color:var(--text3);font-style:normal;text-align:right}
+/* segmented */
+.segmented{display:inline-flex;gap:2px;padding:3px;border-radius:13px;background:var(--surface3);max-width:100%;flex-wrap:wrap}
+.segmented button{border:0;background:transparent;color:var(--text3);font-size:11px;font-weight:600;padding:7px 12px;border-radius:10px;cursor:pointer;transition:.15s;white-space:nowrap}
+.segmented button.active{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(16,24,40,.12)}
+.segmented.small button{padding:5px 10px;font-size:10.5px}
+/* conversion layout */
+.conv-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:16px}
+.metric-block{margin-top:16px;padding:16px;border-radius:16px;border:1px solid var(--line);background:var(--surface)}
+.metric-block>span{font-size:10.5px;color:var(--text2)}
+.metric-block strong{display:block;font:600 36px/1.1 var(--mono);letter-spacing:-1.5px;margin:5px 0 3px}
+.formula{font:10px var(--mono);color:var(--text3);background:var(--surface2);border-radius:7px;padding:4px 8px;display:inline-block}
+.mini-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}
+.mini-grid>div{padding:10px;border:1px solid var(--line);border-radius:11px;background:var(--surface2);min-width:0}
+.mini-grid span{display:block;font-size:9.5px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mini-grid strong{display:block;font:600 12px var(--mono);margin-top:3px;letter-spacing:-.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nines-card{margin-top:12px;padding:14px 16px;border:1px solid var(--line);border-radius:15px;background:var(--surface2)}
+.nines-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.nines-top span{font-size:10px;color:var(--text3)}
+.nines-top strong{font:600 15px var(--mono);letter-spacing:-.4px}
+.nines-bar{display:flex;gap:5px;margin:10px 0 6px}
+.nines-bar i{height:7px;flex:1;border-radius:99px;background:var(--surface3);transition:background .25s}
+.nines-bar i.on{background:linear-gradient(90deg,var(--brand),var(--brand2))}
+.nines-foot{font-size:9.5px;color:var(--text3);line-height:1.5}
+/* prediction */
+.table-head,.t-row{display:grid;gap:8px;align-items:center}
+.table-head{font:9px var(--mono);color:var(--text3);letter-spacing:.5px;padding:0 2px 7px;text-transform:uppercase}
+.t-row{padding:7px 0;border-top:1px solid var(--line)}
+.parts-head,.parts-row{grid-template-columns:minmax(92px,1.3fr) 62px 58px 58px 62px 28px}
+.similar-head,.similar-row{grid-template-columns:minmax(90px,1.2fr) 78px 66px 28px}
+.parts-row .input-wrap input,.similar-row .input-wrap input{height:32px;font-size:11px;padding:0 8px}
+.parts-row .input-wrap select{height:32px;font-size:10.5px}
+.unit-name-input{height:32px;width:100%;border:1px solid var(--line2);border-radius:9px;background:var(--surface);padding:0 9px;font-size:11px;outline:none}
+.unit-name-input:focus{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft)}
+.base-fit{font:10px var(--mono);color:var(--text3);text-align:right;padding-right:4px}
+.pred-result{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}
+.pred-result>div{padding:11px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface2)}
+.pred-result span{display:block;font-size:9.5px;color:var(--text3)}
+.pred-result strong{display:block;font:600 14px var(--mono);margin-top:3px;letter-spacing:-.4px}
+.rank-list .rank-row{grid-template-columns:110px minmax(0,1fr) 66px}
+/* allocation */
+.alloc-grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:16px}
+.alloc-head,.alloc-row{grid-template-columns:minmax(70px,1fr) 62px 62px 62px 28px}
+.alloc-head.agree,.alloc-row.agree{grid-template-columns:minmax(70px,1fr) 72px 62px 28px}
+.alloc-head.equal,.alloc-row.equal{grid-template-columns:minmax(0,1fr) 66px 28px}
+.alloc-row .input-wrap input{height:32px;font-size:11px;padding:0 8px}
+.compare-card{margin-top:14px;border:1px solid var(--line);border-radius:15px;background:var(--surface2);padding:12px 14px}
+.compare-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;gap:8px}
+.compare-head b{font-size:11px}
+.compare-head span{font:9px var(--mono);color:var(--text3)}
+.cmp-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-top:1px solid var(--line);font-size:11px;gap:10px}
+.cmp-row span{color:var(--text3)}
+.cmp-row strong{font:600 11px var(--mono);letter-spacing:-.2px;text-align:right}
+/* report */
+.report-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:16px}
+.report-copy h3{margin:0 0 8px;font-size:14px;letter-spacing:-.3px}
+.report-copy p{margin:0;color:var(--text2);font-size:11.5px;line-height:1.7}
+.report-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.snap{border:1px solid var(--line);border-radius:16px;background:var(--surface2);padding:14px 16px}
+.snap-row{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px dashed var(--line)}
+.snap-row:last-child{border-bottom:0}
+.snap-row span{color:var(--text3);font-size:10.5px}
+.snap-row strong{font:600 10.5px var(--mono);text-align:right;letter-spacing:-.2px}
+.disclaimer{margin-top:14px;padding:11px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface2);color:var(--text3);font-size:10px;line-height:1.6}
+/* footer */
+.footer{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;padding:22px 4px 0;border-top:1px solid var(--line);margin-top:6px;color:var(--text3);font-size:10px;line-height:1.7}
+/* modal */
+.modal{position:fixed;inset:0;z-index:120;background:rgba(8,12,22,.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  display:grid;place-items:center;padding:22px}
+.report-sheet{width:min(880px,100%);max-height:90vh;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);
+  border-radius:22px;box-shadow:var(--shadow-lg);overflow:hidden}
+.report-toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:13px 18px;border-bottom:1px solid var(--line);background:var(--surface2)}
+.report-toolbar b{font:10px var(--mono);letter-spacing:1.6px;color:var(--text3)}
+.report-toolbar>div{display:flex;gap:8px}
+.report-scroll{overflow:auto;padding:34px 40px 44px}
+#reportBody{font-size:12px;line-height:1.75;color:var(--text2)}
+#reportBody h1{font-size:23px;letter-spacing:-.6px;margin:0 0 4px;color:var(--text)}
+#reportBody .rep-sub{color:var(--text3);font-size:10.5px;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+#reportBody h2{font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:var(--brand);margin:24px 0 10px;font-family:var(--mono)}
+#reportBody .kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 20px;margin:10px 0}
+#reportBody .kv div{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px dashed var(--line)}
+#reportBody .kv span{color:var(--text3)}
+#reportBody .kv strong{font:600 11px var(--mono);color:var(--text);letter-spacing:-.2px}
+#reportBody table{width:100%;border-collapse:collapse;margin:8px 0;font-size:11px}
+#reportBody th{text-align:left;font:9.5px var(--mono);letter-spacing:.6px;color:var(--text3);text-transform:uppercase;padding:7px 8px;border-bottom:1px solid var(--line2)}
+#reportBody td{padding:7px 8px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:10.5px}
+#reportBody td:first-child{font-family:var(--sans)}
+#reportBody .rep-note{margin-top:22px;padding:11px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface2);color:var(--text3);font-size:9.5px;line-height:1.65}
+/* toast */
+.toast{position:fixed;left:50%;bottom:28px;z-index:200;transform:translate(-50%,16px);display:flex;align-items:center;gap:9px;
+  background:#101725;color:#eef2fb;padding:10px 16px;border-radius:12px;font-size:11.5px;opacity:0;pointer-events:none;
+  transition:opacity .22s,transform .22s;box-shadow:0 18px 40px rgba(0,0,0,.3);max-width:min(420px,90vw)}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.toast i{width:6px;height:6px;border-radius:50%;background:#4ade80;flex:none}
+.toast.error i{background:#f87171}
+body.modal-open{overflow:hidden}
+/* responsive */
+@media(max-width:1080px){
+  .shell{grid-template-columns:minmax(0,1fr);padding-top:80px;gap:18px}
+  .side{position:static;flex-direction:row;overflow:auto;padding-bottom:2px;gap:4px}
+  .side-label,.side-note{display:none}
+  .nav-item{flex:none;padding:8px 10px}
+  .nav-item small{display:none}
+  .rbd-grid,.conv-grid,.alloc-grid,.report-grid{grid-template-columns:minmax(0,1fr)}
+  .save-pill{display:none}
+}
+@media(max-width:720px){
+  .topbar-in{padding:0 14px;gap:10px}
+  .brand small{display:none}
+  .top-actions .btn-ghost{display:none}
+  .shell{padding:76px 14px 48px}
+  .hero h1{font-size:24px}
+  .big-metric{font-size:38px}
+  .card{padding:16px;border-radius:20px}
+  .choice-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .parts-head,.parts-row{grid-template-columns:minmax(80px,1.2fr) 50px 50px 50px 56px 24px}
+  .parts-row .input-wrap input{font-size:10px;padding:0 6px}
+  .report-scroll{padding:22px 18px 30px}
+  .mini-grid,.pred-result{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .chart-box{height:188px}
+  .brand b{font-size:13px}
+}
+@media print{
+  body{background:#fff}
+  body *{visibility:hidden}
+  #reportOverlay,#reportOverlay *{visibility:visible}
+  #reportOverlay{position:absolute;inset:0;padding:0;background:#fff;display:block;backdrop-filter:none}
+  .report-sheet{max-height:none;width:100%;border:0;border-radius:0;box-shadow:none}
+  .report-toolbar{display:none}
+  .report-scroll{overflow:visible;padding:24px 8px}
+  #reportBody{color:#222}
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-in">
+    <a class="brand" href="#rbd">
+      <span class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="5" cy="6" r="2.1"/><circle cx="19" cy="6" r="2.1"/><circle cx="12" cy="19" r="2.1"/><path d="M7 7.2 10.6 17M17 7.2 13.4 17M7.1 6h9.8"/></svg></span>
+      <span><b>Reliability Workbench</b><small>可靠性计算工作台</small></span>
+    </a>
+    <div class="top-actions">
+      <span class="save-pill" id="saveStatus">本地自动保存</span>
+      <button class="btn btn-ghost btn-sm" id="importJson" type="button">导入 JSON</button>
+      <button class="btn btn-ghost btn-sm" id="topExport" type="button">导出</button>
+      <button class="btn btn-primary btn-sm" id="topReport" type="button">生成报告</button>
+      <button class="theme-btn" id="themeToggle" type="button" aria-label="切换明暗主题">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 13.4A8.4 8.4 0 1 1 10.6 3 6.6 6.6 0 0 0 21 13.4Z"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+  <aside class="side">
+    <div class="side-label">MODULES</div>
+    <a class="nav-item active" href="#rbd"><i>01</i><span><b>RBD 系统建模</b><small>串联 / 并联 / 表决 / 桥式 / 混联</small></span></a>
+    <a class="nav-item" href="#conversion"><i>02</i><span><b>MTBF 换算</b><small>指数与 Weibull · 双向换算</small></span></a>
+    <a class="nav-item" href="#prediction"><i>03</i><span><b>可靠性预计</b><small>元器件计数法 / 相似产品法</small></span></a>
+    <a class="nav-item" href="#allocation"><i>04</i><span><b>可靠性分配</b><small>等分配 / 评分 / AGREE</small></span></a>
+    <a class="nav-item" href="#report"><i>05</i><span><b>摘要报告</b><small>打印 / PDF / JSON 存档</small></span></a>
+    <div class="side-note">全部计算在浏览器本地完成，方案自动保存到 localStorage，不上传任何数据。</div>
+  </aside>
+
+  <main>
+    <section class="hero">
+      <div class="eyebrow">Reliability Engineering · Workbench</div>
+      <h1>可靠性计算工作台</h1>
+      <p>把系统结构、寿命换算、可靠性预计与指标分配放在同一条工作流里。修改任一参数，曲线与关键时点结果即时更新。</p>
+      <div class="chips"><span class="chip">RBD 精确枚举</span><span class="chip">Birnbaum 重要度</span><span class="chip">指数 / Weibull</span><span class="chip">离线单文件</span></div>
+    </section>
+
+    <!-- 01 RBD -->
+    <section class="card" id="rbd">
+      <div class="module-head">
+        <span class="module-no">01</span>
+        <div><h2>RBD 系统建模</h2><p>选择结构并调整单元可靠度，观察系统 R(t) 随任务时间的变化。</p></div>
+        <span class="badge" id="rbdBadge">串联</span>
+      </div>
+      <div class="rbd-grid">
+        <div class="panel">
+          <div class="panel-label">结构类型</div>
+          <div class="choice-grid" id="rbdTabs">
+            <button class="choice active" type="button" data-structure="series"><b><span class="choice-icon">⇢</span>串联</b><small>全部单元工作才成功</small></button>
+            <button class="choice" type="button" data-structure="parallel"><b><span class="choice-icon">∥</span>并联</b><small>任一单元工作即成功</small></button>
+            <button class="choice" type="button" data-structure="kn"><b><span class="choice-icon">k/n</span>k/n 表决</b><small>至少 k 个单元正常</small></button>
+            <button class="choice" type="button" data-structure="bridge"><b><span class="choice-icon">◇</span>桥式</b><small>精确枚举 32 种状态</small></button>
+            <button class="choice" type="button" data-structure="expr"><b><span class="choice-icon">ƒ</span>混联表达式</b><small>+ 串联 · | 并联</small></button>
+          </div>
+          <div class="panel-label">单元可靠度 <span class="hint" id="rbdHint">R @ 1,000 h</span></div>
+          <div id="rbdConfig"></div>
+        </div>
+        <div class="result-panel">
+          <span class="result-label">当前系统可靠度 R_sys</span>
+          <strong class="big-metric" id="rbdValue">0.7290</strong>
+          <span class="result-sub" id="rbdSub">3 单元串联 · t = 1,000 h</span>
+          <div class="time-strip" id="rbdTimes"></div>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-head"><b>可靠度–时间曲线 <small>R(t)</small></b><span class="legend"><i></i>系统 R(t)<i class="hollow"></i>关键时点</span></div>
+        <div class="chart-box"><canvas id="rbdChart"></canvas></div>
+        <div class="chart-tip"><span id="rbdChartNote">横轴：任务时间 h · 纵轴：可靠度</span><span>0 – 2,000 h</span></div>
+      </div>
+      <div class="rank-card">
+        <div class="rank-head"><b>Birnbaum 重要度</b><span>∂R_sys/∂Rᵢ · 降序</span></div>
+        <div id="rbdImportance"></div>
+      </div>
+    </section>
+
+    <!-- 02 conversion -->
+    <section class="card" id="conversion">
+      <div class="module-head">
+        <span class="module-no">02</span>
+        <div><h2>MTBF 与可靠度换算</h2><p>指数分布与 Weibull 分布的双向换算，含 N 个 9 可用度视角。</p></div>
+        <span class="badge" id="convBadge">指数分布</span>
+      </div>
+      <div class="conv-grid">
+        <div class="panel">
+          <div class="segmented" id="distTabs">
+            <button type="button" class="active" data-dist="exp">指数分布</button>
+            <button type="button" data-dist="weibull">Weibull 分布</button>
+          </div>
+          <div id="expForm" style="margin-top:14px">
+            <div class="segmented small" id="expModeTabs">
+              <button type="button" class="active" data-mode="mtbfToR">MTBF → R(t)</button>
+              <button type="button" data-mode="rToMtbf">R(t) → MTBF</button>
+            </div>
+            <div class="form-grid" style="margin-top:12px">
+              <label class="field" id="fExpMtbf"><span>平均故障间隔 MTBF</span><div class="input-wrap"><input id="expMtbf" inputmode="decimal" type="number" min="1" step="10"><i>h</i></div><em class="err"></em></label>
+              <label class="field" id="fExpR"><span>目标可靠度 R(t)</span><div class="input-wrap"><input id="expR" inputmode="decimal" type="number" min="0" max="1" step="0.0001"><i>0–1</i></div><em class="err"></em></label>
+              <label class="field span2"><span>任务时间 t</span><div class="input-wrap"><input id="expT" inputmode="decimal" type="number" min="1" step="10"><i>h</i></div><em class="err"></em></label>
+            </div>
+          </div>
+          <div id="weibullForm" hidden style="margin-top:14px">
+            <div class="form-grid">
+              <label class="field"><span>尺度参数 η（特征寿命）</span><div class="input-wrap"><input id="wEta" inputmode="decimal" type="number" min="1" step="10"><i>h</i></div><em class="err"></em></label>
+              <label class="field"><span>形状参数 β</span><div class="input-wrap"><input id="wBeta" inputmode="decimal" type="number" min="0.1" step="0.1"><i>β</i></div><em class="err"></em></label>
+              <label class="field span2"><span>任务时间 t</span><div class="input-wrap"><input id="wT" inputmode="decimal" type="number" min="1" step="10"><i>h</i></div><em class="err"></em></label>
+            </div>
+          </div>
+          <div class="metric-block">
+            <span>任务可靠度 R(t)</span>
+            <strong id="distR">0.3679</strong>
+            <span class="formula" id="distFormula">R = e^(−t / MTBF)</span>
+          </div>
+          <div class="mini-grid">
+            <div><span>失效率 λ</span><strong id="distLambda">1.0000e−3 /h</strong></div>
+            <div><span>MTBF</span><strong id="distMtbf">1,000 h</strong></div>
+            <div><span>任务时间</span><strong id="distTime">1,000 h</strong></div>
+          </div>
+          <div class="nines-card">
+            <div class="nines-top"><span>可用度视角 · 当前 R(t)</span><strong id="ninesValue">0.20 个 9</strong></div>
+            <div class="nines-bar" id="ninesBar"><i></i><i></i><i></i><i></i><i></i></div>
+            <div class="nines-foot" id="ninesSub">不可用度 1 − R = 0.6321 · 每提升 1 个 9，不可用度降低 10 倍。</div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="chart-card" style="margin-top:0">
+            <div class="chart-head"><b>可靠度衰减 <small>R(t)</small></b><span class="legend"><i></i>R(t)<i class="hollow"></i>任务时点</span></div>
+            <div class="chart-box tall"><canvas id="distChart"></canvas></div>
+            <div class="chart-tip"><span id="distChartNote">指数分布：恒定失效率</span><span id="distRange">0 – 2,000 h</span></div>
+          </div>
+          <div class="rank-card" style="margin-top:14px">
+            <div class="rank-head"><b>工程读数</b><span>INTERPRETATION</span></div>
+            <div id="convNote" style="font-size:11px;color:var(--text2);line-height:1.8"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 03 prediction -->
+    <section class="card" id="prediction">
+      <div class="module-head">
+        <span class="module-no">03</span>
+        <div><h2>可靠性预计</h2><p>以元器件计数法或相似产品法估算系统失效率与 MTBF。</p></div>
+        <span class="badge" id="predBadge">元器件计数法</span>
+      </div>
+      <div class="segmented" id="predTabs" style="margin-bottom:14px">
+        <button type="button" class="active" data-method="parts">元器件计数法</button>
+        <button type="button" data-method="similar">相似产品法</button>
+      </div>
+      <div class="rbd-grid">
+        <div class="panel">
+          <div id="partsPanel">
+            <div class="panel-label">元器件清单 <span class="hint">λb 单位 FIT</span></div>
+            <div class="table-head parts-head"><span>类别</span><span>数量</span><span>πQ</span><span>πE</span><span>λb(FIT)</span><span></span></div>
+            <div id="partsList"></div>
+            <div class="add-row"><button type="button" id="addPart">+ 添加元器件行</button></div>
+            <div class="disclaimer" style="margin-top:12px">πQ 为质量系数，πE 为环境系数。行内 λ = 数量 × λb × πQ × πE，系统按串联累加。</div>
+          </div>
+          <div id="similarPanel" hidden>
+            <div class="panel-label">相似产品清单 <span class="hint">λ 单位 FIT</span></div>
+            <div class="table-head similar-head"><span>参考单元</span><span>λref(FIT)</span><span>修正 K</span><span></span></div>
+            <div id="similarList"></div>
+            <div class="add-row"><button type="button" id="addSimilar">+ 添加相似产品行</button></div>
+            <div class="disclaimer" style="margin-top:12px">以已知产品的失效率为基准，乘以复杂度、环境或代际修正系数 K 得到本产品估计。</div>
+          </div>
+          <div class="panel-label" style="margin-top:16px">任务时间</div>
+          <div class="input-wrap" style="max-width:220px"><input id="predTask" inputmode="decimal" type="number" min="1" step="10"><i>h</i></div>
+          <div class="pred-result">
+            <div><span>系统失效率</span><strong id="predFIT">—</strong></div>
+            <div><span>系统 MTBF</span><strong id="predMTBF">—</strong></div>
+            <div><span>任务可靠度 R(T)</span><strong id="predR">—</strong></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="chart-card" style="margin-top:0">
+            <div class="chart-head"><b>失效率构成 <small>FIT</small></b><span class="legend"><i></i>贡献占比</span></div>
+            <div class="chart-box tall"><canvas id="predChart"></canvas></div>
+            <div class="chart-tip"><span>按单元贡献降序</span><span id="predChartTotal">—</span></div>
+          </div>
+          <div class="rank-card" style="margin-top:14px">
+            <div class="rank-head"><b>预计结论</b><span>SUMMARY</span></div>
+            <div id="predNote" style="font-size:11px;color:var(--text2);line-height:1.8"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 04 allocation -->
+    <section class="card" id="allocation">
+      <div class="module-head">
+        <span class="module-no">04</span>
+        <div><h2>可靠性分配</h2><p>从系统目标 R(T) 或 MTBF 出发，把失效率指标分配到各单元。</p></div>
+        <span class="badge" id="allocBadge">评分分配</span>
+      </div>
+      <div class="panel" style="margin-bottom:14px">
+        <div class="panel-label" style="margin-top:0">分配目标</div>
+        <div class="form-grid">
+          <div>
+            <div class="segmented small" id="targetTabs">
+              <button type="button" class="active" data-mode="r">目标 R(T)</button>
+              <button type="button" data-mode="mtbf">目标 MTBF</button>
+            </div>
+            <div id="fTargetR" style="margin-top:10px"><div class="input-wrap"><input id="allocTargetR" inputmode="decimal" type="number" min="0" max="1" step="0.01"><i>0–1</i></div><em class="err" id="allocTargetErr"></em></div>
+            <div id="fTargetMtbf" hidden style="margin-top:10px"><div class="input-wrap"><input id="allocTargetMtbf" inputmode="decimal" type="number" min="1" step="100"><i>h</i></div><em class="err" id="allocTargetErr2"></em></div>
+          </div>
+          <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:10px">
+            <label class="field"><span>任务时间 T</span><div class="input-wrap"><input id="allocTask" inputmode="decimal" type="number" min="1" step="10"><i>h</i></div><em class="err"></em></label>
+            <label class="field"><span>单元数</span><div class="input-wrap"><input id="allocCount" value="3" disabled><i>个</i></div><em class="err"></em></label>
+          </div>
+        </div>
+        <div class="panel-label">分配方法</div>
+        <div class="segmented" id="methodTabs">
+          <button type="button" data-method="equal">等分配</button>
+          <button type="button" class="active" data-method="scoring">评分分配</button>
+          <button type="button" data-method="agree">AGREE</button>
+        </div>
+      </div>
+      <div class="alloc-grid">
+        <div class="panel">
+          <div class="panel-label">单元参数 <span class="hint" id="allocHint">按复杂度 / 技术水平 / 环境评分</span></div>
+          <div class="table-head alloc-head" id="allocHead"><span>单元</span><span>复杂度</span><span>技术水平</span><span>环境</span><span></span></div>
+          <div id="allocUnits"></div>
+          <div class="add-row"><button type="button" id="addAllocUnit">+ 添加单元</button></div>
+        </div>
+        <div class="panel">
+          <div class="metric-block" style="margin-top:0">
+            <span>系统目标可靠度 R_sys(T)</span>
+            <strong id="allocR">0.9000</strong>
+            <div class="mini-grid" style="margin-top:10px">
+              <div><span>系统 λ</span><strong id="allocLambda">1.0536e−4 /h</strong></div>
+              <div><span>目标 MTBF</span><strong id="allocMtbf">9,491 h</strong></div>
+              <div><span>单元数</span><strong id="allocUnitCount">3</strong></div>
+            </div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-head"><b>单元失效率分配 <small>FIT</small></b><span class="legend"><i></i>λᵢ</span></div>
+            <div class="chart-box tall"><canvas id="allocChart"></canvas></div>
+            <div class="chart-tip"><span>λᵢ 之和等于系统 λ</span><span id="allocChartTotal">—</span></div>
+          </div>
+          <div class="compare-card">
+            <div class="compare-head"><b>分配结果与当前能力</b><span id="compareNote">对比模块 03</span></div>
+            <div id="compareList"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 05 report -->
+    <section class="card" id="report">
+      <div class="module-head">
+        <span class="module-no">05</span>
+        <div><h2>摘要报告与方案存档</h2><p>汇总当前全部模块结果，支持打印 / PDF 与 JSON 导入导出。</p></div>
+      </div>
+      <div class="report-grid">
+        <div class="report-copy">
+          <h3>生成一页式工程初算摘要</h3>
+          <p>报告会自动纳入 RBD 结构与关键时点、MTBF 换算结果、可靠性预计以及分配方案。打印时只输出报告内容，适合评审会前快速留档。</p>
+          <div class="report-actions">
+            <button class="btn btn-primary" id="genReport" type="button">预览报告</button>
+            <button class="btn btn-ghost" id="printCard" type="button">直接打印</button>
+            <button class="btn btn-ghost" id="exportCard" type="button">导出 JSON</button>
+            <button class="btn btn-ghost" id="importCard" type="button">导入 JSON</button>
+          </div>
+          <div class="disclaimer">导出的 JSON 包含当前全部输入与方案设置，可在另一台设备导入后继续计算。文件不上传服务器。</div>
+        </div>
+        <div class="snap">
+          <div class="snap-row"><span>系统 R_sys（RBD）</span><strong id="snapR">0.7290</strong></div>
+          <div class="snap-row"><span>参考 MTBF</span><strong id="snapMtbf">1,000 h</strong></div>
+          <div class="snap-row"><span>预计 MTBF</span><strong id="snapPred">—</strong></div>
+          <div class="snap-row"><span>分配方法</span><strong id="snapMethod">评分分配</strong></div>
+          <div class="snap-row"><span>方案更新时间</span><strong id="snapTime">—</strong></div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <div><b>Reliability Workbench</b> · 浏览器端工程计算工具<br>核心公式与界面分离，方案仅保存在本机 localStorage。</div>
+      <div>本工具结果为工程初算，关键设计决策需由可靠性工程师复核。</div>
+    </footer>
+  </main>
+</div>
+
+<div class="modal" id="reportOverlay" hidden>
+  <div class="report-sheet">
+    <div class="report-toolbar"><b>RELIABILITY SUMMARY</b>
+      <div><button class="btn btn-primary btn-sm" id="printReport" type="button">打印 / 导出 PDF</button><button class="btn btn-ghost btn-sm" id="closeReport" type="button">关闭</button></div>
+    </div>
+    <div class="report-scroll"><article id="reportBody"></article></div>
+  </div>
+</div>
+<input type="file" id="importFile" accept=".json,application/json" hidden>
+<div class="toast" id="toast"><i></i><span id="toastText"></span></div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ============ helpers ============ */
+  var $ = function (id) { return document.getElementById(id); };
+  var $$ = function (sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); };
+  var clamp = function (v, a, b) { return Math.min(b, Math.max(a, v)); };
+  var numOr = function (v, d) { var n = parseFloat(v); return isFinite(n) ? n : d; };
+  var esc = function (s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  };
+  function setText(id, t) { var el = $(id); if (el) el.textContent = t; }
+  function setVal(id, v) { var el = $(id); if (el) el.value = v; }
+  function fmt(v, d) { return isFinite(v) ? v.toFixed(d == null ? 4 : d) : '—'; }
+  function fmtInt(v) { return isFinite(v) ? Math.round(v).toLocaleString('en-US') : '—'; }
+  function fmtExp(v, d) {
+    if (!isFinite(v) || v === 0) return '—';
+    return v.toExponential(d == null ? 4 : d).replace('e-', 'e−');
+  }
+  function fmtPct(v, d) { return isFinite(v) ? (v * 100).toFixed(d == null ? 2 : d) + '%' : '—'; }
+  function debounce(fn, ms) {
+    var t;
+    return function () { var a = arguments, s = this; clearTimeout(t); t = setTimeout(function () { fn.apply(s, a); }, ms); };
+  }
+  var toastTimer;
+  function toast(msg, isErr) {
+    var t = $('toast');
+    setText('toastText', msg);
+    t.classList.toggle('error', !!isErr);
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.classList.remove('show'); }, 2800);
+  }
+  function fieldErr(el, msg) {
+    var f = el && el.parentNode;
+    while (f && f !== document && !(f.classList && f.classList.contains('field'))) f = f.parentNode;
+    if (!f || f === document) return;
+    var em = f.querySelector('.err');
+    if (em) em.textContent = msg || '';
+  }
+  function mark(el, ok, msg) {
+    if (!el) return;
+    el.classList.toggle('invalid', !ok);
+    if (!ok) fieldErr(el, msg);
+    else fieldErr(el, '');
+  }
+
+  /* ============ constants ============ */
+  var STORE = 'relia-single-state-v1';
+  var THEME = 'relia-single-theme';
+  var CATS = [
+    { id: 'resistor', name: '电阻器', base: 1.5 },
+    { id: 'capacitor', name: '电容器', base: 4 },
+    { id: 'ic', name: '集成电路', base: 22 },
+    { id: 'diode', name: '二极管', base: 3 },
+    { id: 'transistor', name: '晶体管', base: 4 },
+    { id: 'connector', name: '连接器', base: 12 },
+    { id: 'relay', name: '继电器', base: 35 },
+    { id: 'pcb', name: '印制板', base: 9 },
+    { id: 'crystal', name: '晶振', base: 12 },
+    { id: 'transformer', name: '变压器', base: 10 },
+    { id: 'fan', name: '风扇', base: 45 },
+    { id: 'other', name: '其他', base: 6 }
+  ];
+  var STRUCT_NAME = { series: '串联', parallel: '并联', kn: 'k/n 表决', bridge: '桥式', expr: '混联' };
+  var METHOD_NAME = { equal: '等分配', scoring: '评分分配', agree: 'AGREE 分配' };
+
+  /* ============ state ============ */
+  function defaults() {
+    return {
+      version: 1,
+      updatedAt: '',
+      rbd: {
+        structure: 'series',
+        t0: 1000,
+        series: { units: [{ r: 0.9 }, { r: 0.9 }, { r: 0.9 }] },
+        parallel: { units: [{ r: 0.9 }, { r: 0.9 }] },
+        kn: { n: 3, k: 2, r: 0.9 },
+        bridge: { arms: [0.9, 0.9, 0.9, 0.9, 0.9] },
+        expr: { text: '(a|b)+c', units: [{ id: 'a', r: 0.9 }, { id: 'b', r: 0.9 }, { id: 'c', r: 0.9 }] }
+      },
+      conv: { dist: 'exp', mode: 'mtbfToR', mtbf: 1000, t: 1000, r: 0.3679, eta: 1200, beta: 1.8, wT: 1000 },
+      pred: {
+        method: 'parts',
+        taskTime: 1000,
+        parts: [
+          { cat: 'resistor', qty: 12, q: 1, e: 1 },
+          { cat: 'capacitor', qty: 8, q: 1, e: 1 },
+          { cat: 'ic', qty: 3, q: 1.4, e: 1 },
+          { cat: 'connector', qty: 2, q: 1, e: 1 },
+          { cat: 'pcb', qty: 1, q: 1, e: 1 }
+        ],
+        similar: [
+          { name: '参考模块 A', ref: 45, k: 1 },
+          { name: '参考模块 B', ref: 28, k: 1.2 }
+        ]
+      },
+      alloc: {
+        targetMode: 'r',
+        targetR: 0.9,
+        targetMtbf: 10000,
+        taskTime: 1000,
+        method: 'scoring',
+        units: [
+          { name: '单元 1', complexity: 3, tech: 2, env: 1.2, importance: 0.9, modules: 4 },
+          { name: '单元 2', complexity: 2, tech: 3, env: 1.0, importance: 0.8, modules: 3 },
+          { name: '单元 3', complexity: 4, tech: 2, env: 1.5, importance: 0.7, modules: 5 }
+        ]
+      }
+    };
+  }
+
+  function normalize(raw) {
+    var d = defaults();
+    if (!raw || typeof raw !== 'object') return d;
+    var s = d;
+    if (raw.rbd && typeof raw.rbd === 'object') {
+      var r = raw.rbd;
+      if (STRUCT_NAME[r.structure]) s.rbd.structure = r.structure;
+      s.rbd.t0 = clamp(numOr(r.t0, 1000), 1, 1e9);
+      function units(arr, n) {
+        if (!Array.isArray(arr)) return null;
+        var out = arr.slice(0, 8).map(function (u) { return { r: clamp(numOr(u && u.r, 0.9), 0, 1) }; });
+        return out.length >= n ? out : null;
+      }
+      if (r.series && units(r.series.units, 2)) s.rbd.series.units = units(r.series.units, 2);
+      if (r.parallel && units(r.parallel.units, 2)) s.rbd.parallel.units = units(r.parallel.units, 2);
+      if (r.kn && typeof r.kn === 'object') {
+        var n = Math.round(clamp(numOr(r.kn.n, 3), 2, 8));
+        s.rbd.kn.n = n;
+        s.rbd.kn.k = Math.round(clamp(numOr(r.kn.k, 2), 1, n));
+        s.rbd.kn.r = clamp(numOr(r.kn.r, 0.9), 0, 1);
+      }
+      if (r.bridge && Array.isArray(r.bridge.arms) && r.bridge.arms.length === 5) {
+        s.rbd.bridge.arms = r.bridge.arms.map(function (v) { return clamp(numOr(v, 0.9), 0, 1); });
+      }
+      if (r.expr && typeof r.expr.text === 'string') {
+        s.rbd.expr.text = r.expr.text.slice(0, 120);
+        if (Array.isArray(r.expr.units)) {
+          var us = r.expr.units.filter(function (u) { return u && /^[a-z]$/.test(u.id); })
+            .slice(0, 12).map(function (u) { return { id: u.id, r: clamp(numOr(u.r, 0.9), 0, 1) }; });
+          if (us.length) s.rbd.expr.units = us;
+        }
+        syncExprUnits(s.rbd);
+      }
+    }
+    if (raw.conv && typeof raw.conv === 'object') {
+      var c = raw.conv;
+      if (c.dist === 'exp' || c.dist === 'weibull') s.conv.dist = c.dist;
+      if (c.mode === 'mtbfToR' || c.mode === 'rToMtbf') s.conv.mode = c.mode;
+      s.conv.mtbf = clamp(numOr(c.mtbf, 1000), 1, 1e12);
+      s.conv.t = clamp(numOr(c.t, 1000), 0.001, 1e12);
+      s.conv.r = clamp(numOr(c.r, 0.3679), 0.000001, 0.999999);
+      s.conv.eta = clamp(numOr(c.eta, 1200), 1, 1e12);
+      s.conv.beta = clamp(numOr(c.beta, 1.8), 0.1, 20);
+      s.conv.wT = clamp(numOr(c.wT, 1000), 0.001, 1e12);
+    }
+    if (raw.pred && typeof raw.pred === 'object') {
+      var p = raw.pred;
+      if (p.method === 'parts' || p.method === 'similar') s.pred.method = p.method;
+      s.pred.taskTime = clamp(numOr(p.taskTime, 1000), 0.001, 1e12);
+      if (Array.isArray(p.parts) && p.parts.length) {
+        s.pred.parts = p.parts.slice(0, 30).map(function (u) {
+          u = u || {};
+          var cat = CATS.some(function (x) { return x.id === u.cat; }) ? u.cat : 'other';
+          return {
+            cat: cat,
+            qty: Math.round(clamp(numOr(u.qty, 1), 1, 99999)),
+            q: clamp(numOr(u.q, 1), 0.01, 100),
+            e: clamp(numOr(u.e, 1), 0.01, 100)
+          };
+        });
+      }
+      if (Array.isArray(p.similar) && p.similar.length) {
+        s.pred.similar = p.similar.slice(0, 30).map(function (u) {
+          u = u || {};
+          return {
+            name: String(u.name || '参考单元').slice(0, 40),
+            ref: clamp(numOr(u.ref, 10), 0, 1e7),
+            k: clamp(numOr(u.k, 1), 0.01, 100)
+          };
+        });
+      }
+    }
+    if (raw.alloc && typeof raw.alloc === 'object') {
+      var a = raw.alloc;
+      if (a.targetMode === 'r' || a.targetMode === 'mtbf') s.alloc.targetMode = a.targetMode;
+      if (METHOD_NAME[a.method]) s.alloc.method = a.method;
+      s.alloc.targetR = clamp(numOr(a.targetR, 0.9), 0.000001, 0.999999);
+      s.alloc.targetMtbf = clamp(numOr(a.targetMtbf, 10000), 1, 1e12);
+      s.alloc.taskTime = clamp(numOr(a.taskTime, 1000), 0.001, 1e12);
+      if (Array.isArray(a.units) && a.units.length) {
+        s.alloc.units = a.units.slice(0, 8).map(function (u, i) {
+          return {
+            name: String(u.name || ('单元 ' + (i + 1))).slice(0, 30),
+            complexity: clamp(numOr(u.complexity, 3), 1, 5),
+            tech: clamp(numOr(u.tech, 2), 1, 5),
+            env: clamp(numOr(u.env, 1), 0.1, 10),
+            importance: clamp(numOr(u.importance, 0.9), 0.01, 1),
+            modules: clamp(numOr(u.modules, 3), 1, 99)
+          };
+        });
+      }
+    }
+    s.updatedAt = typeof raw.updatedAt === 'string' ? raw.updatedAt : '';
+    return s;
+  }
+
+  var state = normalize(readStore());
+  function readStore() {
+    try { return JSON.parse(localStorage.getItem(STORE) || 'null'); } catch (e) { return null; }
+  }
+  function save() {
+    state.updatedAt = new Date().toISOString();
+    try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) { }
+    var t = new Date(state.updatedAt);
+    setText('saveStatus', '已保存 · ' + ('0' + t.getHours()).slice(-2) + ':' + ('0' + t.getMinutes()).slice(-2));
+    renderSnap();
+  }
+  var saveSoon = debounce(save, 600);
+
+  /* ============ math core ============ */
+  var RC = {};
+  function comb(n, k) {
+    if (k < 0 || k > n) return 0;
+    var r = 1;
+    for (var i = 1; i <= k; i++) r = r * (n - k + i) / i;
+    return r;
+  }
+  RC.series = function (rs) { return rs.reduce(function (a, b) { return a * b; }, 1); };
+  RC.parallel = function (rs) { return 1 - rs.reduce(function (a, b) { return a * (1 - b); }, 1); };
+  RC.kn = function (n, k, r) {
+    var t = 0;
+    for (var i = k; i <= n; i++) t += comb(n, i) * Math.pow(r, i) * Math.pow(1 - r, n - i);
+    return t;
+  };
+  RC.bridge = function (rs) {
+    var edges = [[0, 1, 0], [0, 2, 1], [1, 3, 2], [2, 3, 3], [1, 2, 4]];
+    var total = 0;
+    for (var m = 0; m < 32; m++) {
+      var p = 1;
+      for (var i = 0; i < 5; i++) p *= (m >> i & 1) ? rs[i] : 1 - rs[i];
+      var adj = [[], [], [], []];
+      for (var j = 0; j < 5; j++) {
+        if (m >> j & 1) { adj[edges[j][0]].push(edges[j][1]); adj[edges[j][1]].push(edges[j][0]); }
+      }
+      var seen = [0], q = [0], ok = false;
+      while (q.length) {
+        var u = q.shift();
+        for (var z = 0; z < adj[u].length; z++) {
+          var v = adj[u][z];
+          if (seen.indexOf(v) < 0) { seen.push(v); q.push(v); }
+        }
+      }
+      if (seen.indexOf(3) >= 0) total += p;
+    }
+    return total;
+  };
+  RC.expr = function (src, getR) {
+    var i = 0;
+    function ws() { while (src[i] === ' ') i++; }
+    function expr() {
+      var v = term(); ws();
+      while (src[i] === '+') { i++; v = v * term(); ws(); }
+      return v;
+    }
+    function term() {
+      var v = factor(); ws();
+      while (src[i] === '|') { i++; var w = factor(); v = 1 - (1 - v) * (1 - w); ws(); }
+      return v;
+    }
+    function factor() {
+      ws();
+      if (src[i] === '(') {
+        i++;
+        var v = expr(); ws();
+        if (src[i] !== ')') throw new Error('缺少右括号');
+        i++;
+        return v;
+      }
+      var ch = (src[i] || '').toLowerCase();
+      if (/[a-z]/.test(ch)) {
+        i++;
+        var r = getR(ch);
+        if (r == null) throw new Error('未定义单元 ' + ch);
+        return r;
+      }
+      throw new Error('表达式无法解析');
+    }
+    var v = expr(); ws();
+    if (i < src.length) throw new Error('存在多余字符');
+    return v;
+  };
+
+  function rbdAt(t) {
+    var rb = state.rbd, t0 = Math.max(1, rb.t0), k = Math.max(0, t) / t0;
+    function cv(r) { return Math.pow(clamp(r, 0, 1), k); }
+    try {
+      if (rb.structure === 'series') return RC.series(rb.series.units.map(function (u) { return cv(u.r); }));
+      if (rb.structure === 'parallel') return RC.parallel(rb.parallel.units.map(function (u) { return cv(u.r); }));
+      if (rb.structure === 'kn') return RC.kn(rb.kn.n, rb.kn.k, cv(rb.kn.r));
+      if (rb.structure === 'bridge') return RC.bridge(rb.bridge.arms.map(cv));
+      if (rb.structure === 'expr') {
+        var map = {};
+        rb.expr.units.forEach(function (u) { map[u.id] = cv(u.r); });
+        return RC.expr(rb.expr.text, function (id) { return map[id]; });
+      }
+    } catch (e) { return NaN; }
+    return NaN;
+  }
+
+  function syncExprUnits(rb) {
+    rb = rb || state.rbd;
+    var text = rb.expr.text.toLowerCase();
+    var ids = [];
+    for (var i = 0; i < text.length; i++) {
+      var ch = text[i];
+      if (/[a-z]/.test(ch) && ids.indexOf(ch) < 0) ids.push(ch);
+    }
+    if (!ids.length) return;
+    var old = rb.expr.units;
+    rb.expr.units = ids.map(function (id) {
+      var hit = old.filter(function (u) { return u.id === id; })[0];
+      return { id: id, r: hit ? hit.r : 0.9 };
+    });
+  }
+
+  function importanceList() {
+    var rb = state.rbd, t0 = rb.t0, out = [];
+    function add(label, get, set) {
+      var old = get(), h = 1e-4;
+      set(clamp(old + h, 0, 1)); var up = rbdAt(t0);
+      set(clamp(old - h, 0, 1)); var dn = rbdAt(t0);
+      set(old);
+      if (isFinite(up) && isFinite(dn)) out.push({ label: label, v: (up - dn) / (2 * h) });
+    }
+    if (rb.structure === 'series' || rb.structure === 'parallel') {
+      rb[rb.structure].units.forEach(function (u, i) {
+        add('单元 ' + (i + 1), function () { return u.r; }, function (v) { u.r = v; });
+      });
+    } else if (rb.structure === 'kn') {
+      add('表决单元', function () { return rb.kn.r; }, function (v) { rb.kn.r = v; });
+    } else if (rb.structure === 'bridge') {
+      ['1', '2', '3', '4', '5'].forEach(function (n, i) {
+        add('桥臂 ' + n, function () { return rb.bridge.arms[i]; }, function (v) { rb.bridge.arms[i] = v; });
+      });
+    } else {
+      rb.expr.units.forEach(function (u) {
+        add('单元 ' + u.id, function () { return u.r; }, function (v) { u.r = v; });
+      });
+    }
+    return out.sort(function (a, b) { return b.v - a.v; });
+  }
+
+  function gamma(z) {
+    var g = 7;
+    var C = [0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313,
+      -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
+    if (z < 0.5) return Math.PI / (Math.sin(Math.PI * z) * gamma(1 - z));
+    z -= 1;
+    var x = C[0];
+    for (var i = 1; i < g + 2; i++) x += C[i] / (z + i);
+    var t = z + g + 0.5;
+    return Math.sqrt(2 * Math.PI) * Math.pow(t, z + 0.5) * Math.exp(-t) * x;
+  }
+
+  /* ============ chart engine ============ */
+  var chartJobs = {};
+  function css(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+  function hexA(hex, a) {
+    hex = (hex || '#4d6bfe').replace('#', '');
+    if (hex.length === 3) hex = hex.split('').map(function (c) { return c + c; }).join('');
+    var n = parseInt(hex, 16);
+    if (!isFinite(n)) return 'rgba(77,107,254,' + a + ')';
+    return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+  }
+  function ctxOf(id) {
+    var c = $(id);
+    if (!c) return null;
+    var box = c.getBoundingClientRect();
+    var w = Math.max(90, box.width), h = Math.max(60, box.height);
+    var dpr = window.devicePixelRatio || 1;
+    c.width = Math.round(w * dpr);
+    c.height = Math.round(h * dpr);
+    var ctx = c.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    return { ctx: ctx, w: w, h: h, surface: css('--surface') || '#fff' };
+  }
+  function axisTime(v, max) {
+    if (max >= 10000) return (v / 1000).toFixed(0) + 'k';
+    if (max >= 1000) return fmtInt(v);
+    return String(Math.round(v));
+  }
+  function fitText(ctx, text, maxW) {
+    if (ctx.measureText(text).width <= maxW) return text;
+    var t = text;
+    while (t.length > 1 && ctx.measureText(t + '…').width > maxW) t = t.slice(0, -1);
+    return t + '…';
+  }
+  function drawLine(id, opts) {
+    var o = ctxOf(id);
+    if (!o) return;
+    var ctx = o.ctx, w = o.w, h = o.h;
+    var brand = css('--brand') || '#4d6bfe';
+    var text3 = css('--text3') || '#8a94a6';
+    var line = css('--line') || '#e6ebf5';
+    var padL = 40, padR = 12, padT = 12, padB = 22;
+    var pw = w - padL - padR, ph = h - padT - padB;
+    var yMin = opts.yMin == null ? 0 : opts.yMin;
+    var yMax = opts.yMax == null ? 1 : opts.yMax;
+    var xMax = opts.xMax || 1;
+    ctx.font = '9px ui-monospace, Menlo, Consolas, monospace';
+    ctx.lineWidth = 1;
+    for (var i = 0; i <= 4; i++) {
+      var y = padT + ph * i / 4;
+      ctx.strokeStyle = line;
+      ctx.beginPath();
+      ctx.moveTo(padL, y + 0.5);
+      ctx.lineTo(w - padR, y + 0.5);
+      ctx.stroke();
+      ctx.fillStyle = text3;
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      ctx.fillText((yMax - (yMax - yMin) * i / 4).toFixed(2), padL - 7, y);
+    }
+    ctx.textBaseline = 'top';
+    for (var k = 0; k <= 4; k++) {
+      var x = padL + pw * k / 4;
+      ctx.textAlign = k === 0 ? 'left' : (k === 4 ? 'right' : 'center');
+      ctx.fillStyle = text3;
+      ctx.fillText(axisTime(xMax * k / 4, xMax) + (k === 4 ? ' h' : ''), x, h - padB + 6);
+    }
+    var pts = (opts.curve || []).filter(function (p) { return isFinite(p[0]) && isFinite(p[1]); });
+    if (!pts.length) {
+      ctx.fillStyle = text3;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(opts.empty || '等待有效输入', padL + pw / 2, padT + ph / 2);
+      return;
+    }
+    function X(v) { return padL + pw * clamp(v / xMax, 0, 1); }
+    function Y(v) { return padT + ph * (1 - clamp((v - yMin) / (yMax - yMin), 0, 1)); }
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(padL, padT, pw, ph);
+    ctx.clip();
+    var g = ctx.createLinearGradient(0, padT, 0, padT + ph);
+    g.addColorStop(0, hexA(brand, 0.22));
+    g.addColorStop(1, hexA(brand, 0.015));
+    ctx.beginPath();
+    pts.forEach(function (p, idx) { idx ? ctx.lineTo(X(p[0]), Y(p[1])) : ctx.moveTo(X(p[0]), Y(p[1])); });
+    ctx.lineTo(X(pts[pts.length - 1][0]), Y(yMin));
+    ctx.lineTo(X(pts[0][0]), Y(yMin));
+    ctx.closePath();
+    ctx.fillStyle = g;
+    ctx.fill();
+    ctx.beginPath();
+    pts.forEach(function (p, idx) { idx ? ctx.lineTo(X(p[0]), Y(p[1])) : ctx.moveTo(X(p[0]), Y(p[1])); });
+    ctx.strokeStyle = brand;
+    ctx.lineWidth = 2.2;
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+    (opts.markers || []).forEach(function (m) {
+      if (!isFinite(m[0]) || !isFinite(m[1]) || m[0] < 0 || m[0] > xMax) return;
+      ctx.beginPath();
+      ctx.arc(X(m[0]), Y(m[1]), 4, 0, Math.PI * 2);
+      ctx.fillStyle = o.surface;
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = brand;
+      ctx.stroke();
+    });
+    ctx.restore();
+  }
+  function drawBars(id, items, opts) {
+    opts = opts || {};
+    var o = ctxOf(id);
+    if (!o) return;
+    var ctx = o.ctx, w = o.w, h = o.h;
+    var brand = opts.color || css('--brand') || '#4d6bfe';
+    var text3 = css('--text3') || '#8a94a6';
+    var text2 = css('--text2') || '#4b5567';
+    var padL = Math.min(104, Math.max(70, w * 0.24)), padR = 58, padT = 6, padB = 6;
+    var pw = w - padL - padR;
+    items = (items || []).filter(function (i) { return isFinite(i.value); });
+    if (!items.length) {
+      ctx.font = '10px ui-monospace, Menlo, monospace';
+      ctx.fillStyle = text3;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(opts.empty || '暂无数据', w / 2, h / 2);
+      return;
+    }
+    var max = Math.max.apply(null, items.map(function (i) { return i.value; }).concat([1]));
+    var rowH = Math.min(30, (h - padT - padB) / items.length);
+    var barH = Math.min(14, rowH * 0.56);
+    ctx.font = '10px ui-monospace, Menlo, monospace';
+    items.forEach(function (it, i) {
+      var y = padT + i * rowH + (rowH - barH) / 2;
+      ctx.fillStyle = text2;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(fitText(ctx, it.label, padL - 12), 0, y + barH / 2);
+      var bw = Math.max(2, pw * it.value / max);
+      ctx.fillStyle = hexA(it.color || brand, it.alpha == null ? 0.82 : it.alpha);
+      var r = barH / 2;
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(padL, y, bw, barH, r);
+      else ctx.rect(padL, y, bw, barH);
+      ctx.fill();
+      ctx.fillStyle = text3;
+      ctx.textAlign = 'right';
+      ctx.fillText(it.text != null ? it.text : fmt(it.value, 1), w - 2, y + barH / 2);
+    });
+    ctx.fillStyle = text3;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    if (opts.title) ctx.fillText(opts.title, 0, 0);
+  }
+
+  /* ============ RBD ============ */
+  function rbdDesc() {
+    var rb = state.rbd;
+    if (rb.structure === 'series') return rb.series.units.length + ' 单元串联';
+    if (rb.structure === 'parallel') return rb.parallel.units.length + ' 单元并联';
+    if (rb.structure === 'kn') return rb.kn.n + ' 中取 ' + rb.kn.k + ' 表决';
+    if (rb.structure === 'bridge') return '五桥臂桥式';
+    return '混联表达式';
+  }
+  function renderRBD() {
+    var rb = state.rbd;
+    $$('#rbdTabs .choice').forEach(function (b) { b.classList.toggle('active', b.dataset.structure === rb.structure); });
+    setText('rbdBadge', STRUCT_NAME[rb.structure]);
+    var box = $('rbdConfig'), h = '';
+    if (rb.structure === 'series' || rb.structure === 'parallel') {
+      var arr = rb[rb.structure].units;
+      h = arr.map(function (u, i) {
+        return '<div class="unit-row"><div class="unit-name"><span class="unit-tag">U' + (i + 1) + '</span><span>单元 ' + (i + 1) + '</span></div>' +
+          '<div class="input-wrap"><input type="number" min="0" max="1" step="0.01" data-u="' + i + '" value="' + u.r + '"></div>' +
+          (arr.length > 2 ? '<button type="button" class="del" data-del="' + i + '" title="删除该单元">×</button>' : '<span></span>') + '</div>';
+      }).join('');
+      h += '<div class="add-row"><button type="button" data-add="1">+ 添加单元（最多 8 个）</button></div>';
+    } else if (rb.structure === 'kn') {
+      h = '<div class="form-grid">' +
+        '<label class="field"><span>单元总数 n</span><div class="input-wrap"><input id="knN" type="number" min="2" max="8" step="1" value="' + rb.kn.n + '"><i>个</i></div><em class="err"></em></label>' +
+        '<label class="field"><span>成功所需 k</span><div class="input-wrap"><input id="knK" type="number" min="1" max="8" step="1" value="' + rb.kn.k + '"><i>个</i></div><em class="err"></em></label>' +
+        '<label class="field span2"><span>单元可靠度 R（同型假设）</span><div class="input-wrap"><input id="knR" type="number" min="0" max="1" step="0.01" value="' + rb.kn.r + '"><i>0–1</i></div><em class="err"></em></label>' +
+        '</div><div class="disclaimer" style="margin-top:10px">R_sys = Σ C(n,i)·Rⁱ·(1−R)^(n−i)，i = k … n。</div>';
+    } else if (rb.structure === 'bridge') {
+      var labels = ['S→A', 'S→B', 'A→T', 'B→T', 'A↔B'];
+      h = rb.bridge.arms.map(function (v, i) {
+        return '<div class="unit-row"><div class="unit-name"><span class="unit-tag">B' + (i + 1) + '</span><span>桥臂 ' + labels[i] + '</span></div>' +
+          '<div class="input-wrap"><input type="number" min="0" max="1" step="0.01" data-arm="' + i + '" value="' + v + '"></div><span></span></div>';
+      }).join('');
+      h += '<div class="disclaimer" style="margin-top:10px">按 5 个桥臂的 32 种通断状态精确枚举 S→T 连通概率。</div>';
+    } else {
+      h = '<label class="field"><span>混联表达式（+ 串联，| 并联，括号分组）</span><div class="input-wrap"><input id="exprText" value="' + esc(rb.expr.text) + '" spellcheck="false"></div><em class="err" id="exprErr"></em></label>';
+      h += '<div class="panel-label" style="margin-top:14px">单元可靠度</div>';
+      h += rb.expr.units.map(function (u) {
+        return '<div class="unit-row"><div class="unit-name"><span class="unit-tag">' + u.id + '</span><span>单元 ' + u.id + '</span></div>' +
+          '<div class="input-wrap"><input type="number" min="0" max="1" step="0.01" data-letter="' + u.id + '" value="' + u.r + '"></div><span></span></div>';
+      }).join('');
+      h += '<div class="disclaimer" style="margin-top:10px">示例：(a|b)+c 表示 a、b 并联后再与 c 串联。字母需在下方给出可靠度。</div>';
+    }
+    box.innerHTML = h;
+    bindRBDConfig();
+  }
+  function bindRBDConfig() {
+    var box = $('rbdConfig');
+    $$('input[data-u]', box).forEach(function (el) {
+      el.addEventListener('input', function () {
+        var v = parseFloat(el.value), ok = isFinite(v) && v >= 0 && v <= 1;
+        mark(el, ok, '可靠度需在 0–1 之间');
+        if (!ok) return;
+        state.rbd[state.rbd.structure].units[+el.dataset.u].r = v;
+        afterEdit();
+      });
+    });
+    $$('input[data-arm]', box).forEach(function (el) {
+      el.addEventListener('input', function () {
+        var v = parseFloat(el.value), ok = isFinite(v) && v >= 0 && v <= 1;
+        mark(el, ok, '可靠度需在 0–1 之间');
+        if (!ok) return;
+        state.rbd.bridge.arms[+el.dataset.arm] = v;
+        afterEdit();
+      });
+    });
+    $$('input[data-letter]', box).forEach(function (el) {
+      el.addEventListener('input', function () {
+        var v = parseFloat(el.value), ok = isFinite(v) && v >= 0 && v <= 1;
+        mark(el, ok, '可靠度需在 0–1 之间');
+        if (!ok) return;
+        var id = el.dataset.letter;
+        state.rbd.expr.units.forEach(function (u) { if (u.id === id) u.r = v; });
+        afterEdit();
+      });
+    });
+    var knN = $('knN');
+    if (knN) {
+      knN.addEventListener('input', function () {
+        var v = Math.round(parseFloat(knN.value)), ok = isFinite(v) && v >= 2 && v <= 8;
+        mark(knN, ok, 'n 需为 2–8 的整数');
+        if (!ok) return;
+        state.rbd.kn.n = v;
+        if (state.rbd.kn.k > v) { state.rbd.kn.k = v; setVal('knK', v); }
+        afterEdit();
+      });
+    }
+    var knK = $('knK');
+    if (knK) {
+      knK.addEventListener('input', function () {
+        var v = Math.round(parseFloat(knK.value)), ok = isFinite(v) && v >= 1 && v <= state.rbd.kn.n;
+        mark(knK, ok, 'k 需在 1–n 之间');
+        if (!ok) return;
+        state.rbd.kn.k = v;
+        afterEdit();
+      });
+    }
+    var knR = $('knR');
+    if (knR) {
+      knR.addEventListener('input', function () {
+        var v = parseFloat(knR.value), ok = isFinite(v) && v >= 0 && v <= 1;
+        mark(knR, ok, '可靠度需在 0–1 之间');
+        if (!ok) return;
+        state.rbd.kn.r = v;
+        afterEdit();
+      });
+    }
+    var exprText = $('exprText');
+    if (exprText) {
+      exprText.addEventListener('input', function () {
+        state.rbd.expr.text = exprText.value.slice(0, 120);
+        var err = '';
+        try {
+          var map = {};
+          state.rbd.expr.units.forEach(function (u) { map[u.id] = u.r; });
+          RC.expr(state.rbd.expr.text.toLowerCase(), function (id) { return map[id]; });
+        } catch (e) { err = e.message; }
+        setText('exprErr', err);
+        exprText.classList.toggle('invalid', !!err);
+        if (!err) afterEdit();
+      });
+      exprText.addEventListener('change', function () {
+        syncExprUnits();
+        renderRBD();
+        renderRBDResult();
+        saveSoon();
+      });
+    }
+    $$('[data-del]', box).forEach(function (b) {
+      b.addEventListener('click', function () {
+        var arr = state.rbd[state.rbd.structure].units;
+        if (arr.length <= 2) return;
+        arr.splice(+b.dataset.del, 1);
+        renderRBD(); renderRBDResult(); saveSoon();
+      });
+    });
+    var add = $('rbdConfig').querySelector('[data-add]');
+    if (add) {
+      add.addEventListener('click', function () {
+        var arr = state.rbd[state.rbd.structure].units;
+        if (arr.length >= 8) { toast('最多支持 8 个单元', true); return; }
+        arr.push({ r: arr[arr.length - 1].r });
+        renderRBD(); renderRBDResult(); saveSoon();
+      });
+    }
+  }
+  function afterEdit() { recalcSoon(); saveSoon(); }
+
+  function renderRBDResult() {
+    var v = rbdAt(state.rbd.t0);
+    setText('rbdValue', isFinite(v) ? v.toFixed(4) : '—');
+    setText('rbdSub', rbdDesc() + ' · t = ' + fmtInt(state.rbd.t0) + ' h');
+    var times = [100, 500, 1000];
+    $('rbdTimes').innerHTML = times.map(function (t) {
+      var r = rbdAt(t);
+      return '<div class="time-chip"><span>' + fmtInt(t) + ' h</span><strong>' + (isFinite(r) ? r.toFixed(4) : '—') + '</strong></div>';
+    }).join('');
+    var imp = importanceList();
+    if (!imp.length) {
+      $('rbdImportance').innerHTML = '<div style="font-size:11px;color:var(--text3)">当前结构无有效单元输入。</div>';
+    } else {
+      var max = Math.max.apply(null, imp.map(function (i) { return Math.abs(i.v); }).concat([1e-9]));
+      $('rbdImportance').innerHTML = imp.slice(0, 6).map(function (i) {
+        return '<div class="rank-row"><span>' + esc(i.label) + '</span><div class="track"><i style="width:' +
+          Math.max(2, Math.abs(i.v) / max * 100).toFixed(1) + '%"></i></div><em>' + i.v.toFixed(3) + '</em></div>';
+      }).join('');
+    }
+    chartJobs.rbd = function () {
+      var xMax = Math.max(2000, state.rbd.t0 * 2);
+      var curve = [];
+      for (var i = 0; i <= 64; i++) {
+        var t = xMax * i / 64, r = rbdAt(t);
+        curve.push([t, isFinite(r) ? r : 0]);
+      }
+      var markers = times.map(function (t) { return [t, rbdAt(t)]; });
+      drawLine('rbdChart', { curve: curve, markers: markers, xMax: xMax });
+      setText('rbdChartNote', '横轴：任务时间 h · 纵轴：可靠度');
+      var note = $('rbdChartNote');
+      if (note && note.nextElementSibling) note.nextElementSibling.textContent = '0 – ' + fmtInt(xMax) + ' h';
+    };
+    chartJobs.rbd();
+    setText('snapR', isFinite(v) ? v.toFixed(4) : '—');
+  }
+
+  /* ============ conversion ============ */
+  function syncDistribution() {
+    var c = state.conv;
+    setText('convBadge', c.dist === 'exp' ? '指数分布' : 'Weibull 分布');
+    $$('#distTabs button').forEach(function (b) { b.classList.toggle('active', b.dataset.dist === c.dist); });
+    $('expForm').hidden = c.dist !== 'exp';
+    $('weibullForm').hidden = c.dist !== 'weibull';
+    $$('#expModeTabs button').forEach(function (b) { b.classList.toggle('active', b.dataset.mode === c.mode); });
+    $('fExpMtbf').hidden = c.mode !== 'mtbfToR';
+    $('fExpR').hidden = c.mode !== 'rToMtbf';
+    setVal('expMtbf', c.mtbf);
+    setVal('expR', c.r);
+    setVal('expT', c.t);
+    setVal('wEta', c.eta);
+    setVal('wBeta', c.beta);
+    setVal('wT', c.wT);
+  }
+  function convNumbers() {
+    var c = state.conv;
+    if (c.dist === 'weibull') {
+      var eta = Math.max(1e-6, c.eta), beta = Math.max(0.01, c.beta), t = Math.max(0, c.wT);
+      var R = Math.exp(-Math.pow(t / eta, beta));
+      var mtbf = eta * gamma(1 + 1 / beta);
+      var haz = beta / eta * Math.pow(t / eta, beta - 1);
+      return { R: R, lambda: haz, mtbf: mtbf, t: t, dist: 'weibull' };
+    }
+    var T = Math.max(1e-6, c.t);
+    if (c.mode === 'rToMtbf') {
+      var r = clamp(c.r, 1e-6, 1 - 1e-9);
+      var lam = -Math.log(r) / T;
+      return { R: r, lambda: lam, mtbf: 1 / lam, t: T, dist: 'exp' };
+    }
+    var m = Math.max(1e-6, c.mtbf);
+    return { R: Math.exp(-T / m), lambda: 1 / m, mtbf: m, t: T, dist: 'exp' };
+  }
+  function renderConversion() {
+    var v = convNumbers();
+    setText('distR', v.R.toFixed(4));
+    setText('distLambda', fmtExp(v.lambda, 4) + ' /h');
+    setText('distMtbf', fmtInt(v.mtbf) + ' h');
+    setText('distTime', fmtInt(v.t) + ' h');
+    setText('distFormula', v.dist === 'weibull' ? 'R = exp[−(t/η)^β]' : (state.conv.mode === 'rToMtbf' ? 'MTBF = −t / ln R' : 'R = e^(−t/MTBF)'));
+    var nines = v.R >= 1 ? Infinity : -Math.log10(Math.max(1e-15, 1 - v.R));
+    setText('ninesValue', isFinite(nines) ? nines.toFixed(2) + ' 个 9' : '∞');
+    var lit = Math.min(5, Math.max(0, Math.round(nines)));
+    $$('#ninesBar i').forEach(function (x, i) { x.classList.toggle('on', i < lit); });
+    setText('ninesSub', '不可用度 1 − R = ' + fmt(1 - v.R, 4) + ' · 每提升 1 个 9，不可用度降低 10 倍。');
+    setText('convNote', v.dist === 'weibull'
+      ? 'Weibull 形状参数 β = ' + state.conv.beta.toFixed(2) + '：β < 1 为早期失效，β ≈ 1 接近恒定失效率，β > 1 为耗损失效。'
+      : '指数分布假设失效率恒定：已完成 ' + fmtInt(v.t) + ' h 的设备，其剩余平均寿命仍为 MTBF = ' + fmtInt(v.mtbf) + ' h。');
+    setText('distChartNote', v.dist === 'weibull' ? 'Weibull：β = ' + state.conv.beta.toFixed(2) + ' · η = ' + fmtInt(state.conv.eta) + ' h' : '指数分布：恒定失效率');
+    chartJobs.dist = function () {
+      var xMax = Math.max(2000, v.t * 1.6);
+      var curve = [];
+      for (var i = 0; i <= 64; i++) {
+        var t = xMax * i / 64, r;
+        if (v.dist === 'weibull') r = Math.exp(-Math.pow(t / Math.max(1e-6, state.conv.eta), state.conv.beta));
+        else r = Math.exp(-t / Math.max(1e-6, v.mtbf));
+        curve.push([t, r]);
+      }
+      drawLine('distChart', {
+        curve: curve, markers: [[v.t, v.R]], xMax: xMax,
+        yMin: 0, yMax: 1
+      });
+      setText('distRange', '0 – ' + fmtInt(xMax) + ' h');
+    };
+    chartJobs.dist();
+    setText('snapMtbf', fmtInt(v.dist === 'weibull' ? v.mtbf : (state.conv.mode === 'rToMtbf' ? v.mtbf : state.conv.mtbf)) + ' h');
+  }
+
+  /* ============ prediction ============ */
+  function catOf(id) { return CATS.filter(function (c) { return c.id === id; })[0] || CATS[CATS.length - 1]; }
+  function renderPredTabs() {
+    state.pred.method = state.pred.method === 'similar' ? 'similar' : 'parts';
+    $$('#predTabs button').forEach(function (b) { b.classList.toggle('active', b.dataset.method === state.pred.method); });
+    setText('predBadge', state.pred.method === 'parts' ? '元器件计数法' : '相似产品法');
+    $('partsPanel').hidden = state.pred.method !== 'parts';
+    $('similarPanel').hidden = state.pred.method !== 'similar';
+    setVal('predTask', state.pred.taskTime);
+  }
+  function renderPartsList() {
+    var rows = state.pred.parts;
+    $('partsList').innerHTML = rows.map(function (row, i) {
+      var opts = CATS.map(function (c) {
+        return '<option value="' + c.id + '"' + (c.id === row.cat ? ' selected' : '') + '>' + c.name + '</option>';
+      }).join('');
+      return '<div class="t-row parts-row">' +
+        '<div class="input-wrap"><select data-pcat="' + i + '">' + opts + '</select></div>' +
+        '<div class="input-wrap"><input type="number" min="1" step="1" data-pf="qty" data-pi="' + i + '" value="' + row.qty + '"></div>' +
+        '<div class="input-wrap"><input type="number" min="0.01" step="0.1" data-pf="q" data-pi="' + i + '" value="' + row.q + '"></div>' +
+        '<div class="input-wrap"><input type="number" min="0.01" step="0.1" data-pf="e" data-pi="' + i + '" value="' + row.e + '"></div>' +
+        '<div class="base-fit">' + catOf(row.cat).base.toFixed(2) + '</div>' +
+        (rows.length > 1 ? '<button type="button" class="del" data-pdel="' + i + '">×</button>' : '<span></span>') +
+        '</div>';
+    }).join('');
+    $$('#partsList [data-pcat]').forEach(function (sel) {
+      sel.addEventListener('change', function () {
+        state.pred.parts[+sel.dataset.pcat].cat = sel.value;
+        renderPartsList(); renderPredResult(); saveSoon();
+      });
+    });
+    $$('#partsList input[data-pf]').forEach(function (el) {
+      el.addEventListener('input', function () {
+        var v = parseFloat(el.value), f = el.dataset.pf, i = +el.dataset.pi;
+        var lo = f === 'qty' ? 1 : 0.01, hi = f === 'qty' ? 99999 : 100;
+        var ok = isFinite(v) && v >= lo && v <= hi;
+        mark(el, ok, f === 'qty' ? '数量需 ≥ 1' : '系数需在 0.01–100 之间');
+        if (!ok) return;
+        state.pred.parts[i][f] = f === 'qty' ? Math.round(v) : v;
+        afterEdit();
+      });
+    });
+    $$('#partsList [data-pdel]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        state.pred.parts.splice(+b.dataset.pdel, 1);
+        renderPartsList(); renderPredResult(); saveSoon();
+      });
+    });
+  }
+  function renderSimilarList() {
+    var rows = state.pred.similar;
+    $('similarList').innerHTML = rows.map(function (row, i) {
+      return '<div class="t-row similar-row">' +
+        '<input class="unit-name-input" data-sname="' + i + '" value="' + esc(row.name) + '">' +
+        '<div class="input-wrap"><input type="number" min="0" step="1" data-sf="ref" data-si="' + i + '" value="' + row.ref + '"></div>' +
+        '<div class="input-wrap"><input type="number" min="0.01" step="0.05" data-sf="k" data-si="' + i + '" value="' + row.k + '"></div>' +
+        (rows.length > 1 ? '<button type="button" class="del" data-sdel="' + i + '">×</button>' : '<span></span>') +
+        '</div>';
+    }).join('');
+    $$('#similarList [data-sname]').forEach(function (el) {
+      el.addEventListener('input', function () {
+        state.pred.similar[+el.dataset.sname].name = el.value.slice(0, 30);
+        renderPredResult(); saveSoon();
+      });
+    });
+    $$('#similarList input[data-sf]').forEach(function (el) {
+      el.addEventListener('input', function () {
+        var v = parseFloat(el.value), ok = isFinite(v) && (el.dataset.sf === 'ref' ? v >= 0 : v >= 0.01 && v <= 100);
+        mark(el, ok, el.dataset.sf === 'ref' ? 'λref 需 ≥ 0' : 'K 需在 0.01–100 之间');
+        if (!ok) return;
+        state.pred.similar[+el.dataset.si][el.dataset.sf] = v;
+        afterEdit();
+      });
+    });
+    $$('#similarList [data-sdel]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        state.pred.similar.splice(+b.dataset.sdel, 1);
+        renderSimilarList(); renderPredResult(); saveSoon();
+      });
+    });
+  }
+  function computePred() {
+    var p = state.pred, items = [], total = 0;
+    if (p.method === 'parts') {
+      p.parts.forEach(function (r) {
+        var fit = Math.max(0, r.qty * catOf(r.cat).base * r.q * r.e);
+        total += fit;
+        items.push({ label: catOf(r.cat).name, value: fit });
+      });
+    } else {
+      p.similar.forEach(function (r) {
+        var fit = Math.max(0, r.ref * r.k);
+        total += fit;
+        items.push({ label: r.name || '参考单元', value: fit });
+      });
+    }
+    var T = Math.max(0, p.taskTime);
+    var lam = total * 1e-9;
+    return {
+      fit: total,
+      mtbf: total > 0 ? 1e9 / total : Infinity,
+      r: Math.exp(-lam * T),
+      task: T,
+      items: items.sort(function (a, b) { return b.value - a.value; })
+    };
+  }
+  function renderPredResult() {
+    var v = computePred();
+    setText('predFIT', v.fit > 0 ? v.fit.toFixed(1) + ' FIT' : '—');
+    setText('predMTBF', isFinite(v.mtbf) ? fmtInt(v.mtbf) + ' h' : '—');
+    setText('predR', v.fit > 0 ? v.r.toFixed(5) : '—');
+    setText('predChartTotal', '合计 ' + v.fit.toFixed(1) + ' FIT');
+    if (!v.fit) {
+      setText('predNote', '请至少保留一行有效数据。');
+    } else {
+      var top = v.items[0];
+      setText('predNote', '主要贡献：' + top.label + ' ' + top.value.toFixed(1) + ' FIT（' + fmtPct(top.value / v.fit, 1) + '）。按串联模型，系统在 ' + fmtInt(v.task) + ' h 内失效概率约 ' + fmtPct(1 - v.r, 3) + '。');
+    }
+    chartJobs.pred = function () {
+      drawBars('predChart', v.items.slice(0, 8).map(function (i) {
+        return { label: i.label, value: i.value, text: i.value.toFixed(1) };
+      }), { empty: '暂无预计数据' });
+    };
+    chartJobs.pred();
+    setText('snapPred', isFinite(v.mtbf) ? fmtInt(v.mtbf) + ' h' : '—');
+  }
+
+  /* ============ allocation ============ */
+  function syncTarget() {
+    var a = state.alloc;
+    $$('#targetTabs button').forEach(function (b) { b.classList.toggle('active', b.dataset.mode === a.targetMode); });
+    $('fTargetR').hidden = a.targetMode !== 'r';
+    $('fTargetMtbf').hidden = a.targetMode !== 'mtbf';
+    setVal('allocTargetR', a.targetR);
+    setVal('allocTargetMtbf', a.targetMtbf);
+    setVal('allocTask', a.taskTime);
+    setVal('allocCount', a.units.length);
+  }
+  function renderMethodTabs() {
+    $$('#methodTabs button').forEach(function (b) { b.classList.toggle('active', b.dataset.method === state.alloc.method); });
+    setText('allocBadge', METHOD_NAME[state.alloc.method]);
+    setText('allocHint', state.alloc.method === 'equal' ? '各单元平均分担系统失效率'
+      : state.alloc.method === 'scoring' ? '按复杂度 / 技术水平 / 环境评分'
+        : '按重要度与模块数分配');
+  }
+  function renderAllocPanel() {
+    var a = state.alloc, m = a.method, rows = a.units;
+    var head = $('allocHead');
+    head.className = 'table-head alloc-head' + (m === 'agree' ? ' agree' : m === 'equal' ? ' equal' : '');
+    if (m === 'equal') head.innerHTML = '<span>单元</span><span>λᵢ(FIT)</span><span></span>';
+    else if (m === 'agree') head.innerHTML = '<span>单元</span><span>重要度 I</span><span>模块数 m</span><span></span>';
+    else head.innerHTML = '<span>单元</span><span>复杂度</span><span>技术水平</span><span>环境</span><span></span>';
+    var res = computeAlloc();
+    $('allocUnits').innerHTML = rows.map(function (u, i) {
+      var name = '<input class="unit-name-input" data-aname="' + i + '" value="' + esc(u.name) + '">';
+      var cells = '';
+      if (m === 'equal') {
+        cells = '<div class="base-fit" style="text-align:left;padding:0">' + (res.units[i] ? (res.units[i].lambda * 1e9).toFixed(1) : '—') + '</div>';
+      } else if (m === 'agree') {
+        cells = '<div class="input-wrap"><input type="number" min="0.01" max="1" step="0.01" data-af="importance" data-ai="' + i + '" value="' + u.importance + '"></div>' +
+          '<div class="input-wrap"><input type="number" min="1" max="99" step="1" data-af="modules" data-ai="' + i + '" value="' + u.modules + '"></div>';
+      } else {
+        cells = '<div class="input-wrap"><input type="number" min="1" max="5" step="1" data-af="complexity" data-ai="' + i + '" value="' + u.complexity + '"></div>' +
+          '<div class="input-wrap"><input type="number" min="1" max="5" step="1" data-af="tech" data-ai="' + i + '" value="' + u.tech + '"></div>' +
+          '<div class="input-wrap"><input type="number" min="0.1" max="10" step="0.1" data-af="env" data-ai="' + i + '" value="' + u.env + '"></div>';
+      }
+      var del = rows.length > 1 ? '<button type="button" class="del" data-adel="' + i + '">×</button>' : '<span></span>';
+      return '<div class="t-row alloc-row' + (m === 'agree' ? ' agree' : m === 'equal' ? ' equal' : '') + '">' + name + cells + del + '</div>';
+    }).join('');
+    $$('#allocUnits [data-aname]').forEach(function (el) {
+      el.addEventListener('input', function () {
+        state.alloc.units[+el.dataset.aname].name = el.value.slice(0, 30);
+        renderAllocResult(); saveSoon();
+      });
+    });
+    $$('#allocUnits input[data-af]').forEach(function (el) {
+      el.addEventListener('input', function () {
+        var f = el.dataset.af, i = +el.dataset.ai, v = parseFloat(el.value);
+        var ok;
+        if (f === 'complexity' || f === 'tech') ok = isFinite(v) && v >= 1 && v <= 5;
+        else if (f === 'env') ok = isFinite(v) && v >= 0.1 && v <= 10;
+        else if (f === 'importance') ok = isFinite(v) && v > 0 && v <= 1;
+        else ok = isFinite(v) && v >= 1 && v <= 99;
+        mark(el, ok, '输入超出允许范围');
+        if (!ok) return;
+        state.alloc.units[i][f] = f === 'modules' ? Math.round(v) : v;
+        afterEdit();
+      });
+    });
+    $$('#allocUnits [data-adel]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        if (state.alloc.units.length <= 1) return;
+        state.alloc.units.splice(+b.dataset.adel, 1);
+        renderAllocPanel(); renderAllocResult(); saveSoon();
+      });
+    });
+  }
+  function computeAlloc() {
+    var a = state.alloc, T = Math.max(1e-6, a.taskTime), targetR, targetLambda;
+    if (a.targetMode === 'mtbf') {
+      var m = Math.max(1e-6, a.targetMtbf);
+      targetLambda = 1 / m;
+      targetR = Math.exp(-T / m);
+    } else {
+      targetR = clamp(a.targetR, 1e-6, 1 - 1e-9);
+      targetLambda = -Math.log(targetR) / T;
+    }
+    var ws = a.units.map(function (u) {
+      if (a.method === 'equal') return 1;
+      if (a.method === 'agree') return Math.max(1e-6, u.modules) / Math.max(1e-6, u.importance);
+      return Math.max(1e-6, u.complexity) / Math.max(1e-6, u.tech) * Math.max(1e-6, u.env);
+    });
+    var sum = ws.reduce(function (x, y) { return x + y; }, 0) || 1;
+    var units = a.units.map(function (u, i) {
+      var lam = targetLambda * ws[i] / sum;
+      return { name: u.name, lambda: lam, r: Math.exp(-lam * T), share: ws[i] / sum };
+    });
+    return { targetR: targetR, targetLambda: targetLambda, targetMtbf: 1 / targetLambda, T: T, units: units };
+  }
+  function renderAllocResult() {
+    var v = computeAlloc(), a = state.alloc;
+    setText('allocR', v.targetR.toFixed(4));
+    setText('allocLambda', fmtExp(v.targetLambda, 4) + ' /h');
+    setText('allocMtbf', fmtInt(v.targetMtbf) + ' h');
+    setText('allocUnitCount', String(a.units.length));
+    setVal('allocCount', a.units.length);
+    chartJobs.alloc = function () {
+      drawBars('allocChart', v.units.map(function (u) {
+        return { label: u.name, value: u.lambda * 1e9, text: (u.lambda * 1e9).toFixed(1) };
+      }), { empty: '暂无单元', color: css('--brand') });
+      setText('allocChartTotal', 'Σ = ' + (v.targetLambda * 1e9).toFixed(1) + ' FIT');
+    };
+    chartJobs.alloc();
+    var pred = computePred();
+    var rows = '';
+    var ratio = pred.mtbf / v.targetMtbf;
+    if (isFinite(pred.mtbf) && pred.fit > 0) {
+      rows = '<div class="cmp-row"><span>分配目标 MTBF</span><strong>' + fmtInt(v.targetMtbf) + ' h</strong></div>' +
+        '<div class="cmp-row"><span>当前预计 MTBF</span><strong>' + fmtInt(pred.mtbf) + ' h</strong></div>' +
+        '<div class="cmp-row"><span>能力裕度</span><strong>' + (ratio >= 1 ? '+' : '') + fmtPct(ratio - 1, 1) + '</strong></div>' +
+        '<div class="cmp-row"><span>判定</span><strong style="color:' + (ratio >= 1 ? 'var(--ok)' : 'var(--warn)') + '">' +
+        (ratio >= 1 ? '预计能力满足分配目标' : '预计能力不足，需优化设计') + '</strong></div>';
+      setText('compareNote', '预计 / 目标 = ' + ratio.toFixed(2) + '×');
+    } else {
+      rows = '<div class="cmp-row"><span>当前预计 MTBF</span><strong>暂无有效数据</strong></div>';
+      setText('compareNote', '请先在模块 03 填写预计数据');
+    }
+    $('compareList').innerHTML = rows;
+    setText('snapMethod', METHOD_NAME[a.method]);
+  }
+
+  /* ============ snapshot / report ============ */
+  function renderSnap() {
+    var t = state.updatedAt ? new Date(state.updatedAt) : null;
+    setText('snapTime', t ? (t.getMonth() + 1) + '月' + t.getDate() + '日 ' + ('0' + t.getHours()).slice(-2) + ':' + ('0' + t.getMinutes()).slice(-2) : '—');
+    setText('snapMethod', METHOD_NAME[state.alloc.method]);
+    setText('snapPred', (function () { var p = computePred(); return isFinite(p.mtbf) ? fmtInt(p.mtbf) + ' h' : '—'; })());
+  }
+  function buildReport() {
+    var v = rbdAt(state.rbd.t0);
+    var conv = convNumbers();
+    var pred = computePred();
+    var alloc = computeAlloc();
+    var now = new Date();
+    var stamp = now.getFullYear() + '/' + ('0' + (now.getMonth() + 1)).slice(-2) + '/' + ('0' + now.getDate()).slice(-2) + ' ' +
+      ('0' + now.getHours()).slice(-2) + ':' + ('0' + now.getMinutes()).slice(-2);
+    var unitRows = alloc.units.map(function (u) {
+      return '<tr><td>' + esc(u.name) + '</td><td>' + (u.lambda * 1e9).toFixed(2) + '</td><td>' + u.r.toFixed(5) + '</td><td>' + fmtPct(u.share, 1) + '</td></tr>';
+    }).join('');
+    var rbdRows = [100, 500, 1000].map(function (t) {
+      var r = rbdAt(t);
+      return '<div><span>' + fmtInt(t) + ' h</span><strong>' + (isFinite(r) ? r.toFixed(5) : '—') + '</strong></div>';
+    }).join('');
+    return '<h1>RELIABILITY ENGINEERING SUMMARY</h1>' +
+      '<div class="rep-sub">可靠性工程初算摘要 · 基于当前 RBD、MTBF 换算、可靠性预计与分配输入自动生成。<br>REPORT ' + stamp + ' · RELIABILITY WORKBENCH · SCHEMA V1</div>' +
+      '<div class="kv">' +
+      '<div><span>系统 R_sys</span><strong>' + (isFinite(v) ? v.toFixed(4) : '—') + '</strong></div>' +
+      '<div><span>参考 MTBF</span><strong>' + fmtInt(state.conv.mtbf) + ' h</strong></div>' +
+      '<div><span>预计 MTBF</span><strong>' + (isFinite(pred.mtbf) ? fmtInt(pred.mtbf) + ' h' : '—') + '</strong></div>' +
+      '<div><span>分配方法</span><strong>' + METHOD_NAME[state.alloc.method] + '</strong></div>' +
+      '</div>' +
+      '<h2>01 · RBD 系统结构</h2>' +
+      '<div class="kv"><div><span>结构类型</span><strong>' + STRUCT_NAME[state.rbd.structure] + '</strong></div>' +
+      '<div><span>基准时刻 t₀</span><strong>' + fmtInt(state.rbd.t0) + ' h</strong></div></div>' +
+      '<div class="kv">' + rbdRows + '</div>' +
+      '<h2>02 · 寿命与可靠度换算</h2>' +
+      '<div class="kv">' +
+      '<div><span>分布</span><strong>' + (conv.dist === 'weibull' ? 'Weibull' : '指数') + '</strong></div>' +
+      '<div><span>任务时间</span><strong>' + fmtInt(conv.t) + ' h</strong></div>' +
+      '<div><span>失效率 λ</span><strong>' + fmtExp(conv.lambda, 4) + ' /h</strong></div>' +
+      '<div><span>MTBF</span><strong>' + fmtInt(conv.mtbf) + ' h</strong></div>' +
+      '<div><span>任务可靠度 R(t)</span><strong>' + conv.R.toFixed(5) + '</strong></div></div>' +
+      '<h2>03 · 可靠性预计</h2>' +
+      '<div class="kv">' +
+      '<div><span>方法</span><strong>' + (state.pred.method === 'parts' ? '元器件计数法' : '相似产品法') + '</strong></div>' +
+      '<div><span>任务时间</span><strong>' + fmtInt(pred.task) + ' h</strong></div>' +
+      '<div><span>系统失效率</span><strong>' + pred.fit.toFixed(1) + ' FIT</strong></div>' +
+      '<div><span>预计 MTBF</span><strong>' + (isFinite(pred.mtbf) ? fmtInt(pred.mtbf) + ' h' : '—') + '</strong></div>' +
+      '<div><span>R(T)</span><strong>' + pred.r.toFixed(5) + '</strong></div></div>' +
+      '<h2>04 · 可靠性分配</h2>' +
+      '<div class="kv">' +
+      '<div><span>目标 R(T)</span><strong>' + alloc.targetR.toFixed(4) + '</strong></div>' +
+      '<div><span>系统 λ</span><strong>' + fmtExp(alloc.targetLambda, 4) + ' /h</strong></div>' +
+      '<div><span>目标 MTBF</span><strong>' + fmtInt(alloc.targetMtbf) + ' h</strong></div>' +
+      '<div><span>任务时间 T</span><strong>' + fmtInt(alloc.T) + ' h</strong></div></div>' +
+      '<table><thead><tr><th>单元</th><th>λᵢ (FIT)</th><th>Rᵢ(T)</th><th>权重</th></tr></thead><tbody>' + unitRows + '</tbody></table>' +
+      '<div class="rep-note">本报告为工程初算结果，采用简化模型（指数/Weibull 假设、串联累加、独立失效）。关键设计决策、正式指标承诺与安全性评估需由可靠性工程师复核。</div>';
+  }
+  function openReport() {
+    setHtml('reportBody', buildReport());
+    $('reportOverlay').hidden = false;
+    document.body.classList.add('modal-open');
+    $('closeReport').focus();
+  }
+  function setHtml(id, html) { var el = $(id); if (el) el.innerHTML = html; }
+  function closeReport() {
+    $('reportOverlay').hidden = true;
+    document.body.classList.remove('modal-open');
+  }
+
+  /* ============ recalc ============ */
+  function recalc() {
+    renderRBDResult();
+    renderConversion();
+    renderPredResult();
+    renderAllocResult();
+    renderSnap();
+  }
+  var recalcSoon = debounce(recalc, 300);
+
+  function syncAll() {
+    renderRBD();
+    setText('rbdHint', 'R @ ' + fmtInt(state.rbd.t0) + ' h');
+    renderRBDResult();
+    syncDistribution();
+    renderPredTabs();
+    renderPartsList();
+    renderSimilarList();
+    renderPredResult();
+    syncTarget();
+    renderMethodTabs();
+    renderAllocPanel();
+    renderAllocResult();
+    renderSnap();
+  }
+
+  /* ============ report / import / export ============ */
+  function exportJSON() {
+    var blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+    var a = document.createElement('a');
+    var d = new Date();
+    a.href = URL.createObjectURL(blob);
+    a.download = 'reliability-plan-' + d.getFullYear() + ('0' + (d.getMonth() + 1)).slice(-2) + ('0' + d.getDate()).slice(-2) + '.json';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 400);
+    toast('方案 JSON 已导出');
+  }
+  function importJSON(file) {
+    var reader = new FileReader();
+    reader.onload = function () {
+      try {
+        var raw = JSON.parse(reader.result);
+        if (!raw || typeof raw !== 'object') throw new Error('文件内容不是有效方案');
+        state = normalize(raw);
+        save();
+        syncAll();
+        recalc();
+        toast('方案已导入并恢复');
+      } catch (e) {
+        toast('导入失败：' + e.message, true);
+      }
+    };
+    reader.onerror = function () { toast('文件读取失败', true); };
+    reader.readAsText(file);
+  }
+
+  /* ============ theme ============ */
+  function applyTheme(t, persist) {
+    document.documentElement.dataset.theme = t;
+    if (persist) { try { localStorage.setItem(THEME, t); } catch (e) { } }
+    drawAll();
+  }
+  function toggleTheme() {
+    applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark', true);
+  }
+  function drawAll() {
+    Object.keys(chartJobs).forEach(function (k) { try { chartJobs[k](); } catch (e) { } });
+  }
+
+  /* ============ nav ============ */
+  function bindScrollSpy() {
+    var secs = ['rbd', 'conversion', 'prediction', 'allocation', 'report'].map(function (id) { return $(id); });
+    var nav = $$('.nav-item'), scheduled = false;
+    function active() {
+      var y = 130, cur = 'rbd';
+      secs.forEach(function (s) { if (s && s.getBoundingClientRect().top <= y) cur = s.id; });
+      nav.forEach(function (n) { n.classList.toggle('active', n.getAttribute('href') === '#' + cur); });
+    }
+    addEventListener('scroll', function () {
+      if (!scheduled) { scheduled = true; requestAnimationFrame(function () { active(); scheduled = false; }); }
+    }, { passive: true });
+    nav.forEach(function (n) {
+      n.addEventListener('click', function () {
+        nav.forEach(function (x) { x.classList.remove('active'); });
+        n.classList.add('active');
+      });
+    });
+    active();
+  }
+
+  /* ============ bind ============ */
+  function bind() {
+    $$('#rbdTabs .choice').forEach(function (b) {
+      b.addEventListener('click', function () {
+        state.rbd.structure = b.dataset.structure;
+        renderRBD(); renderRBDResult(); saveSoon();
+      });
+    });
+    $$('#distTabs button').forEach(function (b) {
+      b.addEventListener('click', function () {
+        state.conv.dist = b.dataset.dist;
+        syncDistribution(); renderConversion(); saveSoon();
+      });
+    });
+    $$('#expModeTabs button').forEach(function (b) {
+      b.addEventListener('click', function () {
+        state.conv.mode = b.dataset.mode;
+        syncDistribution(); renderConversion(); saveSoon();
+      });
+    });
+    function expInput(id, key, min, max, check) {
+      var el = $(id);
+      if (!el) return;
+      el.addEventListener('input', function () {
+        var v = parseFloat(el.value);
+        var ok = isFinite(v) && v >= min && v <= max && (!check || check(v));
+        mark(el, ok, '输入需在 ' + min + '–' + max + ' 之间');
+        if (!ok) return;
+        state.conv[key] = v;
+        recalcSoon(); saveSoon();
+      });
+    }
+    expInput('expMtbf', 'mtbf', 1, 1e12);
+    expInput('expT', 't', 0.001, 1e12);
+    expInput('expR', 'r', 0.000001, 0.999999);
+    expInput('wEta', 'eta', 1, 1e12);
+    expInput('wBeta', 'beta', 0.1, 20);
+    expInput('wT', 'wT', 0.001, 1e12);
+
+    $$('#predTabs button').forEach(function (b) {
+      b.addEventListener('click', function () {
+        state.pred.method = b.dataset.method;
+        renderPredTabs(); renderPredResult(); saveSoon();
+      });
+    });
+    $('addPart').addEventListener('click', function () {
+      if (state.pred.parts.length >= 30) { toast('最多 30 行', true); return; }
+      state.pred.parts.push({ cat: 'resistor', qty: 1, q: 1, e: 1 });
+      renderPartsList(); renderPredResult(); saveSoon();
+    });
+    $('addSimilar').addEventListener('click', function () {
+      if (state.pred.similar.length >= 30) { toast('最多 30 行', true); return; }
+      state.pred.similar.push({ name: '参考单元 ' + (state.pred.similar.length + 1), ref: 10, k: 1 });
+      renderSimilarList(); renderPredResult(); saveSoon();
+    });
+    var pt = $('predTask');
+    pt.addEventListener('input', function () {
+      var v = parseFloat(pt.value), ok = isFinite(v) && v > 0;
+      mark(pt, ok, '任务时间需大于 0');
+      if (!ok) return;
+      state.pred.taskTime = v;
+      recalcSoon(); saveSoon();
+    });
+
+    $$('#targetTabs button').forEach(function (b) {
+      b.addEventListener('click', function () {
+        state.alloc.targetMode = b.dataset.mode;
+        syncTarget(); renderAllocResult(); saveSoon();
+      });
+    });
+    var tr = $('allocTargetR');
+    tr.addEventListener('input', function () {
+      var v = parseFloat(tr.value), ok = isFinite(v) && v > 0 && v < 1;
+      tr.classList.toggle('invalid', !ok);
+      setText('allocTargetErr', ok ? '' : '目标 R 需在 0–1 之间（不含端点）');
+      if (!ok) return;
+      state.alloc.targetR = v;
+      recalcSoon(); saveSoon();
+    });
+    var tm = $('allocTargetMtbf');
+    tm.addEventListener('input', function () {
+      var v = parseFloat(tm.value), ok = isFinite(v) && v > 0;
+      tm.classList.toggle('invalid', !ok);
+      setText('allocTargetErr2', ok ? '' : 'MTBF 需大于 0');
+      if (!ok) return;
+      state.alloc.targetMtbf = v;
+      recalcSoon(); saveSoon();
+    });
+    var at = $('allocTask');
+    at.addEventListener('input', function () {
+      var v = parseFloat(at.value), ok = isFinite(v) && v > 0;
+      mark(at, ok, '任务时间需大于 0');
+      if (!ok) return;
+      state.alloc.taskTime = v;
+      afterEdit();
+    });
+    $$('#methodTabs button').forEach(function (b) {
+      b.addEventListener('click', function () {
+        state.alloc.method = b.dataset.method;
+        renderMethodTabs(); renderAllocPanel(); renderAllocResult(); saveSoon();
+      });
+    });
+    $('addAllocUnit').addEventListener('click', function () {
+      if (state.alloc.units.length >= 8) { toast('最多 8 个单元', true); return; }
+      state.alloc.units.push({ name: '单元 ' + (state.alloc.units.length + 1), complexity: 3, tech: 2, env: 1, importance: 0.9, modules: 3 });
+      renderAllocPanel(); renderAllocResult(); saveSoon();
+    });
+
+    $('themeToggle').addEventListener('click', toggleTheme);
+    $('genReport').addEventListener('click', openReport);
+    $('topReport').addEventListener('click', openReport);
+    $('closeReport').addEventListener('click', closeReport);
+    $('printReport').addEventListener('click', function () { window.print(); });
+    $('printCard').addEventListener('click', function () { openReport(); setTimeout(function () { window.print(); }, 150); });
+    $('reportOverlay').addEventListener('click', function (e) { if (e.target === $('reportOverlay')) closeReport(); });
+    addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('reportOverlay').hidden) closeReport(); });
+
+    ['topExport', 'exportCard'].forEach(function (id) { var el = $(id); if (el) el.addEventListener('click', exportJSON); });
+    ['importJson', 'importCard'].forEach(function (id) {
+      var el = $(id);
+      if (el) el.addEventListener('click', function () { $('importFile').click(); });
+    });
+    $('importFile').addEventListener('change', function () {
+      if (this.files && this.files[0]) importJSON(this.files[0]);
+      this.value = '';
+    });
+
+    addEventListener('resize', debounce(drawAll, 180));
+    bindScrollSpy();
+  }
+
+  /* ============ init ============ */
+  function init() {
+    var th = 'light';
+    try { th = localStorage.getItem(THEME) || 'light'; } catch (e) { }
+    if (th !== 'dark') th = 'light';
+    document.documentElement.dataset.theme = th;
+    bind();
+    syncAll();
+    recalc();
+    drawAll();
+    if (state.updatedAt) setText('saveStatus', '已恢复本地方案');
+    setTimeout(save, 600);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
+
+</script>
+</body>
+</html>
