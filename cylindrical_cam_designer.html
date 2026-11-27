@@ -60,10 +60,19 @@ canvas{max-width:100%;display:block}
 .notice{display:flex;gap:8px;align-items:flex-start;padding:6px 14px;background:#fff8e1;color:#7a5406;
   border-bottom:1px solid #f0dfa8;font-size:11.5px}
 
-/* ---------- 布局 ---------- */
-main{display:grid;grid-template-columns:404px minmax(0,1fr);gap:10px;padding:10px;align-items:start}
+/* ---------- 布局（按 1920×1080 常规显示器优化） ---------- */
+main{display:grid;grid-template-columns:420px minmax(0,1fr);gap:14px;align-items:start;
+  width:100%;max-width:1920px;margin:0 auto;padding:14px 20px}
+/* 1440 及以下收紧 */
+@media (max-width:1599px){
+  main{grid-template-columns:404px minmax(0,1fr);gap:10px;padding:10px}
+}
+/* 1600 以上充分利用横向空间 */
+@media (min-width:1600px){
+  main{grid-template-columns:456px minmax(0,1fr);gap:16px;padding:16px 22px}
+}
 @media (max-width:1279px){
-  main{grid-template-columns:1fr}
+  main{grid-template-columns:1fr;padding:10px}
   .left-col{position:static!important;max-height:none!important}
 }
 .left-col{position:sticky;top:48px;max-height:calc(100vh - 58px);overflow:auto;padding-right:2px;min-width:0}
@@ -120,7 +129,7 @@ main{display:grid;grid-template-columns:404px minmax(0,1fr);gap:10px;padding:10p
 .pill.warn{background:var(--warnbg);border-color:#eddb9f;color:var(--warn)}
 .pill.bad{background:var(--badbg);border-color:#f2c2bc;color:var(--bad)}
 
-.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:7px;margin-bottom:9px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:7px;margin-bottom:9px}
 .card{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--ink3);border-radius:var(--r);
   padding:6px 8px 7px;min-height:64px;position:relative}
 .card.ok{border-left-color:var(--ok)}
@@ -165,6 +174,7 @@ main{display:grid;grid-template-columns:404px minmax(0,1fr);gap:10px;padding:10p
 .viz-tab.active{background:var(--acc);border-color:var(--acc);color:#fff}
 .viz-pane{padding:8px}
 .canvas-wrap{background:#fff;border:1px solid var(--line2);border-radius:var(--r);padding:4px;overflow:auto}
+.canvas-wrap>canvas{margin:0 auto}
 .panel-hint{font-size:10.5px;color:var(--ink3);line-height:1.6;padding:5px 2px 1px}
 .row-toggles{display:flex;align-items:center;gap:5px;flex-wrap:wrap;padding:0 0 6px}
 .rt-label{font-size:10.5px;color:var(--ink3);font-family:var(--mono)}
@@ -1308,6 +1318,14 @@ const App = {
     requestAnimationFrame((t) => this.animLoop(t));
     this.refreshUI();
     this.initShell();
+    // 窗口尺寸变化后重新适配画布（宽屏/缩放/分屏）
+    window.addEventListener('resize', () => {
+      clearTimeout(this._rzT);
+      this._rzT = setTimeout(() => {
+        this._curveCache = null;
+        this.renderAllViz();
+      }, 140);
+    });
   },
 
   // 随动器中心距默认跟随基圆直径的一半，人工修改后不再自动跟随
@@ -2459,6 +2477,17 @@ const App = {
     return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   },
 
+  // 按容器宽度自适应画布尺寸（保证在 1920 等宽屏下铺满右栏，不放大模糊）
+  fitCanvas(cv, opts) {
+    if (!cv) return 900;
+    const o = opts || {};
+    const wrap = cv.parentElement;
+    const avail = Math.floor(((wrap && wrap.clientWidth) || 900) - 10);
+    const w = Math.max(o.min || 640, Math.min(avail, o.max || 2600));
+    if (cv.width !== w) cv.width = w;
+    return w;
+  },
+
   // 将颜色转为指定透明度（用于行背景浅色）
   withAlpha(color, a) {
     const c = (color || '').trim();
@@ -2478,12 +2507,19 @@ const App = {
 
   drawCurves() {
     const cv = document.getElementById('cvCurves');
-    const W = cv.width;
+    if (!cv) return;
+    const W = this.fitCanvas(cv, { min: 680, max: 2400 });
     const vis = this.state.visibleRows || {};
     const rowCfg = this._curveRowCfg();
     const nVis = rowCfg.filter(r => vis[r.key] !== false).length || 1;
     const isCompound = this._curveIsCompound();
-    const targetH = isCompound ? (56 + 132 * nVis) : (68 + 170 * nVis);
+    // 宽屏行高收紧；同时按窗口高度自适应，尽量一屏显示完 8 行曲线
+    const tier = W >= 1500 ? 0 : (W >= 1150 ? 1 : 2);
+    const rowWant = isCompound ? [104, 118, 132][tier] : [132, 150, 170][tier];
+    const vhAvail = Math.max(420, ((window.innerHeight || 900) - 300));
+    const rowMin = isCompound ? 84 : 92;
+    const rowH = Math.max(rowMin, Math.min(rowWant, Math.floor((vhAvail - 62) / nVis)));
+    const targetH = (isCompound ? 52 : 62) + rowH * nVis;
     if (cv.height !== targetH) cv.height = targetH;
     const H = cv.height;
     const ctx = cv.getContext('2d');
@@ -2880,8 +2916,12 @@ const App = {
   /* -------- 轮廓展开图 -------- */
   drawFlatten() {
     const cv = document.getElementById('cvFlatten');
+    if (!cv) return;
+    const W = this.fitCanvas(cv, { min: 680, max: 2400 });
+    const targetH = W >= 1300 ? 560 : 480;
+    if (cv.height !== targetH) cv.height = targetH;
     const ctx = cv.getContext('2d');
-    const W = cv.width, H = cv.height;
+    const H = cv.height;
     ctx.clearRect(0, 0, W, H);
 
     const pad = { l: 66, r: 24, t: 60, b: 44 };
@@ -2973,8 +3013,13 @@ const App = {
   /* -------- 3D 线框 -------- */
   draw3D() {
     const cv = document.getElementById('cv3D');
+    if (!cv) return;
+    // 3D 视图保持较方的画幅，宽屏下居中，避免左右大片空白
+    const W = this.fitCanvas(cv, { min: 620, max: 980 });
+    const targetH = W >= 900 ? 560 : 520;
+    if (cv.height !== targetH) cv.height = targetH;
     const ctx = cv.getContext('2d');
-    const W = cv.width, H = cv.height;
+    const H = cv.height;
     ctx.clearRect(0, 0, W, H);
 
     const pts = this.state.points;
@@ -3265,8 +3310,10 @@ const App = {
   /* -------- 参数示意 -------- */
   drawIndic() {
     const cv = document.getElementById('cvIndic');
+    if (!cv) return;
+    const W = this.fitCanvas(cv, { min: 640, max: 1000 });
     const ctx = cv.getContext('2d');
-    const W = cv.width, H = cv.height;
+    const H = cv.height;
     ctx.clearRect(0, 0, W, H);
     const camCompound = this.state.camType === 'compound'
       && this.state.layerStore && this.state.layerStore[0] && this.state.layerStore[1];
