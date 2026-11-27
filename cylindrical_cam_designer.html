@@ -286,7 +286,7 @@ main{display:grid;grid-template-columns:clamp(324px,23vw,470px) minmax(0,1fr);ga
 <body>
 
 <header class="topbar">
-  <div class="tt"><span class="logo">▣</span><span class="t1" data-i18n="title">圆柱凸轮设计工具</span><span class="t2">v1.5</span></div>
+  <div class="tt"><span class="logo">▣</span><span class="t1" data-i18n="title">圆柱凸轮设计工具</span><span class="t2">v1.6</span></div>
   <div class="scheme">
     <input id="schemeName" class="name" value="未命名方案" maxlength="40" spellcheck="false" placeholder="方案名称">
     <span id="dirty" class="dirty" hidden data-i18n="unsaved">未保存</span>
@@ -1538,7 +1538,8 @@ const App = {
     const list = document.getElementById('segList');
     const lawLabel = (k) => this.t(LAW_LABEL_KEY[k] || k);
     list.innerHTML = this.state.segments.map((seg, i) => {
-      const cum = this.state.segments.slice(0, i).reduce((a, s) => a + s.angle, 0);
+      // 累计转角：含本段在内的转角总和（第一段 = 自身转角，末段 = 360°）
+      const cum = this.state.segments.slice(0, i + 1).reduce((a, s) => a + s.angle, 0);
       const lawOpts = LAW_KEYS.map(k =>
         `<option value="${k}" ${k === seg.law ? 'selected' : ''}>${lawLabel(k)}</option>`
       ).join('');
@@ -1599,7 +1600,7 @@ const App = {
             <input type="number" value="${massDisp}" step="0.5" min="0" ${massFollow ? 'disabled' : ''}
               onchange="App.state.segments[${i}].mass = +this.value;App.scheduleCompute()"></label>
           <label class="seg-field"><span>${this.t('segCumLbl')}</span>
-            <div class="seg-static">${i === 0 ? '—' : cum + '°'}</div></label>
+            <div class="seg-static">${Math.round(cum * 1000) / 1000}°</div></label>
           ${transRow}
         </div>
       </div>`;
