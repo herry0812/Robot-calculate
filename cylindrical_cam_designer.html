@@ -286,7 +286,7 @@ main{display:grid;grid-template-columns:clamp(324px,23vw,470px) minmax(0,1fr);ga
 <body>
 
 <header class="topbar">
-  <div class="tt"><span class="logo">▣</span><span class="t1" data-i18n="title">圆柱凸轮设计工具</span><span class="t2">v1.3</span></div>
+  <div class="tt"><span class="logo">▣</span><span class="t1" data-i18n="title">圆柱凸轮设计工具</span><span class="t2">v1.4</span></div>
   <div class="scheme">
     <input id="schemeName" class="name" value="未命名方案" maxlength="40" spellcheck="false" placeholder="方案名称">
     <span id="dirty" class="dirty" hidden data-i18n="unsaved">未保存</span>
@@ -3329,43 +3329,41 @@ const App = {
     const mutedC = this.cssVar('--text-muted');
     const accent = this.cssVar('--primary');
 
-    const cx = W * 0.38;
-    const baseDia0 = camCompound ? L0.baseDia : p.baseDia;
+    const cx = W * 0.40;
+    const dia0 = camCompound ? L0.baseDia : p.baseDia;
+    const dia1 = camCompound ? L1.baseDia : 0;
+    const axial = Math.max(p.camWidth, 1);
+    // 纵向可用高度（给底部尺寸标注和文字留白）
+    const availH = Math.max(170, H - 215);
     const scale = Math.min(
-      (W * 0.32) / Math.max(p.camWidth, 10),
-      (H - 180) / Math.max(baseDia0, 10),
-      (H - 180) / Math.max(p.initialHt + 30, 20)
+      (W * 0.30) / Math.max(dia0, 10),
+      availH / Math.max(axial, 10),
+      availH / Math.max(p.initialHt + 20, 20)
     );
-    const cy = H * 0.50;
-    const w = p.camWidth * scale;
-    const h0 = baseDia0 * scale;
-    const h1 = camCompound ? L1.baseDia * scale : 0;
-    const hMax = Math.max(h0, h1 || 0);
+    // 轴线竖直：横向 = 基圆直径，纵向 = 凸轮高度
+    const w0 = dia0 * scale;
+    const w1 = camCompound ? dia1 * scale : 0;
+    const h = axial * scale;
     const r = Math.max(5, (p.rollerDia / 2) * scale);
-    const rOuter0 = h0 / 2;
-    const rOuter1 = camCompound ? h1 / 2 : 0;
-    const rIn1 = camCompound ? Math.max(8, rOuter1 - 2 * (p.rollerWidth * scale + 4)) : 0;
+    const topY = 58;                 // 外轮廓最高点
+    const botY = topY + h;           // 外轮廓最低点
+    const ry = Math.max(4, Math.min(w0 * 0.06, h * 0.22));
+    const rimTop = topY + ry;        // 上端面中心（椭圆中心）
+    const rimBot = botY - ry;        // 下端面中心
+    const cy = topY + h / 2;
 
-    // 画凸轮（单层圆柱；复合画两层径向嵌套 —— 外套环 + 内芯）
-    ctx.strokeStyle = '#6b7bff'; ctx.lineWidth = 2;
+    // 画凸轮圆柱：端面椭圆上下各一，外轮廓高度正好等于 h
+    const drawCan = (w, stroke, fill) => {
+      ctx.strokeStyle = stroke; ctx.lineWidth = 2; ctx.fillStyle = fill;
+      ctx.beginPath(); ctx.rect(cx - w / 2, rimTop, w, rimBot - rimTop); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(cx, rimTop, w / 2, ry, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(cx, rimBot, w / 2, ry, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    };
     if (camCompound) {
-      // 第1层：外套环（环形截面，上下椭圆仍画全椭圆示意）
-      ctx.fillStyle = 'rgba(184,192,255,0.28)';
-      ctx.beginPath(); ctx.rect(cx - w / 2, cy - h0 / 2, w, h0); ctx.fill(); ctx.stroke();
-      ctx.beginPath(); ctx.ellipse(cx, cy - h0 / 2, w / 2, h0 * 0.10, 0, 0, Math.PI * 2); ctx.stroke();
-      ctx.beginPath(); ctx.ellipse(cx, cy + h0 / 2, w / 2, h0 * 0.10, 0, 0, Math.PI * 2); ctx.stroke();
-
-      // 第2层：内芯（更小直径，圆柱，位于第1层内部）
-      ctx.strokeStyle = '#e67700';
-      ctx.fillStyle = 'rgba(255,146,43,0.22)';
-      ctx.beginPath(); ctx.rect(cx - w / 2, cy - h1 / 2, w, h1); ctx.fill(); ctx.stroke();
-      ctx.beginPath(); ctx.ellipse(cx, cy - h1 / 2, w / 2, h1 * 0.10, 0, 0, Math.PI * 2); ctx.stroke();
-      ctx.beginPath(); ctx.ellipse(cx, cy + h1 / 2, w / 2, h1 * 0.10, 0, 0, Math.PI * 2); ctx.stroke();
+      drawCan(w0, '#6b7bff', 'rgba(184,192,255,0.28)');   // 第1层（外圈）
+      drawCan(w1, '#e67700', 'rgba(255,146,43,0.22)');    // 第2层（内芯，径向嵌套）
     } else {
-      ctx.fillStyle = 'rgba(184,192,255,0.28)';
-      ctx.beginPath(); ctx.rect(cx - w / 2, cy - h0 / 2, w, h0); ctx.fill(); ctx.stroke();
-      ctx.beginPath(); ctx.ellipse(cx, cy - h0 / 2, w / 2, h0 * 0.10, 0, 0, Math.PI * 2); ctx.stroke();
-      ctx.beginPath(); ctx.ellipse(cx, cy + h0 / 2, w / 2, h0 * 0.10, 0, 0, Math.PI * 2); ctx.stroke();
+      drawCan(w0, '#6b7bff', 'rgba(184,192,255,0.28)');
     }
 
     // 尺寸标注工具
@@ -3393,21 +3391,18 @@ const App = {
     };
 
     // === 尺寸 ===
-    // 单层：基圆直径 / 凸轮高度（以 p.baseDia / p.camWidth 为准）
-    // 复合：两层基圆各标注（左侧竖向两条；高度共用 camWidth）
+    // 基圆直径：横向（圆柱直径方向）
+    // 凸轮高度：纵向（沿轴线方向）
     if (camCompound) {
-      // 第1层基圆
-      dimV(cx - w / 2 - 36, cy - h0 / 2, cy + h0 / 2, `${this.t('baseDia')}₁ ${L0.baseDia} mm`);
-      // 第2层基圆（更靠左一点，避免和第1层重叠）
-      dimV(cx - w / 2 - 72, cy - h1 / 2, cy + h1 / 2, `${this.t('baseDia')}₂ ${L1.baseDia} mm`);
+      dimH(botY + 32, cx - w0 / 2, cx + w0 / 2, `${this.t('baseDia')}₁ ${L0.baseDia} mm`);
+      dimH(botY + 78, cx - w1 / 2, cx + w1 / 2, `${this.t('baseDia')}₂ ${L1.baseDia} mm`);
     } else {
-      dimV(cx - w / 2 - 28, cy - h0 / 2, cy + h0 / 2, `${this.t('baseDia')} ${p.baseDia} mm`);
+      dimH(botY + 32, cx - w0 / 2, cx + w0 / 2, `${this.t('baseDia')} ${p.baseDia} mm`);
     }
-    // 凸轮高度（横向）：y 留足 58px 给 label，避免贴底
-    dimH(cy + h0 / 2 + 58, cx - w / 2, cx + w / 2, `${this.t('camWidth')} ${p.camWidth} mm`);
+    dimV(cx - w0 / 2 - 26, topY, botY, `${this.t('camWidth')} ${p.camWidth} mm`);
 
     // 随动器（只画当前层的滚子 + 杆）
-    const rx = cx + w / 2 + 90;
+    const rx = cx + w0 / 2 + 92;
     const rollerCy = cy;
     const wR = Math.max(8, p.rollerWidth * scale);
     ctx.fillStyle = '#ff922b'; ctx.strokeStyle = '#d9480f'; ctx.lineWidth = 1.5;
@@ -3422,16 +3417,16 @@ const App = {
     // 滚子直径（竖向）
     dimV(rx + wR / 2 + 26, rollerCy - r, rollerCy + r, `${this.t('rollerDia')} ${p.rollerDia} mm`);
 
-    // 初始高度（凸轮内向上）：单层用 p.initialHt；复合用当前活动层参数
+    // 初始高度（沿轴向，自下端面向上）：单层用 p.initialHt；复合用当前活动层参数
     const liftHt = p.initialHt;
-    const liftY = cy + h0 / 2 - liftHt * scale;
+    const liftY = rimBot - liftHt * scale;
     ctx.strokeStyle = '#2f9e44'; ctx.lineWidth = 1; ctx.setLineDash([4, 3]);
-    ctx.beginPath(); ctx.moveTo(cx - w / 2, liftY); ctx.lineTo(cx + w / 2, liftY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx - w0 / 2, liftY); ctx.lineTo(cx + w0 / 2, liftY); ctx.stroke();
     ctx.setLineDash([]);
     const liftLabel = camCompound
       ? `${this.t('initialHt')}（${this.t('layer1')}${this.state.activeLayer === 1 ? '₂' : '₁'}）${liftHt} mm`
       : `${this.t('initialHt')} ${liftHt} mm`;
-    dimV(cx + w / 2 + 16, liftY, cy + h0 / 2, liftLabel);
+    dimV(cx + w0 / 2 + 16, liftY, rimBot, liftLabel);
 
     // 复合模式右下角加一行提示
     if (camCompound) {
