@@ -286,7 +286,7 @@ main{display:grid;grid-template-columns:clamp(324px,23vw,470px) minmax(0,1fr);ga
 <body>
 
 <header class="topbar">
-  <div class="tt"><span class="logo">▣</span><span class="t1" data-i18n="title">圆柱凸轮设计工具</span><span class="t2">v1.4</span></div>
+  <div class="tt"><span class="logo">▣</span><span class="t1" data-i18n="title">圆柱凸轮设计工具</span><span class="t2">v1.5</span></div>
   <div class="scheme">
     <input id="schemeName" class="name" value="未命名方案" maxlength="40" spellcheck="false" placeholder="方案名称">
     <span id="dirty" class="dirty" hidden data-i18n="unsaved">未保存</span>
@@ -1838,10 +1838,16 @@ const App = {
         const forceAxial = Math.abs(F_cam);             // 沿运动方向的力（= N·cosα）
         const N_normal = forceAxial / Math.cos(alphaRad); // 法向正压力 = F / cosα
 
-        // 输入扭矩 T = F·(ds/dφ)/η = Rb·N·sinα/η
-        // Rb、ds/dφ 均以 mm 计，故结果单位为 N·mm（显示/导出时 ÷1000 得 N·m）
-        // 用带符号的 F_cam 与 vRad 相乘：回程时若弹簧/重力驱动随动器，扭矩为负（凸轮被反驱）
-        const T_input = F_cam * vRad / Math.max(p.efficiency, 0.01);
+        // 输入扭矩（有符号）：
+        //   凸轮驱动随动器（升程，做正功）   T = F·(ds/dφ) / η   —— 摩擦阻力使所需扭矩增大
+        //   随动器驱动凸轮（回程，做负功）   T = F·(ds/dφ) × η   —— 摩擦阻力抵消一部分扭矩
+        // 摩擦（滚子滚动阻力、随动器导向阻力）始终阻碍相对运动，故两个方向都使 |T| 朝同侧修正：
+        // 同样是压力角时，升程扭矩绝对值 > 回程扭矩绝对值。
+        // Rb、ds/dφ 均以 mm 计，结果单位 N·mm（显示/导出 ÷1000 得 N·m）。
+        const effVal = Number(p.efficiency);
+        const eta = isFinite(effVal) ? Math.min(1, Math.max(0.01, effVal)) : 1;
+        const tIdeal = F_cam * vRad;                  // N·mm，有符号的理想（无摩擦）扭矩
+        const T_input = tIdeal >= 0 ? (tIdeal / eta) : (tIdeal * eta);
 
         pts.push({
           phi: phi_abs, phiRad: phi_r,
