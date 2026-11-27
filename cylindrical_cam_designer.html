@@ -286,7 +286,7 @@ main{display:grid;grid-template-columns:clamp(324px,23vw,470px) minmax(0,1fr);ga
 <body>
 
 <header class="topbar">
-  <div class="tt"><span class="logo">▣</span><span class="t1" data-i18n="title">圆柱凸轮设计工具</span><span class="t2">v1.2</span></div>
+  <div class="tt"><span class="logo">▣</span><span class="t1" data-i18n="title">圆柱凸轮设计工具</span><span class="t2">v1.3</span></div>
   <div class="scheme">
     <input id="schemeName" class="name" value="未命名方案" maxlength="40" spellcheck="false" placeholder="方案名称">
     <span id="dirty" class="dirty" hidden data-i18n="unsaved">未保存</span>
@@ -1838,8 +1838,10 @@ const App = {
         const forceAxial = Math.abs(F_cam);             // 沿运动方向的力（= N·cosα）
         const N_normal = forceAxial / Math.cos(alphaRad); // 法向正压力 = F / cosα
 
-        // 输入扭矩 T = Rb · N · sinα / η = F · ds/dφ / η
-        const T_input = Rb / 1000 * N_normal * Math.sin(alphaRad) / Math.max(p.efficiency, 0.01);
+        // 输入扭矩 T = F·(ds/dφ)/η = Rb·N·sinα/η
+        // Rb、ds/dφ 均以 mm 计，故结果单位为 N·mm（显示/导出时 ÷1000 得 N·m）
+        // 用带符号的 F_cam 与 vRad 相乘：回程时若弹簧/重力驱动随动器，扭矩为负（凸轮被反驱）
+        const T_input = F_cam * vRad / Math.max(p.efficiency, 0.01);
 
         pts.push({
           phi: phi_abs, phiRad: phi_r,
@@ -4042,24 +4044,48 @@ Object.assign(App, {
   },
 
   /* ---------- 指标 / 卡片 / 状态 ---------- */
+  // 在点列上按角度线性插值取扭矩（N·mm）
+  torqueAtPhi(pts, deg) {
+    if (!pts || !pts.length) return 0;
+    const d = ((deg % 360) + 360) % 360;
+    let lo = 0, hi = pts.length - 1;
+    while (lo < hi - 1) {
+      const mid = (lo + hi) >> 1;
+      if (pts[mid].phi <= d) lo = mid; else hi = mid;
+    }
+    const a = pts[lo], b = pts[hi] || a;
+    const k = (d - a.phi) / ((b.phi - a.phi) || 1);
+    const t = Math.max(0, Math.min(1, k));
+    return (a.torqueNmm || 0) + ((b.torqueNmm || 0) - (a.torqueNmm || 0)) * t;
+  },
+
   metrics() {
     const single = this.state.points || [];
     const compound = this._curveIsCompound();
     const P0 = compound ? (this.state.ptsByLayer[0] || []) : [];
     const P1 = compound ? (this.state.ptsByLayer[1] || []) : [];
     const layers = compound ? [P0, P1] : [single];
-    let amax = 0, tmaxNmm = 0, nmax = 0, smin = Infinity, smax = -Infinity, ptsCount = 0;
+    let amax = 0, nmax = 0, smin = Infinity, smax = -Infinity, ptsCount = 0;
     layers.forEach(pts => {
       if (!pts || !pts.length) return;
       ptsCount += pts.length;
       pts.forEach(q => {
         amax = Math.max(amax, Math.abs(q.alphaDeg || 0));
-        tmaxNmm += Math.abs(q.torqueNmm || 0);   // 复合两层扭矩相加（同一输入轴）
         nmax = Math.max(nmax, Math.abs(q.forceN || 0));
         smin = Math.min(smin, q.s); smax = Math.max(smax, q.s);
       });
     });
     if (ptsCount === 0) return null;
+    // 输入扭矩：同一根轴上逐相位叠加各层扭矩，再取最大绝对值
+    let tmaxNmm = 0;
+    if (compound && P0.length && P1.length) {
+      for (let d = 0; d < 360; d += 0.5) {
+        const t = this.torqueAtPhi(P0, d) + this.torqueAtPhi(P1, d);
+        if (Math.abs(t) > tmaxNmm) tmaxNmm = Math.abs(t);
+      }
+    } else {
+      layers[0].forEach(q => { if (Math.abs(q.torqueNmm || 0) > tmaxNmm) tmaxNmm = Math.abs(q.torqueNmm || 0); });
+    }
     const al = this.state.alerts || [];
     return {
       amax, tmax: tmaxNmm / 1000, nmax, stroke: smax - smin, points: compound ? ptsCount : (this.state.points || []).length,
@@ -4078,9 +4104,11 @@ Object.assign(App, {
     const chk = m.e > 0 ? 'bad' : (m.w > 0 ? 'warn' : 'ok');
     const card = (c, label, val, unit, sub) =>
       `<div class="card ${c}"><div class="cl">${label}</div><div class="cv">${val}<small>${unit || ''}</small></div><div class="cs">${sub || ''}</div></div>`;
+    const eta = (this.state.params && isFinite(this.state.params.efficiency)) ? this.state.params.efficiency : null;
+    const etaTxt = eta != null ? ` · η ${(eta * 100).toFixed(0)}%` : '';
     box.innerHTML =
       card(cls, this.t('cardAlpha'), m.amax.toFixed(2), '°', this.t('cardLimit', { v: m.limit.toFixed(0) })) +
-      card('', this.t('cardTorque'), m.tmax.toFixed(2), 'N·m', 'T<sub>max</sub>') +
+      card('', this.t('cardTorque'), m.tmax.toFixed(2), 'N·m', 'T<sub>max</sub>' + etaTxt) +
       card('', this.t('cardForce'), m.nmax.toFixed(0), 'N', 'N<sub>max</sub>') +
       card('', this.t('cardStroke'), m.stroke.toFixed(2), 'mm', 's<sub>max</sub> − s<sub>min</sub>') +
       card('', this.t('cardPoints'), m.points, '', 'φ 0 – 360°') +
