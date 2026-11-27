@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="浏览器端可靠性工程计算工具：RBD、MTBF 换算、可靠性预计、可靠性分配与摘要报告。">
+  <meta name="theme-color" content="#4d6bfe">
+  <title>Reliability Workbench · 可靠性计算工作台</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%234d6bfe'/%3E%3Cpath d='M20 43V21h11c7 0 11 3.7 11 9.6 0 4.3-2.4 7.6-6.4 9l8.1 3.4H36l-7.3-3.1V43H20zm8.7-10.3h2.1c2.4 0 3.8-1.1 3.8-3.1s-1.4-3-3.8-3h-2.1v6.1z' fill='%23fff'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+  <script>
+    (function () {
+      try {
+        var theme = localStorage.getItem('relia-workbench-theme');
+        if (theme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+      } catch (error) { /* storage may be disabled */ }
+    })();
+  </script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="模块导航">
+      <a class="brand" href="#top" aria-label="Reliability Workbench 首页">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="6" cy="6" r="2.2"></circle>
+            <circle cx="18" cy="6" r="2.2"></circle>
+            <circle cx="12" cy="18" r="2.2"></circle>
+            <path d="M7.6 7.6 10.8 16M16.4 7.6 13.2 16M8.2 6h7.6"></path>
+          </svg>
+        </span>
+        <span class="brand-copy">
+          <strong>Reliability</strong>
+          <span>Workbench</span>
+        </span>
+      </a>
+
+      <div class="nav-block">
+        <div class="nav-label">计算模块</div>
+        <nav class="nav-list" id="moduleNav">
+          <a class="nav-item active" href="#rbd" data-target="rbd">
+            <span class="nav-index">01</span><span>可靠性框图</span><span class="nav-dot"></span>
+          </a>
+          <a class="nav-item" href="#conversion" data-target="conversion">
+            <span class="nav-index">02</span><span>MTBF 换算</span><span class="nav-dot"></span>
+          </a>
+          <a class="nav-item" href="#prediction" data-target="prediction">
+            <span class="nav-index">03</span><span>可靠性预计</span><span class="nav-dot"></span>
+          </a>
+          <a class="nav-item" href="#allocation" data-target="allocation">
+            <span class="nav-index">04</span><span>可靠性分配</span><span class="nav-dot"></span>
+          </a>
+          <a class="nav-item" href="#report" data-target="report">
+            <span class="nav-index">05</span><span>报告与导出</span><span class="nav-dot"></span>
+          </a>
+        </nav>
+      </div>
+
+      <div class="sidebar-note">
+        <div class="sidebar-note-top"><span class="status-dot"></span>本地自动保存</div>
+        <p>输入即时计算，方案保存在当前浏览器的 localStorage 中，不上传服务器。</p>
+        <div class="sidebar-actions">
+          <button class="theme-toggle" id="themeToggleSidebar" type="button" aria-label="切换明暗主题">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"></path>
+            </svg>
+            <span>深色模式</span>
+          </button>
+          <span class="local-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="4" y="10" width="16" height="10" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path>
+            </svg>
+            LOCAL
+          </span>
+        </div>
+      </div>
+    </aside>
+
+    <main class="workspace" id="top">
+      <header class="topbar">
+        <div class="topbar-left">
+          <div class="crumb">
+            <span>工程计算</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg>
+            <strong>可靠性工作台</strong>
+          </div>
+          <span class="save-status" id="saveStatus"><span class="status-dot"></span><span id="saveStatusText">已自动保存</span></span>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn btn-ghost btn-icon-only" id="themeToggleTop" type="button" title="切换明暗主题" aria-label="切换明暗主题">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"></path>
+            </svg>
+          </button>
+          <button class="btn btn-ghost" id="topExportBtn" type="button" title="导出方案 JSON">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 21h14"></path>
+            </svg>
+            <span>导出方案</span>
+          </button>
+          <button class="btn btn-primary" id="topReportBtn" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"></path><path d="M14 2v6h6M8 13h8M8 17h5"></path>
+            </svg>
+            <span>生成报告</span>
+          </button>
+        </div>
+      </header>
+
+      <div class="content">
+        <section class="hero" aria-labelledby="heroTitle">
+          <div>
+            <span class="eyebrow">Reliability engineering toolkit</span>
+            <h1 id="heroTitle">把可靠性，<em>算清楚。</em></h1>
+            <p>从系统框图到分配闭环，在一个干净的浏览器工作台里完成可靠性初算。所有公式在本地运行，输入变化后即时反馈。</p>
+          </div>
+          <div class="hero-side">
+            <div class="hero-panel">
+              <div class="hero-stat">
+                <span>当前 R_sys</span>
+                <strong id="heroRbd">0.7290</strong>
+              </div>
+              <div class="hero-stat">
+                <span>参考 MTBF</span>
+                <strong id="heroMtbf">1,000 h</strong>
+              </div>
+            </div>
+            <div class="hero-caption">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg>
+              4 种 RBD 结构 · 3 种分配方法 · 本地持久化
+            </div>
+          </div>
+        </section>
+
+        <div class="module-list">
+          <!-- ============================ MODULE 01 ============================ -->
+          <section class="module-card" id="rbd" aria-labelledby="rbdTitle">
+            <div class="card-head">
+              <span class="card-index">01</span>
+              <div class="card-heading">
+                <h2 id="rbdTitle">可靠性框图 RBD</h2>
+                <p>用串联、并联、k/n 表决或桥接混联描述系统结构，实时得到系统可靠度与时间曲线。</p>
+              </div>
+              <div class="card-head-meta">
+                <span class="pill pill-brand">实时计算</span>
+                <span class="pill">R(t)</span>
+              </div>
+            </div>
+
+            <div class="choice-grid" id="rbdStructureChoices" role="tablist" aria-label="RBD 结构类型">
+              <button class="choice-card active" type="button" data-structure="series" role="tab" aria-selected="true">
+                <span class="choice-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="9" width="4" height="6" rx="1"></rect><rect x="10" y="9" width="4" height="6" rx="1"></rect><rect x="17" y="9" width="4" height="6" rx="1"></rect><path d="M7 12h3M14 12h3"></path></svg>
+                </span>
+                <span class="choice-title">串联</span>
+                <span class="choice-desc">R₁ · R₂ · … · Rₙ</span>
+              </button>
+              <button class="choice-card" type="button" data-structure="parallel" role="tab" aria-selected="false">
+                <span class="choice-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h6v14H4zM14 5h6v14h-6z" opacity=".9"></path><path d="M10 9h4M10 15h4" opacity=".6"></path></svg>
+                </span>
+                <span class="choice-title">并联</span>
+                <span class="choice-desc">1 − ∏(1 − Rᵢ)</span>
+              </button>
+              <button class="choice-card" type="button" data-structure="kn" role="tab" aria-selected="false">
+                <span class="choice-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M8.5 12.5 11 15l4.5-6"></path></svg>
+                </span>
+                <span class="choice-title">k/n 表决</span>
+                <span class="choice-desc">Σ C(n,i) Rⁱ(1−R)ⁿ⁻ⁱ</span>
+              </button>
+              <button class="choice-card" type="button" data-structure="bridge" role="tab" aria-selected="false">
+                <span class="choice-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h18M3 17h18M8 7v10M16 7v10M12 7v10"></path></svg>
+                </span>
+                <span class="choice-title">桥接 / 混联</span>
+                <span class="choice-desc">5 单元桥式 · 混合表达式</span>
+              </button>
+            </div>
+
+            <div class="rbd-layout">
+              <div class="config-panel">
+                <div id="rbdStructurePanel"></div>
+                <div class="field" id="rbdT0Field" style="margin-top: 13px;">
+                  <label class="field-label" for="rbdT0">参考时间 t₀ <span class="hint">> 0 · 小时</span></label>
+                  <div class="input-shell has-unit">
+                    <input id="rbdT0" type="number" min="0.000001" step="100" value="1000" inputmode="decimal" aria-describedby="rbdT0Hint">
+                    <span class="input-unit">h</span>
+                  </div>
+                  <div class="field-hint" id="rbdT0Hint">单元可靠度所对应的时间。曲线按 R(t) = R₀^(t/t₀) 换算。</div>
+                  <div class="field-error" id="rbdT0Error"></div>
+                </div>
+              </div>
+
+              <div class="result-panel">
+                <div class="metric-board">
+                  <div class="metric-topline">
+                    <span class="metric-label">系统可靠度 <span>R_sys</span></span>
+                    <span class="pill pill-brand" id="rbdStructureBadge">串联</span>
+                  </div>
+                  <p class="metric-value brand" id="rbdResult" aria-live="polite">0.7290</p>
+                  <p class="metric-sub" id="rbdResultSub">3 个单元串联 · 单元 R = 0.9000</p>
+                  <div class="metric-divider"></div>
+                  <div class="metric-inline">
+                    <div class="metric-mini"><span>组成单元</span><strong id="rbdUnitCount">3</strong></div>
+                    <div class="metric-mini"><span>参考时间 t₀</span><strong id="rbdRefTime">1,000 h</strong></div>
+                    <div class="metric-mini"><span>R(1000h)</span><strong id="rbdMissionR">0.7290</strong></div>
+                  </div>
+                </div>
+
+                <div class="chart-panel">
+                  <div class="chart-head">
+                    <div class="chart-title">可靠度–时间曲线 <span>R(t)</span></div>
+                    <div class="chart-legend">
+                      <span class="legend-item"><i class="legend-dot"></i>系统</span>
+                      <span class="legend-item"><i class="legend-dot hollow"></i>关键时点</span>
+                    </div>
+                  </div>
+                  <div class="chart-shell">
+                    <canvas id="rbdChart" role="img" aria-label="系统可靠度随时间变化的曲线"></canvas>
+                    <div class="chart-fallback" id="rbdChartFallback">图表库未能加载，计算结果仍可正常使用。</div>
+                  </div>
+                </div>
+
+                <div class="time-strip" id="rbdTimeStrip"></div>
+
+                <div class="importance-panel">
+                  <div class="importance-head">
+                    <strong>Birnbaum 重要度</strong>
+                    <span>∂R_sys / ∂Rᵢ · 数值排序</span>
+                  </div>
+                  <div class="importance-list" id="rbdImportanceList"></div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ============================ MODULE 02 ============================ -->
+          <section class="module-card" id="conversion" aria-labelledby="conversionTitle">
+            <div class="card-head">
+              <span class="card-index">02</span>
+              <div class="card-heading">
+                <h2 id="conversionTitle">MTBF / 失效率 / 可靠度换算</h2>
+                <p>指数分布下联动 MTBF、λ 与 R(t)；也可切换到 Weibull 分布查看形状参数的影响。</p>
+              </div>
+              <div class="card-head-meta">
+                <span class="pill pill-brand">双向联动</span>
+              </div>
+            </div>
+
+            <div class="conversion-layout">
+              <div class="conversion-form">
+                <div class="conversion-form-head">
+                  <strong>分布假设</strong>
+                  <span>修改任意字段，其余结果联动</span>
+                </div>
+                <div class="segmented" id="distributionTabs" role="tablist" aria-label="寿命分布">
+                  <button class="active" type="button" data-distribution="exp" role="tab" aria-selected="true">指数分布</button>
+                  <button type="button" data-distribution="weibull" role="tab" aria-selected="false">Weibull 分布</button>
+                </div>
+
+                <div id="expForm" style="margin-top: 16px;">
+                  <div class="field-grid">
+                    <div class="field" id="expMtbfField">
+                      <label class="field-label" for="expMtbf">MTBF <span class="hint">> 0 · 小时</span></label>
+                      <div class="input-shell has-unit">
+                        <input id="expMtbf" type="number" min="0.000001" step="100" value="1000" inputmode="decimal">
+                        <span class="input-unit">h</span>
+                      </div>
+                      <div class="field-hint">平均无故障时间</div>
+                      <div class="field-error"></div>
+                    </div>
+                    <div class="field" id="expLambdaField">
+                      <label class="field-label" for="expLambda">失效率 λ <span class="hint">≥ 0 · 1/h</span></label>
+                      <div class="input-shell has-unit">
+                        <input id="expLambda" type="number" min="0.000000000001" step="0.0001" value="0.001" inputmode="decimal">
+                        <span class="input-unit">1/h</span>
+                      </div>
+                      <div class="field-hint">恒定失效率假设</div>
+                      <div class="field-error"></div>
+                    </div>
+                    <div class="field" id="expTimeField">
+                      <label class="field-label" for="expTime">任务时间 t <span class="hint">≥ 0 · 小时</span></label>
+                      <div class="input-shell has-unit">
+                        <input id="expTime" type="number" min="0" step="100" value="1000" inputmode="decimal">
+                        <span class="input-unit">h</span>
+                      </div>
+                      <div class="field-hint">用于计算 R(t)</div>
+                      <div class="field-error"></div>
+                    </div>
+                    <div class="field" id="expRField">
+                      <label class="field-label" for="expR">可靠度 R(t) <span class="hint">0 &lt; R ≤ 1</span></label>
+                      <div class="input-shell">
+                        <input id="expR" type="number" min="0.000000000001" max="1" step="0.001" value="0.367879" inputmode="decimal">
+                      </div>
+                      <div class="field-hint">也可直接输入可靠度反算 λ</div>
+                      <div class="field-error"></div>
+                    </div>
+                  </div>
+                  <div class="formula-card" style="margin-top: 14px;">
+                    <code>R(t) = e<sup>−λt</sup></code> &nbsp;·&nbsp; <code>MTBF = 1/λ</code> &nbsp;·&nbsp; 指数分布适用于偶然失效期。
+                  </div>
+                </div>
+
+                <div id="weibullForm" hidden style="margin-top: 16px;">
+                  <div class="field-grid">
+                    <div class="field" id="weibullBetaField">
+                      <label class="field-label" for="weibullBeta">形状参数 β <span class="hint">> 0</span></label>
+                      <div class="input-shell">
+                        <input id="weibullBeta" type="number" min="0.000001" step="0.1" value="2" inputmode="decimal">
+                      </div>
+                      <div class="field-hint">β &lt; 1 早期失效 · β = 1 恒定 · β &gt; 1 耗损失效</div>
+                      <div class="field-error"></div>
+                    </div>
+                    <div class="field" id="weibullEtaField">
+                      <label class="field-label" for="weibullEta">尺度参数 η <span class="hint">> 0 · 小时</span></label>
+                      <div class="input-shell has-unit">
+                        <input id="weibullEta" type="number" min="0.000001" step="100" value="1200" inputmode="decimal">
+                        <span class="input-unit">h</span>
+                      </div>
+                      <div class="field-hint">特征寿命（63.2% 失效时间）</div>
+                      <div class="field-error"></div>
+                    </div>
+                    <div class="field" id="weibullTimeField">
+                      <label class="field-label" for="weibullTime">任务时间 t <span class="hint">≥ 0 · 小时</span></label>
+                      <div class="input-shell has-unit">
+                        <input id="weibullTime" type="number" min="0" step="100" value="1000" inputmode="decimal">
+                        <span class="input-unit">h</span>
+                      </div>
+                      <div class="field-hint">用于计算 R(t) 与瞬时 λ(t)</div>
+                      <div class="field-error"></div>
+                    </div>
+                    <div class="field">
+                      <span class="field-label">参数来源</span>
+                      <div class="formula-card" style="margin: 0; min-height: 46px; display: flex; align-items: center;">
+                        <span class="source-note">工程估计 / 试验数据拟合，需复核</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="formula-card" style="margin-top: 14px;">
+                    <code>R(t) = exp[−(t/η)<sup>β</sup>]</code> &nbsp;·&nbsp; <code>MTBF = η · Γ(1 + 1/β)</code>
+                  </div>
+                </div>
+              </div>
+
+              <div class="conversion-result">
+                <div class="result-summary">
+                  <div class="metric-topline">
+                    <span class="metric-label">任务可靠度 <span>R(t)</span></span>
+                    <span class="pill pill-brand" id="distributionBadge">指数分布</span>
+                  </div>
+                  <p class="metric-value brand" id="distR" aria-live="polite">0.3679</p>
+                  <p class="metric-sub" id="distRSub">MTBF 1,000 h · t = 1,000 h</p>
+                  <div class="metric-row">
+                    <div class="metric-cell"><span>MTBF</span><strong id="distMtbf">1,000 h</strong></div>
+                    <div class="metric-cell"><span>失效率 λ</span><strong id="distLambda">1.000e−3 /h</strong></div>
+                    <div class="metric-cell"><span>瞬时失效率 λ(t)</span><strong id="distHazard">1.000e−3 /h</strong></div>
+                    <div class="metric-cell"><span>任务时间 t</span><strong id="distTime">1,000 h</strong></div>
+                  </div>
+                </div>
+
+                <div class="chart-panel">
+                  <div class="chart-head">
+                    <div class="chart-title">可靠度衰减 <span>R(t)</span></div>
+                    <div class="chart-legend"><span class="legend-item"><i class="legend-dot"></i>R(t)</span></div>
+                  </div>
+                  <div class="chart-shell">
+                    <canvas id="distChart" role="img" aria-label="可靠度随时间衰减的曲线"></canvas>
+                    <div class="chart-fallback" id="distChartFallback">图表库未能加载，计算结果仍可正常使用。</div>
+                  </div>
+                </div>
+
+                <div class="nines-panel">
+                  <div class="nines-top">
+                    <span>可用度视角 · 当前 R(t)</span>
+                    <strong id="ninesValue">0.2 个 9</strong>
+                  </div>
+                  <div class="nines-track" id="ninesTrack" aria-hidden="true">
+                    <span class="nines-segment"></span>
+                    <span class="nines-segment"></span>
+                    <span class="nines-segment"></span>
+                    <span class="nines-segment"></span>
+                    <span class="nines-segment"></span>
+                  </div>
+                  <div class="nines-scale"><span>1 个 9</span><span>3 个 9</span><span>5 个 9</span></div>
+                  <div class="field-hint" id="ninesSub" style="margin-top: 7px;">将当前可靠度视作可用度估算，不等同于系统可用度指标。</div>
+                </div>
+
+                <div class="formula-card" id="distFormulaCard">
+                  <code>R = e^(−λt)</code> · 当前使用指数分布。适用于成熟期、失效率近似恒定的产品。
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ============================ MODULE 03 ============================ -->
+          <section class="module-card" id="prediction" aria-labelledby="predictionTitle">
+            <div class="card-head">
+              <span class="card-index">03</span>
+              <div class="card-heading">
+                <h2 id="predictionTitle">可靠性预计</h2>
+                <p>自下而上估算系统失效率与 MTBF。内置元器件计数法与相似产品法，系数可覆盖。</p>
+              </div>
+              <div class="card-head-meta">
+                <span class="pill pill-brand">自下而上</span>
+              </div>
+            </div>
+
+            <div class="segmented" id="predictionMethod" role="tablist" aria-label="可靠性预计方法" style="margin-bottom: 18px;">
+              <button class="active" type="button" data-method="parts" role="tab" aria-selected="true">元器件计数法</button>
+              <button type="button" data-method="similar" role="tab" aria-selected="false">相似产品法</button>
+            </div>
+
+            <div class="prediction-layout">
+              <div class="prediction-main">
+                <div id="partsPanel">
+                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                    <div class="section-label" style="flex: 1; margin: 0;">元器件清单</div>
+                    <button class="btn btn-quiet btn-small" id="addPartBtn" type="button">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+                      添加元器件
+                    </button>
+                  </div>
+                  <div class="part-head" aria-hidden="true">
+                    <span>类型</span><span>数量</span><span>质量等级</span><span>环境类别</span><span style="text-align:right;">贡献 FIT</span><span></span>
+                  </div>
+                  <div class="part-list" id="partRows"></div>
+                  <div class="field-hint" style="margin-top: 7px;">数量范围 1–10,000；质量等级与环境系数可在“高级参数”中覆盖。</div>
+
+                  <details class="advanced" id="partsAdvanced">
+                    <summary>高级参数 · 基础失效率与修正因子</summary>
+                    <div class="advanced-body">
+                      <p class="advanced-caption">以下为示例级工程经验值，参考 GJB/Z 299C 的计数法思路但未逐项复现标准数据。关键决策请以正式标准、厂家数据或试验结果复核。</p>
+                      <div class="factor-grid" id="predictionFactors"></div>
+                    </div>
+                  </details>
+                </div>
+
+                <div id="similarPanel" hidden>
+                  <div class="similar-panel">
+                    <div class="section-label" style="margin-top: 0;">参考产品与修正因子</div>
+                    <div class="field-grid">
+                      <div class="field" id="similarMtbfField">
+                        <label class="field-label" for="similarMtbf">参考产品 MTBF <span class="hint">> 0 · 小时</span></label>
+                        <div class="input-shell has-unit">
+                          <input id="similarMtbf" type="number" min="0.000001" step="100" value="5000" inputmode="decimal">
+                          <span class="input-unit">h</span>
+                        </div>
+                        <div class="field-hint">已有相似产品的现场 / 试验 MTBF</div>
+                        <div class="field-error"></div>
+                      </div>
+                      <div class="field" id="similarComplexityField">
+                        <label class="field-label" for="similarComplexity">复杂度修正因子 <span class="hint">> 0</span></label>
+                        <div class="input-shell">
+                          <input id="similarComplexity" type="number" min="0.000001" step="0.1" value="1.2" inputmode="decimal">
+                        </div>
+                        <div class="field-hint"><span class="source-note">工程经验值，需复核</span></div>
+                        <div class="field-error"></div>
+                      </div>
+                      <div class="field" id="similarEnvField">
+                        <label class="field-label" for="similarEnv">环境修正因子 <span class="hint">> 0</span></label>
+                        <div class="input-shell">
+                          <input id="similarEnv" type="number" min="0.000001" step="0.1" value="2.0" inputmode="decimal">
+                        </div>
+                        <div class="field-hint"><span class="source-note">工程经验值，需复核</span></div>
+                        <div class="field-error"></div>
+                      </div>
+                      <div class="field">
+                        <span class="field-label">计算关系</span>
+                        <div class="formula-card" style="margin: 0; min-height: 46px; display: flex; align-items: center;">
+                          <code>MTBF_new = MTBF_ref / (C_c × C_e)</code>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="prediction-result">
+                <div class="result-summary">
+                  <div class="metric-topline">
+                    <span class="metric-label">预计系统 MTBF</span>
+                    <span class="pill pill-brand" id="predictionBadge">元器件计数法</span>
+                  </div>
+                  <p class="metric-value brand" id="predictionMtbf" aria-live="polite">—</p>
+                  <p class="metric-sub" id="predictionMtbfSub">等待输入元器件数据</p>
+                  <div class="metric-row">
+                    <div class="metric-cell"><span>系统失效率</span><strong id="predictionLambda">—</strong></div>
+                    <div class="metric-cell"><span>失效率合计</span><strong id="predictionFit">—</strong></div>
+                    <div class="metric-cell"><span>元器件总数</span><strong id="predictionCount">—</strong></div>
+                    <div class="metric-cell"><span>数据来源</span><strong id="predictionSource">—</strong></div>
+                  </div>
+                </div>
+
+                <div class="importance-panel" id="predictionRankingPanel">
+                  <div class="importance-head">
+                    <strong>主要失效率来源</strong>
+                    <span>TOP 5 · FIT</span>
+                  </div>
+                  <div class="importance-list" id="predictionRanking"></div>
+                </div>
+
+                <div class="formula-card" id="predictionFormula">
+                  计数法：<code>λ_sys = Σ nᵢ λ_bᵢ π_Qᵢ π_Eᵢ</code>，结果来自可编辑系数表。
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ============================ MODULE 04 ============================ -->
+          <section class="module-card" id="allocation" aria-labelledby="allocationTitle">
+            <div class="card-head">
+              <span class="card-index">04</span>
+              <div class="card-heading">
+                <h2 id="allocationTitle">可靠性分配</h2>
+                <p>从系统目标自上而下拆分至单元。支持等分配、评分分配与 AGREE 综合分配，并与预计能力对照。</p>
+              </div>
+              <div class="card-head-meta">
+                <span class="pill pill-brand">自上而下</span>
+              </div>
+            </div>
+
+            <div class="allocation-layout">
+              <div class="allocation-config">
+                <div class="segmented" id="targetModeTabs" role="tablist" aria-label="目标输入方式" style="margin-bottom: 14px;">
+                  <button class="active" type="button" data-target-mode="r" role="tab" aria-selected="true">目标可靠度 R_sys</button>
+                  <button type="button" data-target-mode="mtbf" role="tab" aria-selected="false">目标 MTBF</button>
+                </div>
+
+                <div class="target-row">
+                  <div class="field" id="targetRField">
+                    <label class="field-label" for="targetR">目标可靠度 <span class="hint">0 &lt; R ≤ 1</span></label>
+                    <div class="input-shell">
+                      <input id="targetR" type="number" min="0.000000000001" max="1" step="0.001" value="0.9" inputmode="decimal">
+                    </div>
+                    <div class="field-hint">系统在任务时间内的目标可靠度</div>
+                    <div class="field-error"></div>
+                  </div>
+                  <div class="field" id="targetMtbfField" hidden>
+                    <label class="field-label" for="targetMtbf">目标 MTBF <span class="hint">> 0 · 小时</span></label>
+                    <div class="input-shell has-unit">
+                      <input id="targetMtbf" type="number" min="0.000001" step="100" value="5000" inputmode="decimal">
+                      <span class="input-unit">h</span>
+                    </div>
+                    <div class="field-hint">系统平均无故障时间目标</div>
+                    <div class="field-error"></div>
+                  </div>
+                  <div class="field" id="missionTimeField">
+                    <label class="field-label" for="missionTime">任务时间 t <span class="hint">> 0 · 小时</span></label>
+                    <div class="input-shell has-unit">
+                      <input id="missionTime" type="number" min="0.000001" step="100" value="1000" inputmode="decimal">
+                      <span class="input-unit">h</span>
+                    </div>
+                    <div class="field-hint">可靠度与失效率换算基准</div>
+                    <div class="field-error"></div>
+                  </div>
+                  <div class="field" id="allocUnitCountField">
+                    <label class="field-label" for="allocUnitCount">单元数量 n <span class="hint">1–20</span></label>
+                    <div class="input-shell">
+                      <input id="allocUnitCount" type="number" min="1" max="20" step="1" value="3" inputmode="numeric">
+                    </div>
+                    <div class="field-hint">最多 20 个单元</div>
+                    <div class="field-error"></div>
+                  </div>
+                </div>
+
+                <div class="section-label" style="margin-top: 18px;">分配方法</div>
+                <div class="segmented" id="allocationMethodTabs" role="tablist" aria-label="可靠性分配方法" style="margin-bottom: 14px;">
+                  <button class="active" type="button" data-method="equal" role="tab" aria-selected="true">等分配</button>
+                  <button type="button" data-method="scoring" role="tab" aria-selected="false">评分分配</button>
+                  <button type="button" data-method="agree" role="tab" aria-selected="false">AGREE 分配</button>
+                </div>
+
+                <div id="allocationUnitPanel"></div>
+                <div class="alloc-note" id="allocationMethodNote"></div>
+              </div>
+
+              <div class="allocation-result">
+                <div class="result-summary">
+                  <div class="metric-topline">
+                    <span class="metric-label">分配后系统目标 <span>MTBF</span></span>
+                    <span class="pill pill-brand" id="allocationMethodBadge">等分配</span>
+                  </div>
+                  <p class="metric-value brand" id="allocationMtbf" aria-live="polite">9,491 h</p>
+                  <p class="metric-sub" id="allocationSub">系统 λ = 1.054e−4 /h · 任务时间 1,000 h</p>
+                  <div class="metric-row">
+                    <div class="metric-cell"><span>目标 R(t)</span><strong id="allocationTargetR">0.9000</strong></div>
+                    <div class="metric-cell"><span>系统 λ</span><strong id="allocationLambda">1.054e−4 /h</strong></div>
+                    <div class="metric-cell"><span>单元数</span><strong id="allocationCount">3</strong></div>
+                    <div class="metric-cell"><span>当前预计 MTBF</span><strong id="allocationPredicted">—</strong></div>
+                  </div>
+                </div>
+
+                <div class="chart-panel">
+                  <div class="chart-head">
+                    <div class="chart-title">单元失效率分配 <span>FIT</span></div>
+                    <div class="chart-legend"><span class="legend-item"><i class="legend-dot"></i>λᵢ</span></div>
+                  </div>
+                  <div class="chart-shell tall">
+                    <canvas id="allocChart" role="img" aria-label="各单元分配失效率的横向条形图"></canvas>
+                    <div class="chart-fallback" id="allocChartFallback">图表库未能加载，分配数值仍可正常使用。</div>
+                  </div>
+                </div>
+
+                <div class="units-threshold" id="allocationThreshold">
+                  <div class="units-threshold-head">
+                    <strong>分配结果与当前能力</strong>
+                    <span id="allocationThresholdNote">未填写模块 03 预计值</span>
+                  </div>
+                  <div id="allocationThresholdList"></div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ============================ MODULE 05 ============================ -->
+          <section class="module-card" id="report" aria-labelledby="reportTitle">
+            <div class="card-head">
+              <span class="card-index">05</span>
+              <div class="card-heading">
+                <h2 id="reportTitle">报告与导出</h2>
+                <p>把当前输入、结果和图表汇总为可打印的摘要页，或导出 JSON 方案以便复盘与交接。</p>
+              </div>
+              <div class="card-head-meta">
+                <span class="pill pill-brand">工程初算</span>
+              </div>
+            </div>
+
+            <div class="report-layout">
+              <div class="report-copy">
+                <h3>生成摘要报告</h3>
+                <p>报告将自动汇总五个模块的当前状态，并附上 RBD 与 MTBF 曲线快照。使用浏览器的“打印 / 另存为 PDF”即可导出。所有结果均带有工程初算声明。</p>
+                <div class="report-actions">
+                  <button class="btn btn-primary" id="generateReportBtn" type="button">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"></path><path d="M14 2v6h6M8 13h8M8 17h5"></path></svg>
+                    生成摘要报告
+                  </button>
+                  <button class="btn btn-ghost" id="exportJsonBtn" type="button">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 21h14"></path></svg>
+                    导出 JSON
+                  </button>
+                  <button class="btn btn-ghost" id="importJsonBtn" type="button">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21V9"></path><path d="m7 14 5-5 5 5"></path><path d="M5 3h14"></path></svg>
+                    导入 JSON
+                  </button>
+                </div>
+              </div>
+
+              <div class="report-aside">
+                <button class="report-action-card" type="button" id="reportCardPrint">
+                  <span class="report-action-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                  </span>
+                  <span class="report-action-copy"><strong>打印 / 导出 PDF</strong><span>使用浏览器打印样式，A4 友好</span></span>
+                </button>
+                <button class="report-action-card" type="button" id="reportCardExport">
+                  <span class="report-action-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"></path><path d="M14 2v6h6"></path></svg>
+                  </span>
+                  <span class="report-action-copy"><strong>方案 JSON</strong><span>完整保留输入、系数与版本信息</span></span>
+                </button>
+                <button class="report-action-card" type="button" id="reportCardImport">
+                  <span class="report-action-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="m7 10 5 5 5-5M12 15V3"></path></svg>
+                  </span>
+                  <span class="report-action-copy"><strong>导入方案</strong><span>恢复此前导出的计算状态</span></span>
+                </button>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <footer class="workspace-footer">
+          <div>
+            <strong>Reliability Workbench</strong> · 浏览器端工程计算工具<br>
+            核心公式与 UI 分离，方案保存在 <code>localStorage</code>。
+          </div>
+          <div>本工具结果为工程初算，关键设计决策需由可靠性工程师复核。</div>
+        </footer>
+      </div>
+    </main>
+  </div>
+
+  <div class="modal" id="reportOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="reportOverlayTitle">
+    <div class="report-sheet">
+      <div class="report-toolbar">
+        <div class="report-toolbar-title" id="reportOverlayTitle">Reliability summary</div>
+        <div class="report-toolbar-actions">
+          <button class="btn btn-primary" id="printReportBtn" type="button">打印 / 导出 PDF</button>
+          <button class="btn btn-ghost" id="closeReportBtn" type="button">关闭</button>
+        </div>
+      </div>
+      <div class="report-scroll">
+        <article class="report-page" id="reportContent"></article>
+      </div>
+    </div>
+  </div>
+
+  <input type="file" id="importFile" accept="application/json,.json" hidden>
+
+  <div class="toast" id="toast" role="status" aria-live="polite">
+    <span class="toast-dot"></span>
+    <span id="toastText"></span>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="calc.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
