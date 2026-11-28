@@ -1,0 +1,3288 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>齿形链传动设计工具 · Silent Chain Designer</title>
+<style>
+:root{
+  --bg:#080c11;
+  --bg-grad-a:rgba(45,212,191,.07);
+  --bg-grad-b:rgba(96,165,250,.05);
+  --panel:#0f151d;
+  --panel-2:#131c26;
+  --panel-3:#0c1218;
+  --line:#20303f;
+  --line-2:#2b3f52;
+  --txt:#e7eef7;
+  --txt-2:#a3b3c6;
+  --txt-3:#6c8095;
+  --acc:#2dd4bf;
+  --acc-2:#14b8a6;
+  --ok:#34d399;
+  --warn:#f5b942;
+  --bad:#f87171;
+  --blue:#5aa9fa;
+  --violet:#a78bfa;
+  --mono:"JetBrains Mono","SFMono-Regular",Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:"Inter","HarmonyOS Sans SC","PingFang SC","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+  --r:10px;
+  --shadow:0 18px 40px -24px rgba(0,0,0,.9);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:
+    radial-gradient(1100px 620px at 12% -8%, var(--bg-grad-a), transparent 62%),
+    radial-gradient(900px 520px at 96% 4%, var(--bg-grad-b), transparent 60%),
+    var(--bg);
+  color:var(--txt);
+  font-family:var(--sans);
+  font-size:13px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  padding-bottom:44px;
+}
+::selection{background:rgba(45,212,191,.28)}
+.hidden{display:none!important}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+button,input,select{font-family:inherit;font-size:inherit;color:inherit}
+button{cursor:pointer}
+a{color:var(--acc)}
+
+/* ---------- scrollbars ---------- */
+*::-webkit-scrollbar{width:9px;height:9px}
+*::-webkit-scrollbar-thumb{background:#243342;border-radius:6px;border:2px solid transparent;background-clip:content-box}
+*::-webkit-scrollbar-thumb:hover{background:#31485c;background-clip:content-box}
+*::-webkit-scrollbar-track{background:transparent}
+
+/* ---------- topbar ---------- */
+.topbar{
+  position:sticky;top:0;z-index:40;
+  display:flex;align-items:center;gap:18px;
+  height:62px;padding:0 18px;
+  background:rgba(9,13,18,.86);
+  border-bottom:1px solid var(--line);
+  backdrop-filter:blur(14px);
+}
+.brand{display:flex;align-items:center;gap:11px;flex-shrink:0}
+.brand-mark{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;
+  background:linear-gradient(150deg,#123a3a,#0d1c25);border:1px solid #1e4a48}
+.brand-mark svg{width:21px;height:21px}
+.brand-t{font-size:14px;font-weight:650;letter-spacing:.2px;white-space:nowrap}
+.brand-s{font-family:var(--mono);font-size:9.5px;color:var(--txt-3);letter-spacing:.1em;white-space:nowrap;margin-top:-1px}
+.scheme{display:flex;align-items:center;gap:7px;margin-left:6px;min-width:0}
+.dirty-dot{width:7px;height:7px;border-radius:50%;background:var(--warn);opacity:0;transition:.2s;flex-shrink:0;box-shadow:0 0 0 3px rgba(245,185,66,.15)}
+.dirty-dot.on{opacity:1}
+.scheme-name{
+  background:var(--panel-2);border:1px solid var(--line);border-radius:8px;
+  padding:6px 10px;width:210px;font-size:12.5px;color:var(--txt-2);outline:none;
+}
+.scheme-name:focus{border-color:var(--acc-2);color:var(--txt)}
+.actions{display:flex;align-items:center;gap:7px;margin-left:auto;flex-wrap:nowrap}
+.btn{
+  height:30px;padding:0 11px;border-radius:7px;
+  background:var(--panel-2);border:1px solid var(--line);
+  color:var(--txt-2);font-size:12px;white-space:nowrap;
+  transition:.15s;display:inline-flex;align-items:center;gap:6px;
+}
+.btn:hover{border-color:var(--line-2);color:var(--txt);background:#182430}
+.btn.primary{background:linear-gradient(180deg,#17c1ae,#0ea79a);border-color:#1fd3bd;color:#04211f;font-weight:650}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn.primary:disabled{opacity:.45;cursor:not-allowed;filter:none}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--txt-3)}
+.btn.ghost:hover{background:var(--panel-2);color:var(--txt)}
+.btn.sm{height:26px;padding:0 8px;font-size:11px}
+.menu-wrap{position:relative}
+.menu{
+  position:absolute;right:0;top:36px;z-index:60;min-width:186px;
+  background:var(--panel-2);border:1px solid var(--line-2);border-radius:10px;
+  padding:5px;box-shadow:var(--shadow);display:none;
+}
+.menu.on{display:block}
+.menu button{
+  display:flex;width:100%;align-items:center;justify-content:space-between;gap:12px;
+  background:none;border:0;border-radius:6px;padding:7px 9px;color:var(--txt-2);font-size:12px;text-align:left
+}
+.menu button:hover{background:#1a2531;color:var(--txt)}
+.menu .sep{height:1px;background:var(--line);margin:5px 4px}
+.kbd{font-family:var(--mono);font-size:10px;color:var(--txt-3);border:1px solid var(--line);padding:0 4px;border-radius:4px}
+
+/* ---------- layout ---------- */
+.layout{
+  display:grid;grid-template-columns:424px minmax(0,1fr);
+  gap:14px;padding:14px 16px 20px;align-items:start;
+  max-width:1880px;margin:0 auto;
+}
+.params{display:flex;flex-direction:column;gap:10px;position:sticky;top:76px;max-height:calc(100vh - 132px);overflow:auto;padding-right:4px}
+.results{display:flex;flex-direction:column;gap:12px;min-width:0}
+
+/* ---------- panel group ---------- */
+.group{
+  background:linear-gradient(180deg,var(--panel),var(--panel-3));
+  border:1px solid var(--line);border-radius:var(--r);
+  overflow:hidden;
+}
+.group-head{
+  display:flex;align-items:center;gap:9px;padding:10px 12px;
+  cursor:pointer;user-select:none;background:rgba(255,255,255,.012);
+}
+.group-head:hover{background:rgba(255,255,255,.028)}
+.group-idx{
+  width:19px;height:19px;border-radius:5px;display:grid;place-items:center;
+  font-family:var(--mono);font-size:10px;color:var(--acc);
+  background:rgba(45,212,191,.09);border:1px solid rgba(45,212,191,.24);flex-shrink:0
+}
+.group-title{font-size:12.5px;font-weight:600;letter-spacing:.3px}
+.group-sub{font-size:10px;color:var(--txt-3);font-family:var(--mono);margin-left:auto}
+.chev{width:14px;height:14px;color:var(--txt-3);transition:.18s;flex-shrink:0}
+.group.collapsed .chev{transform:rotate(-90deg)}
+.group-body{padding:4px 10px 9px;display:flex;flex-direction:column;gap:1px}
+.group.collapsed .group-body{display:none}
+
+/* ---------- field row ---------- */
+.field{
+  display:grid;grid-template-columns:minmax(0,1fr) 112px 42px;
+  align-items:center;gap:7px;padding:4px 2px;border-radius:6px;
+}
+.field:hover{background:rgba(255,255,255,.018)}
+.field-label{display:flex;align-items:center;gap:5px;min-width:0;color:var(--txt-2);font-size:12px}
+.field-label .sym{font-family:var(--mono);font-size:10px;color:var(--txt-3)}
+.field-label .lbl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tip{
+  width:13px;height:13px;border-radius:50%;flex-shrink:0;
+  border:1px solid var(--line-2);color:var(--txt-3);font-size:9px;
+  display:grid;place-items:center;cursor:help;font-family:var(--mono);
+}
+.tip:hover{border-color:var(--acc-2);color:var(--acc)}
+.field input,.field select{
+  width:100%;height:28px;padding:0 8px;border-radius:6px;
+  background:#0a1118;border:1px solid #1e2c3a;color:var(--txt);
+  font-family:var(--mono);font-size:12px;outline:none;
+  transition:.14s;text-align:right;
+  -moz-appearance:textfield;
+}
+.field select{text-align:left;font-family:var(--sans);font-size:11.5px;padding-right:4px}
+.field input:focus,.field select:focus{border-color:var(--acc-2);box-shadow:0 0 0 3px rgba(45,212,191,.1)}
+.field input:disabled{color:var(--txt-3);background:#0c131a;cursor:not-allowed}
+.field input.invalid,.field select.invalid{border-color:var(--bad);box-shadow:0 0 0 3px rgba(248,113,113,.1);text-align:right}
+.field input::-webkit-outer-spin-button,.field input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.unit{font-family:var(--mono);font-size:10px;color:var(--txt-3);text-align:left;white-space:nowrap;overflow:hidden}
+.field-note{grid-column:1/-1;font-size:10.5px;color:var(--txt-3);padding-left:2px;line-height:1.45;margin-top:-1px}
+.field-note b{color:var(--txt-2);font-weight:600}
+.field-note .tag{font-family:var(--mono);font-size:9px;padding:0 4px;border-radius:3px;border:1px solid var(--line-2);color:var(--txt-3);margin-left:4px}
+.row-split{display:flex;gap:6px}
+.row-split input{flex:1}
+.mini-btn{height:28px;padding:0 7px;border-radius:6px;background:#13202b;border:1px solid var(--line-2);color:var(--txt-2);font-size:10.5px;white-space:nowrap}
+.mini-btn:hover{border-color:var(--acc-2);color:var(--acc)}
+.checkline{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--txt-2);padding:5px 2px}
+.checkline input[type=checkbox]{appearance:none;width:15px;height:15px;border-radius:4px;border:1px solid var(--line-2);background:#0a1118;position:relative;cursor:pointer;flex-shrink:0}
+.checkline input[type=checkbox]:checked{background:var(--acc-2);border-color:var(--acc-2)}
+.checkline input[type=checkbox]:checked::after{content:"";position:absolute;left:4px;top:1px;width:4px;height:8px;border:solid #062522;border-width:0 2px 2px 0;transform:rotate(45deg)}
+.checkline .sub{color:var(--txt-3);font-size:10px;font-family:var(--mono)}
+
+/* material info chips */
+.mat-info{display:flex;flex-wrap:wrap;gap:5px;padding:6px 2px 2px}
+.chip{font-family:var(--mono);font-size:9.5px;color:var(--txt-3);border:1px solid var(--line);background:#0b1219;border-radius:4px;padding:1px 5px}
+.chip b{color:var(--txt-2);font-weight:500}
+.src-note{font-size:10px;color:var(--txt-3);line-height:1.5;padding:5px 2px 0;border-top:1px dashed var(--line);margin-top:5px}
+
+/* ---------- KPI ---------- */
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.kpi{
+  position:relative;padding:11px 12px 10px;border-radius:10px;overflow:hidden;
+  background:linear-gradient(180deg,var(--panel-2),#0e161f);
+  border:1px solid var(--line);
+}
+.kpi::before{content:"";position:absolute;left:0;top:0;right:0;height:2px;background:var(--line-2);opacity:.9}
+.kpi.ok::before{background:linear-gradient(90deg,var(--ok),transparent 85%)}
+.kpi.warn::before{background:linear-gradient(90deg,var(--warn),transparent 85%)}
+.kpi.bad::before{background:linear-gradient(90deg,var(--bad),transparent 85%)}
+.kpi.info::before{background:linear-gradient(90deg,var(--blue),transparent 85%)}
+.kpi-top{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.kpi-label{font-size:10.5px;color:var(--txt-3);letter-spacing:.2px;white-space:nowrap}
+.kpi-val{font-family:var(--mono);font-size:21px;font-weight:600;letter-spacing:-.4px;margin-top:3px;line-height:1.15;font-variant-numeric:tabular-nums}
+.kpi-val small{font-size:10.5px;color:var(--txt-3);font-weight:400;margin-left:3px;letter-spacing:0}
+.kpi-sub{font-size:10px;color:var(--txt-3);margin-top:2px;font-family:var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi.ok .kpi-val{color:var(--ok)}
+.kpi.warn .kpi-val{color:var(--warn)}
+.kpi.bad .kpi-val{color:var(--bad)}
+.pill{
+  display:inline-flex;align-items:center;gap:4px;height:17px;padding:0 6px;
+  border-radius:9px;font-size:9.5px;font-family:var(--mono);letter-spacing:.02em;white-space:nowrap;
+}
+.pill::before{content:"";width:4px;height:4px;border-radius:50%;background:currentColor}
+.pill.ok{color:var(--ok);background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.22)}
+.pill.warn{color:var(--warn);background:rgba(245,185,66,.1);border:1px solid rgba(245,185,66,.22)}
+.pill.bad{color:var(--bad);background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.22)}
+.pill.neutral{color:var(--txt-3);background:rgba(255,255,255,.03);border:1px solid var(--line)}
+
+/* ---------- cards ---------- */
+.card{background:linear-gradient(180deg,var(--panel),#0c1219);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.card-head{display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.012)}
+.card-head h2{margin:0;font-size:12px;font-weight:600;letter-spacing:.4px}
+.card-head .hint{font-size:10px;color:var(--txt-3);margin-left:auto;font-family:var(--mono)}
+.card-body{padding:10px 12px}
+.grid-main{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:12px}
+
+/* checks */
+.check-item{display:grid;grid-template-columns:3px 1fr auto;gap:10px;padding:8px 10px;border-radius:7px;background:#0b1219;border:1px solid #16222d;align-items:start}
+.check-item + .check-item{margin-top:6px}
+.check-item .bar{border-radius:3px;background:var(--txt-3);height:100%;min-height:30px}
+.check-item.ok .bar{background:var(--ok)}
+.check-item.warn .bar{background:var(--warn)}
+.check-item.bad .bar{background:var(--bad)}
+.check-name{font-size:11.5px;font-weight:600;color:var(--txt);display:flex;gap:6px;align-items:center}
+.check-why{font-size:10.5px;color:var(--txt-3);margin-top:2px;line-height:1.5}
+.check-why b{color:var(--txt-2);font-weight:500;font-family:var(--mono)}
+.check-advice{font-size:10.5px;color:var(--warn);margin-top:3px;line-height:1.5;opacity:.92}
+
+/* viewer */
+.tabs{display:inline-flex;gap:2px;background:#0a1118;border:1px solid var(--line);border-radius:7px;padding:2px;margin-left:auto}
+.tabs button{height:22px;padding:0 9px;border-radius:5px;border:0;background:transparent;color:var(--txt-3);font-size:10.5px}
+.tabs button.on{background:#1a2733;color:var(--txt);box-shadow:inset 0 0 0 1px var(--line-2)}
+.viewer{position:relative;background:
+  radial-gradient(600px 300px at 50% 0%,rgba(45,212,191,.05),transparent 70%),
+  #070b10;
+  height:360px;overflow:hidden;
+}
+.viewer canvas{display:block;width:100%;height:100%}
+.viewer-tools{position:absolute;left:10px;bottom:10px;display:flex;gap:6px;z-index:3}
+.viewer-badge{position:absolute;right:10px;top:10px;z-index:3}
+.viewer-hint{position:absolute;left:10px;top:10px;z-index:3;font-family:var(--mono);font-size:9.5px;color:var(--txt-3);background:rgba(8,13,18,.7);border:1px solid var(--line);border-radius:5px;padding:2px 6px}
+.kernel-overlay{position:absolute;inset:0;z-index:4;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;background:rgba(7,11,16,.86);backdrop-filter:blur(2px);padding:22px}
+.kernel-overlay h3{margin:0;font-size:13px;font-weight:600}
+.kernel-overlay p{margin:0;font-size:11px;color:var(--txt-3);max-width:420px;line-height:1.6}
+.progress{width:min(320px,80%);height:4px;border-radius:3px;background:#12202b;overflow:hidden}
+.progress i{display:block;height:100%;width:0%;background:linear-gradient(90deg,var(--acc-2),var(--acc));transition:width .2s}
+.viewer-foot{display:flex;align-items:center;gap:10px;padding:7px 12px;border-top:1px solid var(--line);font-size:10px;color:var(--txt-3);font-family:var(--mono);flex-wrap:wrap}
+.viewer-foot .dotsep{width:3px;height:3px;border-radius:50%;background:var(--line-2)}
+
+/* detail table */
+details.detail{padding:0}
+details.detail > summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid transparent}
+details.detail[open] > summary{border-bottom-color:var(--line)}
+details.detail > summary::-webkit-details-marker{display:none}
+details.detail > summary h2{margin:0;font-size:12px;font-weight:600;letter-spacing:.4px}
+details.detail > summary .cnt{font-family:var(--mono);font-size:10px;color:var(--txt-3)}
+details.detail > summary .sp{margin-left:auto}
+.tbl-wrap{overflow:auto;max-height:420px}
+table.calc{width:100%;border-collapse:collapse;font-size:11px}
+table.calc th{
+  position:sticky;top:0;z-index:2;background:#101923;color:var(--txt-3);
+  font-weight:500;text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);
+  white-space:nowrap;font-size:10px;letter-spacing:.04em;
+}
+table.calc td{padding:5px 10px;border-bottom:1px solid #121c25;vertical-align:top;color:var(--txt-2)}
+table.calc tr:hover td{background:rgba(255,255,255,.02)}
+table.calc td.num{font-family:var(--mono);text-align:right;white-space:nowrap;color:var(--txt)}
+table.calc td.sym{font-family:var(--mono);color:var(--acc);white-space:nowrap}
+table.calc td.formula{font-family:var(--mono);font-size:10px;color:var(--txt-3);white-space:nowrap}
+table.calc td.sub{font-family:var(--mono);font-size:10px;color:var(--txt-3)}
+table.calc td.unit{font-family:var(--mono);font-size:10px;color:var(--txt-3);white-space:nowrap}
+table.calc tr.hl td{background:rgba(45,212,191,.035)}
+
+/* footer bar */
+.standard-bar{
+  position:fixed;left:0;right:0;bottom:0;z-index:30;
+  display:flex;align-items:center;gap:10px;
+  height:36px;padding:0 16px;
+  background:rgba(9,13,18,.92);border-top:1px solid var(--line);
+  backdrop-filter:blur(10px);
+  font-size:10px;color:var(--txt-3);line-height:1.3;
+}
+.standard-bar .badge{font-family:var(--mono);font-size:9px;color:var(--acc);border:1px solid rgba(45,212,191,.25);padding:1px 5px;border-radius:4px;white-space:nowrap}
+.standard-bar .txt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.standard-bar .right{margin-left:auto;font-family:var(--mono);white-space:nowrap;display:flex;gap:12px;align-items:center}
+
+/* toast */
+#toastWrap{position:fixed;right:16px;bottom:50px;z-index:100;display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+.toast{
+  background:#111c26;border:1px solid var(--line-2);border-left:3px solid var(--acc);
+  color:var(--txt);padding:8px 12px;border-radius:7px;font-size:11.5px;
+  box-shadow:var(--shadow);animation:tin .22s ease-out;max-width:360px;
+}
+.toast.err{border-left-color:var(--bad)}
+.toast.warn{border-left-color:var(--warn)}
+.toast.ok{border-left-color:var(--ok)}
+@keyframes tin{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}
+
+/* modal */
+.modal{position:fixed;inset:0;z-index:90;display:none;align-items:center;justify-content:center;padding:24px;background:rgba(3,6,9,.66);backdrop-filter:blur(3px)}
+.modal.on{display:flex}
+.modal-panel{width:min(880px,100%);max-height:86vh;display:flex;flex-direction:column;background:linear-gradient(180deg,#111923,#0c1218);border:1px solid var(--line-2);border-radius:12px;box-shadow:var(--shadow);overflow:hidden}
+.modal-panel.sm{width:min(520px,100%)}
+.modal-head{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.modal-head h3{margin:0;font-size:13px;font-weight:600}
+.modal-head .x{margin-left:auto;background:none;border:0;color:var(--txt-3);font-size:18px;line-height:1;padding:2px 4px}
+.modal-head .x:hover{color:var(--txt)}
+.modal-body{padding:14px;overflow:auto}
+.modal-foot{display:flex;gap:8px;justify-content:flex-end;padding:10px 14px;border-top:1px solid var(--line)}
+.modal input[type=text]{width:100%;height:32px;background:#0a1118;border:1px solid var(--line-2);border-radius:7px;padding:0 10px;outline:none}
+.modal input[type=text]:focus{border-color:var(--acc-2)}
+
+/* scheme list */
+.scheme-list{display:flex;flex-direction:column;gap:7px}
+.scheme-row{display:flex;align-items:center;gap:10px;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:#0b1219}
+.scheme-row.active{border-color:rgba(45,212,191,.4);background:rgba(45,212,191,.045)}
+.scheme-row .nm{font-size:12px;font-weight:600;color:var(--txt)}
+.scheme-row .meta{font-family:var(--mono);font-size:9.5px;color:var(--txt-3);margin-top:2px}
+.scheme-row .acts{margin-left:auto;display:flex;gap:5px}
+
+/* provenance table */
+table.prov{width:100%;border-collapse:collapse;font-size:11px}
+table.prov th{text-align:left;color:var(--txt-3);font-weight:500;padding:6px 8px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#101923;font-size:10px}
+table.prov td{padding:5px 8px;border-bottom:1px solid #121c25;color:var(--txt-2);vertical-align:top}
+table.prov td.k{font-family:var(--mono);color:var(--txt);white-space:nowrap}
+table.prov td.v{font-family:var(--mono);color:var(--acc);white-space:nowrap}
+table.prov .st{font-family:var(--mono);font-size:9px;padding:1px 5px;border-radius:3px;border:1px solid;white-space:nowrap}
+.st.std{color:var(--ok);border-color:rgba(52,211,153,.3);background:rgba(52,211,153,.07)}
+.st.approx{color:var(--warn);border-color:rgba(245,185,66,.3);background:rgba(245,185,66,.07)}
+.st.todo{color:var(--bad);border-color:rgba(248,113,113,.3);background:rgba(248,113,113,.07)}
+.st.calib{color:var(--violet);border-color:rgba(167,139,250,.3);background:rgba(167,139,250,.07)}
+
+/* selftest */
+.st-row{display:grid;grid-template-columns:minmax(0,1fr) 110px 110px 80px;gap:8px;padding:6px 8px;border-bottom:1px solid #121c25;font-size:11px;align-items:center}
+.st-row.head{color:var(--txt-3);font-family:var(--mono);font-size:9.5px;border-bottom-color:var(--line)}
+.st-row .mono{font-family:var(--mono)}
+.st-ok{color:var(--ok)}.st-bad{color:var(--bad)}
+.st-sum{padding:9px 10px;border-radius:8px;font-size:11.5px;margin-bottom:10px;border:1px solid}
+.st-sum.ok{color:var(--ok);border-color:rgba(52,211,153,.3);background:rgba(52,211,153,.06)}
+.st-sum.bad{color:var(--bad);border-color:rgba(248,113,113,.3);background:rgba(248,113,113,.06)}
+
+/* misc */
+.icon{width:13px;height:13px;display:inline-block;vertical-align:-2px}
+.muted{color:var(--txt-3)}
+.nowrap{white-space:nowrap}
+.sep-v{width:1px;height:18px;background:var(--line);margin:0 2px}
+.banner{display:flex;gap:8px;align-items:flex-start;padding:7px 10px;border-radius:7px;font-size:10.5px;line-height:1.5;border:1px solid}
+.banner.warn{color:#f7c96b;border-color:rgba(245,185,66,.28);background:rgba(245,185,66,.06)}
+.banner.bad{color:#fca5a5;border-color:rgba(248,113,113,.28);background:rgba(248,113,113,.06)}
+.banner b{color:inherit}
+.banner .ico{flex-shrink:0;margin-top:1px}
+
+@media (max-width:1280px){
+  .kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .grid-main{grid-template-columns:1fr}
+}
+@media (max-width:1080px){
+  .layout{grid-template-columns:1fr}
+  .params{position:static;max-height:none;overflow:visible}
+  .brand-s{display:none}
+  .scheme-name{width:150px}
+  .actions .opt{display:none}
+  .viewer{height:300px}
+}
+@media (max-width:720px){
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .topbar{height:auto;flex-wrap:wrap;padding:8px 10px;gap:8px}
+  .actions{width:100%;overflow:auto}
+  .brand-t{font-size:12.5px}
+  .viewer{height:260px}
+  .standard-bar{height:auto;min-height:36px;padding:4px 10px}
+  .standard-bar .right{display:none}
+}
+
+/* print */
+@media print{
+  @page{size:A4;margin:12mm}
+  body{background:#fff;color:#111;padding:0;font-size:10pt}
+  .topbar,.standard-bar,.params,.viewer,.viewer-foot,.modal,#toastWrap,.btn,.tabs,.viewer-tools,.viewer-badge,.viewer-hint{display:none!important}
+  .layout{display:block;padding:0;max-width:none}
+  .results{gap:10px}
+  .card,.kpi{background:#fff;border:1px solid #bbb;box-shadow:none;break-inside:avoid}
+  .kpi-val{color:#111!important}
+  .kpi-label,.kpi-sub,.check-why,.muted,.card-head .hint{color:#555}
+  .check-item{background:#fafafa;border-color:#ddd}
+  .kpi{page-break-inside:avoid}
+  details.detail > summary{border-bottom:1px solid #bbb}
+  .tbl-wrap{max-height:none;overflow:visible}
+  table.calc th{background:#eee;color:#333}
+  table.calc td{color:#222}
+  table.calc td.num,table.calc td.formula,table.calc td.sub{color:#222}
+  .print-only{display:block!important}
+  .kind{color:#222}
+}
+.print-only{display:none}
+
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-mark">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#2dd4bf" stroke-width="1.6">
+        <circle cx="7" cy="12" r="4.2"/><circle cx="17" cy="12" r="4.2"/>
+        <path d="M10.3 9.1c1.4-.8 2.5-.8 3.9 0M10.3 14.9c1.4.8 2.5.8 3.9 0"/>
+      </svg>
+    </div>
+    <div>
+      <div class="brand-t">齿形链传动设计工具</div>
+      <div class="brand-s">SILENT CHAIN DESIGNER · GB/T 10855-2016</div>
+    </div>
+  </div>
+
+  <div class="scheme">
+    <span class="dirty-dot" id="dirtyDot" title="有未保存的修改"></span>
+    <input class="scheme-name" id="schemeName" value="示例方案 · 轻载 p12.7" spellcheck="false" title="方案名称">
+  </div>
+
+  <div class="actions">
+    <button class="btn" id="btnSave" title="保存到浏览器本地（localStorage）">保存</button>
+    <button class="btn opt" id="btnSaveAs">另存为</button>
+    <button class="btn" id="btnSchemes">方案库</button>
+    <div class="menu-wrap">
+      <button class="btn" id="btnMore">更多 ▾</button>
+      <div class="menu" id="moreMenu">
+        <button id="btnImport">导入方案 JSON</button>
+        <button id="btnExportJson">导出当前方案 JSON</button>
+        <button id="btnExportAll">导出全部方案</button>
+        <div class="sep"></div>
+        <button id="btnPrint">导出计算书（打印 / PDF）</button>
+        <button id="btnSelftest">运行自检（验收算例）</button>
+        <button id="btnProv">系数与来源溯源表</button>
+        <div class="sep"></div>
+        <button id="btnReset">重置为默认参数</button>
+      </div>
+    </div>
+    <button class="btn primary" id="btnStep" title="加载 OpenCascade 内核并导出 STEP">导出 STEP</button>
+  </div>
+</header>
+
+<main class="layout">
+  <aside class="params" id="paramsPanel">
+    <!-- 参数分组由 JS 渲染 -->
+  </aside>
+
+  <section class="results">
+    <div class="kpis" id="kpis">
+      <div class="kpi info" id="kpiForce">
+        <div class="kpi-top"><span class="kpi-label">链条工作拉力</span><span class="pill neutral" id="pillForce">—</span></div>
+        <div class="kpi-val" id="valForce">—</div>
+        <div class="kpi-sub" id="subForce">F<sub>t</sub> · K<sub>A</sub></div>
+      </div>
+      <div class="kpi info" id="kpiD1">
+        <div class="kpi-top"><span class="kpi-label">主动轮分度圆</span><span class="pill neutral" id="pillD1">d₁</span></div>
+        <div class="kpi-val" id="valD1">—</div>
+        <div class="kpi-sub" id="subD1">d = p / sin(180°/z)</div>
+      </div>
+      <div class="kpi" id="kpiUndercut">
+        <div class="kpi-top"><span class="kpi-label">根切判定</span><span class="pill neutral" id="pillUndercut">—</span></div>
+        <div class="kpi-val" id="valUndercut">—</div>
+        <div class="kpi-sub" id="subUndercut">几何约束</div>
+      </div>
+      <div class="kpi" id="kpiLife">
+        <div class="kpi-top"><span class="kpi-label">预估磨损寿命</span><span class="pill neutral" id="pillLife">—</span></div>
+        <div class="kpi-val" id="valLife">—</div>
+        <div class="kpi-sub" id="subLife">ε<sub>lim</sub> 判据</div>
+      </div>
+      <div class="kpi" id="kpiSpeed">
+        <div class="kpi-top"><span class="kpi-label">链速</span><span class="pill neutral" id="pillSpeed">—</span></div>
+        <div class="kpi-val" id="valSpeed">—</div>
+        <div class="kpi-sub" id="subSpeed">v = πd₁n₁/60000</div>
+      </div>
+      <div class="kpi info" id="kpiRatio">
+        <div class="kpi-top"><span class="kpi-label">传动比 / 从动齿数</span><span class="pill neutral" id="pillRatio">i</span></div>
+        <div class="kpi-val" id="valRatio">—</div>
+        <div class="kpi-sub" id="subRatio">—</div>
+      </div>
+      <div class="kpi info" id="kpiStep">
+        <div class="kpi-top"><span class="kpi-label">3D / STEP 状态</span><span class="pill neutral" id="pillStep">未加载</span></div>
+        <div class="kpi-val" id="valStep">—</div>
+        <div class="kpi-sub" id="subStep">OpenCascade B-Rep</div>
+      </div>
+      <div class="kpi info" id="kpiStd">
+        <div class="kpi-top"><span class="kpi-label">标准依据</span><span class="pill ok">现行</span></div>
+        <div class="kpi-val" style="font-size:15px;letter-spacing:0">GB/T 10855-2016</div>
+        <div class="kpi-sub">渐开线模式不在覆盖范围 · ASME B29.2M 参考</div>
+      </div>
+    </div>
+
+    <div class="grid-main">
+      <section class="card">
+        <div class="card-head">
+          <h2>校核清单</h2>
+          <span class="hint" id="checkCount">6 项</span>
+        </div>
+        <div class="card-body" id="checksList"></div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h2>模型预览</h2>
+          <div class="tabs" id="viewTabs">
+            <button data-view="2d" class="on">2D 齿廓</button>
+            <button data-view="3d">3D 模型</button>
+          </div>
+        </div>
+        <div class="viewer" id="viewer">
+          <canvas id="cv2d"></canvas>
+          <div id="view3d" class="hidden" style="position:absolute;inset:0">
+            <canvas id="cv3d"></canvas>
+          </div>
+          <div class="viewer-hint" id="viewHint">主动轮端面齿廓 · 分度圆 / 齿顶圆 / 齿根圆</div>
+          <span class="viewer-badge" id="viewBadge"><span class="pill neutral">2D</span></span>
+          <div class="viewer-tools hidden" id="view3dTools">
+            <button class="btn sm" id="btnFit">适应视图</button>
+            <button class="btn sm" id="btnBuild">重新生成</button>
+          </div>
+          <div class="kernel-overlay hidden" id="kernelOverlay">
+            <h3 id="kTitle">OpenCascade 内核加载中</h3>
+            <p id="kDesc">首次加载约 66 MB（WebAssembly），请保持网络连接。计算与 2D 预览不受影响。</p>
+            <div class="progress"><i id="kBar"></i></div>
+            <div class="mono" id="kPct" style="font-size:10px;color:var(--txt-3)">0%</div>
+            <button class="btn" id="btnKernelRetry" style="display:none">重试</button>
+          </div>
+        </div>
+        <div class="viewer-foot">
+          <span id="footMode">模式：标准直齿廓</span>
+          <span class="dotsep"></span>
+          <span id="footDims">d₁ — / dₐ — / d_f —</span>
+          <span class="dotsep"></span>
+          <span>链条为示意装配，选型以标准配件参数为准</span>
+        </div>
+      </section>
+    </div>
+
+    <details class="detail card" id="detailCard" open>
+      <summary>
+        <h2>计算明细表</h2>
+        <span class="cnt" id="detailCount">—</span>
+        <span class="sp"></span>
+        <span class="pill neutral" style="font-size:9px">公式 · 代入值 · 结果</span>
+      </summary>
+      <div class="tbl-wrap">
+        <table class="calc">
+          <thead>
+            <tr>
+              <th style="width:17%">项目</th>
+              <th style="width:8%">符号</th>
+              <th style="width:25%">公式</th>
+              <th style="width:26%">代入值</th>
+              <th style="width:13%;text-align:right">结果</th>
+              <th style="width:11%">单位</th>
+            </tr>
+          </thead>
+          <tbody id="detailBody"></tbody>
+        </table>
+      </div>
+    </details>
+
+    <div class="banner warn" style="margin-bottom:2px">
+      <span class="ico">⚠</span>
+      <span id="pageWarn">标准数值占位提示：齿顶/齿根圆系数、额定抗拉强度 Q、跨柱距公差等以 <b>CONFIG</b> 维护，标注「待填」的项须由工程师按 GB/T 10855-2016 原文与供应商样本复核后再用于生产。</span>
+    </div>
+  </section>
+</main>
+
+<footer class="standard-bar">
+  <span class="badge">GB/T 10855-2016</span>
+  <span class="txt">本工具依据 GB/T 10855-2016 进行工程初算；渐开线模式不在该标准覆盖范围内。最终链轮齿形、公差与链条选型须以标准原文和供应商样本复核。</span>
+  <span class="right">
+    <span id="footStd">主标准 GB/T 10855-2016</span>
+    <span>ASME B29.2M 参考</span>
+  </span>
+</footer>
+
+<!-- 方案库 -->
+<div class="modal" id="mSchemes">
+  <div class="modal-panel">
+    <div class="modal-head"><h3>方案库</h3><span class="mono" style="font-size:10px;color:var(--txt-3)">localStorage · silentchain.schemes</span><button class="x" data-close>×</button></div>
+    <div class="modal-body"><div class="scheme-list" id="schemeList"></div></div>
+    <div class="modal-foot">
+      <button class="btn" id="btnSchemeSaveAs">保存当前为新方案</button>
+      <button class="btn" id="btnSchemeImport">导入 JSON</button>
+      <button class="btn" data-close>关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- 系数溯源 -->
+<div class="modal" id="mProv">
+  <div class="modal-panel">
+    <div class="modal-head"><h3>系数与来源溯源表</h3><span class="mono" style="font-size:10px;color:var(--txt-3)">自动读取 CONFIG</span><button class="x" data-close>×</button></div>
+    <div class="modal-body" style="padding:0"><div class="tbl-wrap" style="max-height:66vh"><table class="prov" id="provTable"></table></div></div>
+    <div class="modal-foot"><button class="btn" data-close>关闭</button></div>
+  </div>
+</div>
+
+<!-- 自检 -->
+<div class="modal" id="mSelf">
+  <div class="modal-panel">
+    <div class="modal-head"><h3>验收自检</h3><button class="x" data-close>×</button></div>
+    <div class="modal-body" id="selfBody"></div>
+    <div class="modal-foot"><button class="btn" id="btnSelfRerun">重新运行</button><button class="btn" data-close>关闭</button></div>
+  </div>
+</div>
+
+<!-- 通用输入 -->
+<div class="modal" id="mPrompt">
+  <div class="modal-panel sm">
+    <div class="modal-head"><h3 id="promptTitle">输入名称</h3><button class="x" data-close>×</button></div>
+    <div class="modal-body">
+      <input type="text" id="promptInput" spellcheck="false">
+      <div class="muted" style="font-size:10.5px;margin-top:7px" id="promptHint"></div>
+    </div>
+    <div class="modal-foot"><button class="btn" data-close>取消</button><button class="btn primary" id="promptOk">确定</button></div>
+  </div>
+</div>
+
+<!-- 确认 -->
+<div class="modal" id="mConfirm">
+  <div class="modal-panel sm">
+    <div class="modal-head"><h3 id="confirmTitle">确认</h3><button class="x" data-close>×</button></div>
+    <div class="modal-body"><div id="confirmText" style="font-size:12px;color:var(--txt-2);line-height:1.6"></div></div>
+    <div class="modal-foot"><button class="btn" data-close>取消</button><button class="btn primary" id="confirmOk">确定</button></div>
+  </div>
+</div>
+
+<div id="toastWrap"></div>
+<input type="file" id="fileInput" accept=".json,application/json" class="hidden">
+
+<script>
+/* =========================================================================
+   齿形链传动设计工具 — 单文件应用
+   标准依据：GB/T 10855-2016《齿形链和链轮》（参考 ASME B29.2M）
+   渐开线模式：仅作设计参考，不在 GB/T 10855-2016 覆盖范围内
+   ========================================================================= */
+
+/* -------------------------------------------------------------------------
+   1. CONFIG —— 全部标准数值、材料库、系数、公差集中于此
+      provenance 中 state 含义：
+        std    = 标准/通用公式直接可得
+        approx = 工程近似（默认值，需按样本/手册复核）
+        todo   = 未能确证，占位待工程师按标准原文填入（不参与生产决策）
+        calib  = 需按试验/样本寿命反标定的常数
+   ------------------------------------------------------------------------- */
+const CONFIG = {
+  meta: {
+    tool: '齿形链传动设计工具',
+    version: '1.0.0',
+    standard: 'GB/T 10855-2016',
+    reference: 'ASME B29.2M',
+    involuteRef: 'JB/T 11803-2014（齿形与根切约束思路，仅参考）',
+    disclaimer: '本工具依据 GB/T 10855-2016 进行工程初算；渐开线模式不在该标准覆盖范围内。最终链轮齿形、公差与链条选型须以标准原文和供应商样本复核。'
+  },
+
+  /* 节距系列：GB/T 10855-2016 常用规格（mm）。具体型号代号与标准表待核对。 */
+  pitchSeries: [6.35, 9.525, 12.7, 15.875, 19.05, 25.4, 31.75, 38.1, 44.45, 50.8],
+
+  /* 工况系数：按设备类型联动取值（工程推荐，用于初算） */
+  serviceFactors: [
+    { key: 'uniform', label: '均匀载荷（输送机/风机/离心泵）', KA: 1.00 },
+    { key: 'light',   label: '轻微冲击（包装/印刷/搅拌）',     KA: 1.20 },
+    { key: 'medium',  label: '中等冲击（起重/压缩机/冲床）',   KA: 1.30 },
+    { key: 'heavy',   label: '重冲击（破碎/冶金/矿山）',       KA: 1.60 }
+  ],
+
+  /* 链轮材料库：sigmaH/sigmaF 为参考许用值（MPa），km 为相对耐磨系数（45 钢调质 = 1.00） */
+  sprocketMaterials: {
+    '45': {
+      label: '45 钢（中载经济型）',
+      heats: {
+        '调质':      { hrc: 'HB 217~255', sigmaH: 500, sigmaF: 190, km: 1.00 },
+        '齿面淬火':  { hrc: 'HRC 40~50',  sigmaH: 620, sigmaF: 240, km: 1.18 }
+      }
+    },
+    '40Cr': {
+      label: '40Cr（中高载）',
+      heats: {
+        '调质':            { hrc: 'HB 241~286', sigmaH: 560, sigmaF: 220, km: 1.15 },
+        '调质+表面淬火':   { hrc: 'HRC 50~55',  sigmaH: 720, sigmaF: 300, km: 1.40 }
+      }
+    },
+    '20CrMnTi': {
+      label: '20CrMnTi（重载/高速）',
+      heats: {
+        '渗碳淬火': { hrc: 'HRC 58~62', sigmaH: 880, sigmaF: 360, km: 1.80 }
+      }
+    },
+    '35CrMo': {
+      label: '35CrMo（大直径调质）',
+      heats: {
+        '调质': { hrc: 'HB 255~302', sigmaH: 580, sigmaF: 230, km: 1.22 }
+      }
+    },
+    '42CrMo': {
+      label: '42CrMo（大直径调质）',
+      heats: {
+        '调质': { hrc: 'HB 255~302', sigmaH: 620, sigmaF: 250, km: 1.30 }
+      }
+    },
+    '304': {
+      label: '不锈钢 304（腐蚀工况）',
+      heats: {
+        '固溶': { hrc: 'HB ≤187', sigmaH: 330, sigmaF: 130, km: 0.55 }
+      }
+    },
+    '316': {
+      label: '不锈钢 316（腐蚀工况）',
+      heats: {
+        '固溶': { hrc: 'HB ≤187', sigmaH: 350, sigmaF: 140, km: 0.60 }
+      }
+    },
+    'HT200': {
+      label: '铸铁 HT200（低速轻载 z>50）',
+      heats: {
+        '铸态': { hrc: 'HB 170~220', sigmaH: 240, sigmaF: 100, km: 0.50 }
+      }
+    }
+  },
+
+  /* 链条材料库 */
+  chainMaterials: {
+    plate: {
+      '40Mn': { label: '40Mn（冲压 + 调质）', hrc: 'HB 200~240', km: 1.00 },
+      '50Mn': { label: '50Mn（冲压 + 等温淬火）', hrc: 'HB 220~260', km: 1.10 },
+      '65Mn': { label: '65Mn（冲压 + 等温淬火）', hrc: 'HB 240~280', km: 1.20 }
+    },
+    pin: {
+      '40Cr':     { label: '40Cr（表面硬化）', hrc: 'HRC 58~62', depth: '1.2~2.0 mm', km: 1.00 },
+      '20CrMnTi': { label: '20CrMnTi（渗碳淬火）', hrc: 'HRC 58~62', depth: '1.5~2.5 mm', km: 1.15 },
+      'GCr15':    { label: 'GCr15（轴承钢）', hrc: 'HRC 60~64', depth: '1.0~2.0 mm', km: 1.25 }
+    }
+  },
+
+  /* 润滑：磨损修正系数 k_l 与许用链速（m/s）——工程推荐 */
+  lube: {
+    '充分润滑': { kl: 1.0, vlim: 25, note: '油池/喷油，连续供油' },
+    '滴油润滑': { kl: 0.7, vlim: 15, note: '滴油或油绳，间歇供油' },
+    '不良润滑': { kl: 0.4, vlim: 8,  note: '仅初始涂脂或敞开干运行' }
+  },
+
+  /* 环境修正 */
+  env: {
+    '常温': { dust: 1.00, temp: 1.00 },
+    '高温': { dust: 1.00, temp: 1.20 },
+    '粉尘': { dust: 1.35, temp: 1.00 }
+  },
+
+  /* 通用限制 */
+  limits: {
+    wrapMin: 120,        // 包角建议下限（°）
+    aMinPitch: 30,       // 中心距下限（×p）
+    aMaxPitch: 80,       // 中心距上限（×p）
+    zRecMin: 17,         // 寿命推荐最小齿数（工程经验）
+    safetyMin: 7,        // 安全系数可选下限
+    safetyMax: 12        // 安全系数可选上限
+  },
+
+  /* 磨损寿命模型常数 */
+  wear: {
+    // T_h = Cw · ε_lim · p · z1 · b · km · k_l / (Kw · F_work · v)
+    // Cw 量纲 h·W/mm²，使公式量纲闭合；默认值经参考工况标定（非标准值）
+    Cw: 1e6,
+    epsDefault: 3,       // %
+    epsPrecision: 1.5    // %
+  },
+
+  /* 齿形几何系数 */
+  geom: {
+    alphaC: 60,      // 标准直齿廓工作面夹角（°）
+    ka: 0.30,        // 齿顶高系数（h_a = ka·p）——工程默认，待标准表核对
+    kf: 0.33,        // 齿根高系数（h_f = kf·p）——工程默认，待标准表核对
+    rhoF: 0.35,      // 齿根圆角半径系数（ρ = rhoF·p）——工程默认
+    alphaInv: 20,    // 渐开线压力角（°）
+    haInv: 1.0,      // 渐开线齿顶高系数
+    hfInv: 1.25,     // 渐开线齿根高系数
+    profileSeg: 12   // 圆弧/渐开线离散段数
+  },
+
+  /* 公差占位：未确证数值不得编造，state=todo 时 UI 明确提示 */
+  tolerances: {
+    pinDia:   { v: null, unit: 'mm', state: 'todo', src: 'GB/T 10855-2016 销轴直径及公差表' },
+    spanPin:  { v: null, unit: 'mm', state: 'todo', src: 'GB/T 10855-2016 跨柱测量距及量柱直径表' },
+    daTol:    { v: null, unit: 'mm', state: 'todo', src: 'GB/T 10855-2016 齿顶圆直径极限偏差表' },
+    dfTol:    { v: null, unit: 'mm', state: 'todo', src: 'GB/T 10855-2016 齿根圆直径极限偏差表' },
+    keyway:   { v: null, unit: 'mm', state: 'todo', src: 'GB/T 1096 平键键槽尺寸' }
+  },
+
+  /* 默认参数（示例方案 1） */
+  defaults: {
+    n1: 1000, i: 2, z1: 19, z2: 38, P: 5, T: 47.75, a: 508, KA: 1.3, service: 'medium',
+    p: 12.7, b: 20, nPlates: 1, d2: 6.0, q: 1.8, Q: 40,
+    sprocketMat: '45', sprocketHeat: '齿面淬火', plateMat: '50Mn', pinMat: '20CrMnTi',
+    mode: 'straight', width: 22, hubType: 'single', bore: 20, hubDia: 50, hubW: 18,
+    hoursPerDay: 16, daysPerYear: 300, targetLife: 10000, epsLim: 3,
+    lube: '充分润滑', env: '常温', Sreq: 10,
+    alphaC: 60, kaCoef: 0.30, kfCoef: 0.33, rhoF: 0.35,
+    alphaInv: 20, x: 0, autoX: true, autoZmin: true, zminManual: 17,
+    profileSeg: 12, Cw: 1e6
+  },
+
+  /* 溯源条目（页面「系数与来源」表直接渲染） */
+  provenance: [
+    { key: 'd', label: '分度圆直径', value: 'd = p / sin(180°/z)', unit: 'mm', state: 'std', src: 'GB/T 10855-2016 链轮分度圆直径基本公式' },
+    { key: 'Ft', label: '有效圆周力', value: 'Ft = 1000·P / v', unit: 'N', state: 'std', src: '机械传动通用计算式' },
+    { key: 'v', label: '链速', value: 'v = π·d1·n1 / 60000', unit: 'm/s', state: 'std', src: '运动学定义' },
+    { key: 'Fc', label: '离心拉力', value: 'Fc = q·v²', unit: 'N', state: 'std', src: '链条动力学基础式' },
+    { key: 'Fw', label: '工作拉力', value: 'F_work = KA·Ft', unit: 'N', state: 'approx', src: '工程简化（松紧边按 KA 统一放大）' },
+    { key: 'KA', label: '工况系数', value: '1.00 / 1.20 / 1.30 / 1.60', unit: '—', state: 'approx', src: '按设备类型的工程推荐值，需按工况核定' },
+    { key: 'S', label: '安全系数 [S]', value: '7~12（默认 10）', unit: '—', state: 'approx', src: '齿形链工程经验区间，重载冲击取大值' },
+    { key: 'Q', label: '额定抗拉强度', value: '用户输入（示例值）', unit: 'kN', state: 'todo', src: '应按供应商样本 / GB/T 10855-2016 链条规格表填入' },
+    { key: 'ka', label: '齿顶高系数', value: '0.30', unit: '×p', state: 'approx', src: '工程默认，待按 GB/T 10855-2016 齿形表核对' },
+    { key: 'kf', label: '齿根高系数', value: '0.33', unit: '×p', state: 'approx', src: '工程默认，待按 GB/T 10855-2016 齿形表核对（与 z_min=17 锚定）' },
+    { key: 'rhoF', label: '齿根圆角系数', value: '0.35', unit: '×p', state: 'approx', src: '工程默认，待标准/刀具样本核对' },
+    { key: 'alphaC', label: '直齿廓工作面夹角', value: '60', unit: '°', state: 'approx', src: '外接触式齿形链常见 60° 工作面' },
+    { key: 'zminInv', label: '渐开线最小齿数', value: '⌊2(ha*−x)/sin²α⌋', unit: '—', state: 'std', src: '渐开线不根切条件（α=20°、x=0 → 17）' },
+    { key: 'xmin', label: '最小变位系数', value: 'x_min = ha* − z·sin²α/2', unit: '—', state: 'std', src: '渐开线齿廓不根切变位条件' },
+    { key: 'km', label: '配对磨损系数', value: '√(km_轮·√(km_板·km_销))', unit: '—', state: 'approx', src: '相对耐磨系数（45 钢调质 = 1.0），需台架标定' },
+    { key: 'kl', label: '润滑修正系数', value: '充分 1.0 / 滴油 0.7 / 不良 0.4', unit: '—', state: 'approx', src: '工程推荐，需按实际供油状态修正' },
+    { key: 'Kw', label: '工况磨损系数', value: 'KA · f_粉尘 · f_温度', unit: '—', state: 'approx', src: '粉尘 1.35、高温 1.20（工程推荐）' },
+    { key: 'Cw', label: '寿命标定常数', value: '1.0×10⁶', unit: 'h·W/mm²', state: 'calib', src: '使参考工况落入 10⁴ h 量级的标定值，需按实测寿命反标定' },
+    { key: 'eps', label: '许用磨损伸长率', value: '3%（精密 1.5%）', unit: '%', state: 'approx', src: '齿形链工程判据常用值' },
+    { key: 'vlim', label: '许用链速', value: '充分 25 / 滴油 15 / 不良 8', unit: 'm/s', state: 'approx', src: '按润滑状态的工程推荐上限' },
+    { key: 'wrap', label: '包角下限', value: '120', unit: '°', state: 'approx', src: '通用带/链传动包角建议' },
+    { key: 'MR', label: '跨柱测量距', value: '偶数 z: d+dr；奇数 z: d·cos(π/2z)+dr', unit: 'mm', state: 'approx', src: '量柱测量几何；量柱直径 dr 待标准表填入' },
+    { key: 'tol', label: '尺寸公差', value: '占位（未填写）', unit: 'mm', state: 'todo', src: 'GB/T 10855-2016 公差表，须工程师按原文填入' }
+  ]
+};
+
+/* -------------------------------------------------------------------------
+   2. 工具函数
+   ------------------------------------------------------------------------- */
+const U = {
+  num(v, d = 0) {
+    const n = parseFloat(v);
+    return Number.isFinite(n) ? n : d;
+  },
+  clamp(v, a, b) { return Math.min(b, Math.max(a, v)); },
+  round(v, n = 3) {
+    const f = Math.pow(10, n);
+    return Math.round((v + Number.EPSILON) * f) / f;
+  },
+  // 数字显示：按量级自动定小数位
+  fmt(v, digits) {
+    if (!Number.isFinite(v)) return '—';
+    let d = digits;
+    if (d === undefined) {
+      const a = Math.abs(v);
+      d = a >= 10000 ? 0 : a >= 1000 ? 1 : a >= 100 ? 2 : a >= 1 ? 3 : 4;
+    }
+    return v.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
+  },
+  pct(v, digits = 1) { return (v * 100).toFixed(digits) + '%'; },
+  clone(o) { return JSON.parse(JSON.stringify(o)); },
+  esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c => (
+      { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+    ));
+  },
+  nowISO() { return new Date().toISOString(); }
+};
+
+/* -------------------------------------------------------------------------
+   3. ChainCalc —— 纯函数计算引擎（不依赖 DOM）
+   ------------------------------------------------------------------------- */
+const ChainCalc = (() => {
+  const D2R = Math.PI / 180;
+
+  /** 材料查表：返回当前链轮材料+热处理组合 */
+  function sprocketMat(params) {
+    const m = CONFIG.sprocketMaterials[params.sprocketMat] || CONFIG.sprocketMaterials['45'];
+    const h = m.heats[params.sprocketHeat] || Object.values(m.heats)[0];
+    return { key: params.sprocketMat, label: m.label, heat: params.sprocketHeat, ...h };
+  }
+
+  /**
+   * 链轮几何
+   * 分度圆 d = p / sin(180°/z)  （GB/T 10855-2016 基本公式）
+   * 直齿廓：da = d + 2·ka·p；df = d − 2·kf·p（系数待标准表核对）
+   * 渐开线：m = p/π；da = d + 2m(ha*+x)；df = d − 2m(hf*−x)
+   * @returns {object} 几何量（mm）
+   */
+  function geometry(params) {
+    const p = params.p, z1 = params.z1, z2 = params.z2;
+    const r1 = p / (2 * Math.sin(Math.PI / z1));
+    const r2 = p / (2 * Math.sin(Math.PI / z2));
+    const d1 = 2 * r1, d2 = 2 * r2;
+
+    let da1, df1, da2, df2, xUsed = null, m = null;
+    if (params.mode === 'involute') {
+      m = p / Math.PI;
+      const alpha = params.alphaInv * D2R;
+      const ha = CONFIG.geom.haInv, hf = CONFIG.geom.hfInv;
+      const sin2 = Math.sin(alpha) ** 2;
+      if (params.autoX) {
+        // 自动求解唯一变位：使当前 z1 恰好不根切
+        xUsed = Math.max(0, ha - z1 * sin2 / 2);
+      } else {
+        xUsed = params.x;
+      }
+      da1 = d1 + 2 * m * (ha + xUsed);
+      df1 = d1 - 2 * m * (hf - xUsed);
+      da2 = d2 + 2 * m * (ha + xUsed);
+      df2 = d2 - 2 * m * (hf - xUsed);
+    } else {
+      da1 = d1 + 2 * params.kaCoef * p;
+      df1 = d1 - 2 * params.kfCoef * p;
+      da2 = d2 + 2 * params.kaCoef * p;
+      df2 = d2 - 2 * params.kfCoef * p;
+    }
+
+    // 跨柱测量距（量柱直径 dr 取 0.55p 为工程占位，state=todo）
+    const dr = 0.55 * p;
+    const mr = (d, z) => (z % 2 === 0 ? d + dr : d * Math.cos(Math.PI / (2 * z)) + dr);
+
+    return { p, z1, z2, d1, d2, r1, r2, da1, da2, df1, df2, dr, MR1: mr(d1, z1), MR2: mr(d2, z2), xUsed, m };
+  }
+
+  /**
+   * 根切（几何约束，与拉力无关）
+   * 直齿廓：齿槽在齿根圆处是否闭合
+   *   w(ρf) = 2πρf/z − [s_p + 2(r−ρf)tan(αc/2)] ≥ 0
+   * 渐开线：z_min = ⌊2(ha*−x)/sin²α⌋
+   * @returns {object} {mode, zMin, z1Ok, z2Ok, margin, xMin, xUsed, ...}
+   */
+  function undercut(params, g) {
+    const p = params.p;
+    if (params.mode === 'involute') {
+      const alpha = params.alphaInv * D2R;
+      const sin2 = Math.sin(alpha) ** 2;
+      const ha = CONFIG.geom.haInv;
+      const x = g.xUsed;
+      let zMin = Math.floor(2 * (ha - x) / sin2);
+      zMin = Math.max(6, zMin);
+      // 手动覆盖（关闭自动求解时，用户可手输 z_min）
+      if (params.autoZmin === false && params.zminManual > 0) zMin = Math.floor(params.zminManual);
+      const z1Ok = params.z1 >= zMin;
+      const z2Ok = params.z2 >= zMin;
+      const xMinForZ1 = ha - params.z1 * sin2 / 2;
+      const marginal = z1Ok && (params.z1 - zMin) < 1;
+      return {
+        mode: 'involute', zMin, z1Ok, z2Ok, marginal,
+        margin: params.z1 - zMin, xUsed: x, xMin: xMinForZ1,
+        criterion: `z ≥ ⌊2(ha*−x)/sin²α⌋ = ${zMin}`,
+        detail: `α=${params.alphaInv}°, ha*=${ha}, x=${U.round(x, 4)}`
+      };
+    }
+
+    // 标准直齿廓：数值求最小不根切齿数
+    const beta = (params.alphaC / 2) * D2R;
+    const sp = 0.5 * p;                 // 分度圆齿厚（p/2，未计侧隙）
+    const tanB = Math.tan(beta);
+
+    function wf(z) {
+      const r = p / (2 * Math.sin(Math.PI / z));
+      const rf = r - params.kfCoef * p;
+      const t = sp + 2 * (r - rf) * tanB;
+      return 2 * Math.PI * rf / z - t;
+    }
+    function tipThick(z) {
+      const r = p / (2 * Math.sin(Math.PI / z));
+      const ra = r + params.kaCoef * p;
+      return sp - 2 * (ra - r) * tanB;
+    }
+    let zMin = 80;
+    for (let z = 6; z <= 80; z++) {
+      if (wf(z) >= 0 && tipThick(z) > 0) { zMin = z; break; }
+    }
+    // 关闭自动求解时：按工程师手输 z_min 只做通过/不通过判定
+    if (params.autoZmin === false && params.zminManual > 0) zMin = Math.floor(params.zminManual);
+    const margin = wf(params.z1) / p;   // 无量纲齿根槽宽余量
+    const z1Ok = params.z1 >= zMin && wf(params.z1) >= 0 && tipThick(params.z1) > 0;
+    const z2Ok = params.z2 >= zMin && wf(params.z2) >= 0 && tipThick(params.z2) > 0;
+    return {
+      mode: 'straight', zMin, z1Ok, z2Ok, marginal: z1Ok && (params.z1 - zMin) <= 0,
+      margin, wf: wf(params.z1), tipThick: tipThick(params.z1),
+      criterion: `齿根槽宽 w(ρf) ≥ 0 且齿顶未变尖`,
+      detail: `αc=${params.alphaC}°, kf=${params.kfCoef}, ka=${params.kaCoef}`
+    };
+  }
+
+  /**
+   * 链条受力
+   * v = π·d1·n1/60000；Ft = 1000P/v；Fc = q·v²；F_work = KA·Ft
+   * S = Q / F_work；Q_req = [S]·F_work
+   */
+  function force(params, g) {
+    const v = Math.PI * g.d1 * params.n1 / 60000;      // m/s
+    const P = params.P;                                 // kW
+    const Ft = v > 1e-9 ? 1000 * P / v : 0;             // N
+    const Fc = params.q * v * v;                        // N
+    const Fw = params.KA * Ft;                          // N
+    const Qn = params.Q * 1000;                         // N
+    const S = Fw > 1e-9 ? Qn / Fw : 0;
+    const Qreq = params.Sreq * Fw / 1000;               // kN
+    const margin = Qreq > 0 ? (params.Q - Qreq) / Qreq : 0;
+    return { v, P, Ft, Fc, Fw, Qn, S, Qreq, margin, n1: params.n1 };
+  }
+
+  /**
+   * 磨损寿命（工程近似）
+   * T_h = Cw · ε_lim · p · z1 · b · km · k_l / (Kw · F_work · v)
+   * 各项量纲：Cw[h·W/mm²]·ε[—]·p[mm]·z1[—]·b[mm]/(Kw[—]·F[N]·v[m/s])
+   * 说明：保留 z1 正相关（啮合齿数/比压/多边形效应）与材料系数。
+   */
+  function wear(params, g, f) {
+    const matS = sprocketMat(params);
+    const plate = CONFIG.chainMaterials.plate[params.plateMat] || { km: 1 };
+    const pin = CONFIG.chainMaterials.pin[params.pinMat] || { km: 1 };
+    const kmChain = Math.sqrt(plate.km * pin.km);
+    const km = Math.sqrt(matS.km * kmChain);         // 配对几何平均
+    const kl = (CONFIG.lube[params.lube] || CONFIG.lube['充分润滑']).kl;
+    const env = CONFIG.env[params.env] || CONFIG.env['常温'];
+    const Kw = params.KA * env.dust * env.temp;
+    const eps = params.epsLim / 100;
+    const denom = Kw * f.Fw * f.v;
+    const Th = denom > 1e-9 ? (params.Cw * eps * params.p * params.z1 * params.b * km * kl) / denom : 0;
+    const years = Th / ((params.hoursPerDay || 1) * (params.daysPerYear || 1));
+    return { km, kmSprocket: matS.km, kmChain, kl, Kw, eps, Th, years, matS, plate, pin };
+  }
+
+  /** 主求解：params → results（纯函数） */
+  function solve(params) {
+    const g = geometry(params);
+    const u = undercut(params, g);
+    const f = force(params, g);
+    const w = wear(params, g, f);
+    const lube = CONFIG.lube[params.lube] || CONFIG.lube['充分润滑'];
+    const vlim = lube.vlim;
+
+    // 辅助：中心距与包角
+    const aRec = Math.round(Math.max(CONFIG.limits.aMinPitch * params.p, 0.5 * (g.d1 + g.d2) + 2 * params.p));
+    const a = params.a > 0 ? params.a : aRec;
+    const wrap = 180 - 57.29578 * (g.d2 - g.d1) / Math.max(a, 1e-6);
+    const zRec = Math.max(u.zMin + 2, CONFIG.limits.zRecMin);
+
+    // 校核状态
+    const st = (ok, warn) => (ok ? (warn ? 'warn' : 'ok') : 'bad');
+    const checks = [
+      {
+        id: 'undercut', name: '根切 / 最小齿数',
+        status: u.z1Ok && u.z2Ok ? (u.marginal ? 'warn' : 'ok') : 'bad',
+        value: `z_min = ${u.zMin}`,
+        reason: `当前 z1=${params.z1}、z2=${params.z2}；判据：${u.criterion}（${u.detail}）`,
+        advice: u.z1Ok && u.z2Ok
+          ? (u.marginal ? '处于根切临界，建议 z1 再增 2 齿或取正变位。' : '满足几何不根切条件。')
+          : (params.mode === 'involute' ? '增大齿数 z1 / 提高正变位系数 x / 减小压力角。' : '增大 z1 或改用渐开线模式（非 GB/T 10855 覆盖）。')
+      },
+      {
+        id: 'force', name: '链条拉力 / 抗拉强度',
+        status: st(f.S >= params.Sreq, f.S < params.Sreq * 1.15),
+        value: `S = ${U.fmt(f.S, 2)}`,
+        reason: `Q = ${params.Q} kN，F_work = ${U.fmt(f.Fw, 1)} N，实际安全系数 S = Q/F_work。`,
+        advice: f.S >= params.Sreq ? '满足强度储备要求。' : `选用更高 Q 的链条或增加链宽/排数；所需 Q ≥ ${U.fmt(f.Qreq, 1)} kN。`
+      },
+      {
+        id: 'speed', name: '链速 / 润滑上限',
+        status: st(f.v <= vlim, f.v > vlim * 0.8),
+        value: `v = ${U.fmt(f.v, 2)} m/s`,
+        reason: `${params.lube} 推荐许用链速 ${vlim} m/s（工程值）。`,
+        advice: f.v <= vlim ? '链速在推荐范围内。' : '降低 n1、增大齿数或改善润滑（提高许用链速）。'
+      },
+      {
+        id: 'teeth', name: '小链轮齿数（寿命推荐）',
+        status: st(params.z1 >= zRec, params.z1 < zRec && params.z1 >= u.zMin),
+        value: `推荐 ≥ ${zRec}`,
+        reason: `几何最小 z_min=${u.zMin}，寿命推荐 z ≥ z_min+2 且不低于 ${CONFIG.limits.zRecMin}。`,
+        advice: params.z1 >= zRec ? '齿数配置合理。' : '适当增大 z1 可提高寿命并降低多边形效应。'
+      },
+      {
+        id: 'layout', name: '中心距 / 包角',
+        status: st(wrap >= CONFIG.limits.wrapMin && a >= CONFIG.limits.aMinPitch * params.p,
+          wrap >= 100 && (wrap < CONFIG.limits.wrapMin || a < CONFIG.limits.aMinPitch * params.p)),
+        value: `α = ${U.fmt(wrap, 1)}°`,
+        reason: `a = ${U.fmt(a, 0)} mm，推荐 ${U.fmt(CONFIG.limits.aMinPitch * params.p, 0)}~${U.fmt(CONFIG.limits.aMaxPitch * params.p, 0)} mm；包角建议 ≥ ${CONFIG.limits.wrapMin}°。`,
+        advice: wrap >= CONFIG.limits.wrapMin ? '布置合理。' : '增大中心距或减小传动比，避免包角过小导致啮合齿数不足。'
+      },
+      {
+        id: 'life', name: '磨损寿命 / 目标寿命',
+        status: st(w.Th >= params.targetLife, w.Th < params.targetLife && w.Th >= params.targetLife * 0.8),
+        value: `T = ${U.fmt(w.Th, 0)} h`,
+        reason: `ε_lim=${params.epsLim}%，目标 ${U.fmt(params.targetLife, 0)} h，折合 ${U.fmt(w.years, 1)} 年。`,
+        advice: w.Th >= params.targetLife
+          ? '满足目标寿命（模型为工程近似，绝对寿命需按样本/试验标定 Cw）。'
+          : '增大 z1、加宽链条、改善润滑或降低载荷/转速；或核对 Cw 标定。'
+      }
+    ];
+
+    const modeLabel = params.mode === 'involute' ? '渐开线（非标准覆盖）' : '标准直齿廓';
+    const rows = buildRows(params, g, u, f, w, a, aRec, wrap, zRec, vlim);
+
+    return {
+      params, geometry: g, undercut: u, force: f, wear: w,
+      aux: { a, aRec, wrap, zRec, vlim },
+      checks, rows,
+      modeLabel,
+      valid: params.z1 >= 3 && params.z2 >= 3 && params.p > 0 && params.n1 > 0 && params.P >= 0
+    };
+  }
+
+  /** 明细表行 */
+  function buildRows(p, g, u, f, w, a, aRec, wrap, zRec, vlim) {
+    const rows = [];
+    const add = (item, sym, formula, sub, value, unit, hl) => rows.push({ item, sym, formula, sub, value, unit, hl: !!hl });
+
+    add('主动轮分度圆直径', 'd1', 'p / sin(180°/z1)', `${p.p} / sin(180°/${p.z1})`, U.fmt(g.d1, 3), 'mm', true);
+    add('从动轮分度圆直径', 'd2', 'p / sin(180°/z2)', `${p.p} / sin(180°/${p.z2})`, U.fmt(g.d2, 3), 'mm');
+    add('主动轮齿顶圆直径', 'da1', g.m === null ? 'd1 + 2·ka·p' : 'd1 + 2m(ha*+x)',
+      g.m === null ? `${U.fmt(g.d1, 2)} + 2×${p.kaCoef}×${p.p}` : `${U.fmt(g.d1, 2)} + 2×${U.fmt(g.m, 3)}×(1+${U.fmt(g.xUsed, 4)})`,
+      U.fmt(g.da1, 3), 'mm');
+    add('主动轮齿根圆直径', 'df1', g.m === null ? 'd1 − 2·kf·p' : 'd1 − 2m(hf*−x)',
+      g.m === null ? `${U.fmt(g.d1, 2)} − 2×${p.kfCoef}×${p.p}` : `${U.fmt(g.d1, 2)} − 2×${U.fmt(g.m, 3)}×(1.25−${U.fmt(g.xUsed, 4)})`,
+      U.fmt(g.df1, 3), 'mm');
+    add('主动轮跨柱测量距', 'MR1', p.z1 % 2 === 0 ? 'd1 + dr' : 'd1·cos(π/2z1) + dr',
+      `dr = ${U.fmt(g.dr, 2)}（占位）`, U.fmt(g.MR1, 3), 'mm');
+    if (p.mode === 'straight') {
+      add('齿顶弦齿厚', 'ta1', 'p/2 − 2·ka·p·tan(αc/2)', `p/2 − 2×${p.kaCoef}×${p.p}×tan(${p.alphaC / 2}°)`,
+        U.fmt(u.tipThick, 3), 'mm');
+      add('齿根槽宽（判定量）', 'w(ρf)', '2πρf/z − [p/2 + 2(r−ρf)tan(αc/2)]',
+        `z=${p.z1}，余量 ${U.fmt(u.margin, 4)}p`, U.fmt(u.wf, 3), 'mm', true);
+    }
+    add('不根切最小齿数', 'z_min', p.mode === 'involute' ? '⌊2(ha*−x)/sin²α⌋' : '数值求解 w(ρf) ≥ 0',
+      u.detail, String(u.zMin), '—', true);
+    if (p.mode === 'involute') {
+      add('最小变位系数（z1）', 'x_min', 'ha* − z1·sin²α/2', `1 − ${p.z1}×sin²${p.alphaInv}°/2`,
+        U.fmt(u.xMin, 4), '—');
+    }
+    add('链速', 'v', 'π·d1·n1 / 60000', `π×${U.fmt(g.d1, 2)}×${p.n1} / 60000`, U.fmt(f.v, 3), 'm/s', true);
+    add('有效圆周力', 'Ft', '1000·P / v', `1000×${p.P} / ${U.fmt(f.v, 3)}`, U.fmt(f.Ft, 1), 'N');
+    add('离心拉力', 'Fc', 'q · v²', `${p.q} × ${U.fmt(f.v, 3)}²`, U.fmt(f.Fc, 1), 'N');
+    add('工作拉力', 'F_work', 'KA · Ft', `${p.KA} × ${U.fmt(f.Ft, 1)}`, U.fmt(f.Fw, 1), 'N', true);
+    add('实际安全系数', 'S', 'Q / F_work', `${p.Q}000 / ${U.fmt(f.Fw, 1)}`, U.fmt(f.S, 2), '—');
+    add('所需额定抗拉强度', 'Q_req', '[S] · F_work', `${p.Sreq} × ${U.fmt(f.Fw, 1)}`, U.fmt(f.Qreq, 1), 'kN', true);
+    add('配对磨损系数', 'km', '√(km轮 · √(km板·km销))',
+      `√(${U.fmt(w.kmSprocket, 2)} × √(${w.plate.km}×${w.pin.km}))`, U.fmt(w.km, 3), '—');
+    add('润滑修正系数', 'k_l', '按润滑状态', p.lube, U.fmt(w.kl, 2), '—');
+    add('工况磨损系数', 'Kw', 'KA · f粉尘 · f温度',
+      `${p.KA} × ${CONFIG.env[p.env].dust} × ${CONFIG.env[p.env].temp}`, U.fmt(w.Kw, 3), '—');
+    add('预估磨损寿命', 'T_h', 'Cw·ε·p·z1·b·km·k_l /(Kw·F_work·v)',
+      `Cw=${p.Cw.toExponential(1)}`, U.fmt(w.Th, 0), 'h', true);
+    add('折合工作年数', 'T_y', 'T_h /(日工时×年天数)', `${U.fmt(w.Th, 0)} /( ${p.hoursPerDay}×${p.daysPerYear} )`, U.fmt(w.years, 1), '年');
+    add('小端包角', 'α_w', '180° − 57.3°(d2−d1)/a', `180 − 57.3×(${U.fmt(g.d2, 1)}−${U.fmt(g.d1, 1)})/${U.fmt(a, 0)}`, U.fmt(wrap, 1), '°');
+    add('推荐中心距', 'a_rec', 'max(30p, (d1+d2)/2 + 2p)', `max(${U.fmt(30 * p.p, 0)}, ${U.fmt(0.5 * (g.d1 + g.d2) + 2 * p.p, 0)})`, U.fmt(aRec, 0), 'mm');
+    add('寿命推荐齿数', 'z_rec', 'max(z_min+2, 17)', `max(${u.zMin}+2, 17)`, String(zRec), '—');
+    return rows;
+  }
+
+  /**
+   * 自检（验收算例）
+   * p=12.7, z1=19, z2=38, n1=1000, P=5, KA=1.3，Q=40kN 示例值
+   */
+  function selftest() {
+    const base = U.clone(CONFIG.defaults);
+    Object.assign(base, {
+      n1: 1000, z1: 19, z2: 38, P: 5, KA: 1.3, p: 12.7, b: 20,
+      Q: 40, lube: '充分润滑', env: '常温', Cw: 1e6, a: 508,
+      sprocketMat: '45', sprocketHeat: '齿面淬火', plateMat: '50Mn', pinMat: '20CrMnTi'
+    });
+    const r = solve(base);
+    const items = [];
+    const cmp = (name, actual, expect, tol = 0.0001) => {
+      const dev = Math.abs(actual - expect) / Math.abs(expect);
+      items.push({ name, expect: U.fmt(expect, 4), actual: U.fmt(actual, 4), dev: (dev * 100).toFixed(4) + '%', pass: dev <= tol });
+    };
+    cmp('分度圆 d1', r.geometry.d1, 77.1594);
+    cmp('分度圆 d2', r.geometry.d2, 153.7915);
+    cmp('链速 v', r.force.v, 4.0400);
+    cmp('圆周力 Ft', r.force.Ft, 1237.63);
+    cmp('工作拉力 F_work', r.force.Fw, 1608.92);
+
+    // 根切模式一致性
+    const s12 = solve({ ...base, z1: 12, z2: 24 });
+    const s30 = solve({ ...base, z1: 30, z2: 60 });
+    items.push({ name: '直齿廓 z=12 根切判定', expect: '不通过', actual: s12.undercut.z1Ok ? '通过' : '不通过', dev: '—', pass: !s12.undercut.z1Ok });
+    items.push({ name: '直齿廓 z=30 根切判定', expect: '通过', actual: s30.undercut.z1Ok ? '通过' : '不通过', dev: '—', pass: s30.undercut.z1Ok });
+
+    const inv16 = solve({ ...base, mode: 'involute', alphaInv: 20, autoX: false, x: 0, z1: 16, z2: 32 });
+    const inv18 = solve({ ...base, mode: 'involute', alphaInv: 20, autoX: false, x: 0, z1: 18, z2: 36 });
+    items.push({ name: '渐开线 x=0, z=16', expect: '不通过', actual: inv16.undercut.z1Ok ? '通过' : '不通过', dev: `z_min=${inv16.undercut.zMin}`, pass: !inv16.undercut.z1Ok });
+    items.push({ name: '渐开线 x=0, z=18', expect: '通过', actual: inv18.undercut.z1Ok ? '通过' : '不通过', dev: `z_min=${inv18.undercut.zMin}`, pass: inv18.undercut.z1Ok });
+    const inv16x = solve({ ...base, mode: 'involute', autoX: true, z1: 16, z2: 32 });
+    items.push({ name: '渐开线 z=16 自动变位', expect: '通过', actual: inv16x.undercut.z1Ok ? '通过' : '不通过', dev: `x=${U.fmt(inv16x.geometry.xUsed, 3)}`, pass: inv16x.undercut.z1Ok });
+
+    // 寿命单调性
+    const z25 = solve({ ...base, z1: 25, z2: 50 });
+    items.push({ name: '寿命随 z1 增大而上升', expect: `> ${U.fmt(r.wear.Th, 0)} h`, actual: `${U.fmt(z25.wear.Th, 0)} h`, dev: '—', pass: z25.wear.Th > r.wear.Th });
+    const f2 = solve({ ...base, P: 10 });
+    items.push({ name: '寿命随 F_work 增大而下降', expect: `< ${U.fmt(r.wear.Th, 0)} h`, actual: `${U.fmt(f2.wear.Th, 0)} h`, dev: '—', pass: f2.wear.Th < r.wear.Th });
+
+    return {
+      items,
+      pass: items.every(i => i.pass),
+      reference: {
+        d1: r.geometry.d1, d2: r.geometry.d2, v: r.force.v, Ft: r.force.Ft, Fw: r.force.Fw,
+        life: r.wear.Th, zmin: r.undercut.zMin,
+        note: 'Q=40kN 为示例值；12B 属滚子链型号（p=19.05），与 p=12.7 不一致，此处仅作 Q 输入示例。'
+      }
+    };
+  }
+
+  /**
+   * 单齿几何（直齿廓/渐开线共用）
+   * @returns {{r:number,ra:number,rf:number,halfAng:function,step:number}}
+   */
+  function toothGeo(params, z) {
+    const p = params.p;
+    const r = p / (2 * Math.sin(Math.PI / z));
+    const xUsed = params.autoX
+      ? Math.max(0, CONFIG.geom.haInv - z * Math.sin(params.alphaInv * D2R) ** 2 / 2)
+      : params.x;
+    let ra, rf, halfAng;
+    if (params.mode === 'involute') {
+      const m = p / Math.PI;
+      ra = r + m * (CONFIG.geom.haInv + xUsed);
+      rf = r - m * (CONFIG.geom.hfInv - xUsed);
+      const alpha = params.alphaInv * D2R;
+      const rb = r * Math.cos(alpha);
+      const inv = a => Math.tan(a) - a;
+      const psi0 = (0.5 * p) / (2 * r) + inv(alpha);
+      halfAng = (rho) => {
+        if (rho <= rb) return psi0;
+        const ar = Math.acos(Math.min(1, rb / rho));
+        return Math.max(0.0015, psi0 - (inv(ar) - inv(alpha)));
+      };
+      rf = Math.max(rf, rb * 1.002);
+    } else {
+      ra = r + params.kaCoef * p;
+      rf = r - params.kfCoef * p;
+      const tanB = Math.tan((params.alphaC / 2) * D2R);
+      const sp = 0.5 * p;
+      const thick = (rho) => (rho <= r ? sp + 2 * (r - rho) * tanB : sp - 2 * (rho - r) * tanB);
+      halfAng = (rho) => Math.max(0.0015, thick(rho) / 2 / rho);
+      let guard = 0;
+      while ((2 * Math.PI * rf / z - thick(rf)) < 0.002 * p && rf < r - 0.02 * p && guard++ < 400) rf += 0.005 * p;
+    }
+    return { r, ra, rf, halfAng, step: 2 * Math.PI / z, xUsed };
+  }
+
+  /**
+   * 端面齿廓离散点（2D 绘图用）
+   * @returns {Array<[number,number]>} 逆时针闭合点列（mm）
+   */
+  function profile(params, z) {
+    const { ra, rf, halfAng, step } = toothGeo(params, z);
+    const N = Math.max(6, Math.round(params.profileSeg || 12));
+    const pts = [];
+    const push = (rho, th) => pts.push([rho * Math.cos(th), rho * Math.sin(th)]);
+    for (let k = 0; k < z; k++) {
+      const c = k * step;
+      const haIn = halfAng(rf), haOut = halfAng(ra);
+      for (let i = 0; i <= N; i++) {
+        const rho = rf + (ra - rf) * i / N;
+        push(rho, c - halfAng(rho));
+      }
+      const tipSeg = Math.max(3, Math.round(N / 2));
+      for (let i = 1; i < tipSeg; i++) {
+        push(ra, c - haOut + 2 * haOut * i / tipSeg);
+      }
+      for (let i = N; i >= 0; i--) {
+        const rho = rf + (ra - rf) * i / N;
+        push(rho, c + halfAng(rho));
+      }
+      const rootSeg = Math.max(3, Math.round(N / 2));
+      const a0 = c + haIn, a1 = c + step - haIn;
+      for (let i = 1; i < rootSeg; i++) push(rf, a0 + (a1 - a0) * i / rootSeg);
+    }
+    return pts;
+  }
+
+  /**
+   * 端面齿廓精确边（3D B-Rep 用）
+   * 直齿廓：直线齿侧 + 圆弧齿顶/齿根（真圆弧边）
+   * 渐开线：渐开线齿侧离散为直线段 + 圆弧
+   * @returns {Array<{type:'line'|'arc', a:number[], b:number[], r?:number}>}
+   */
+  function profileEdges(params, z) {
+    const { ra, rf, halfAng, step } = toothGeo(params, z);
+    const edges = [];
+    const pt = (rho, th) => [rho * Math.cos(th), rho * Math.sin(th)];
+    const N = Math.max(3, Math.round((params.profileSeg || 12) / 2));
+    for (let k = 0; k < z; k++) {
+      const c = k * step;
+      const haIn = halfAng(rf), haOut = halfAng(ra);
+      if (params.mode === 'involute') {
+        for (let i = 0; i < N; i++) {
+          const r1 = rf + (ra - rf) * i / N, r2 = rf + (ra - rf) * (i + 1) / N;
+          edges.push({ type: 'line', a: pt(r1, c - halfAng(r1)), b: pt(r2, c - halfAng(r2)) });
+        }
+      } else {
+        edges.push({ type: 'line', a: pt(rf, c - haIn), b: pt(ra, c - haOut) });
+      }
+      edges.push({ type: 'arc', r: ra, a: pt(ra, c - haOut), b: pt(ra, c + haOut) });
+      if (params.mode === 'involute') {
+        for (let i = N; i > 0; i--) {
+          const r1 = rf + (ra - rf) * i / N, r2 = rf + (ra - rf) * (i - 1) / N;
+          edges.push({ type: 'line', a: pt(r1, c + halfAng(r1)), b: pt(r2, c + halfAng(r2)) });
+        }
+      } else {
+        edges.push({ type: 'line', a: pt(ra, c + haOut), b: pt(rf, c + haIn) });
+      }
+      edges.push({ type: 'arc', r: rf, a: pt(rf, c + haIn), b: pt(rf, c + step - haIn) });
+    }
+    return edges;
+  }
+
+  return { geometry, undercut, force, wear, solve, selftest, toothGeo, profile, profileEdges, sprocketMat };
+})();
+
+
+/* =========================================================================
+   4. UI —— 参数渲染 / 校验 / 看板 / 2D 齿廓
+   ========================================================================= */
+
+const GROUPS = [
+  { id: 'basic',    idx: '01', title: '传动基本参数', sub: 'POWER / SPEED' },
+  { id: 'chain',    idx: '02', title: '链条选型（标准配件）', sub: 'CHAIN' },
+  { id: 'sprocket', idx: '03', title: '链轮参数', sub: 'SPROCKET' },
+  { id: 'material', idx: '04', title: '材料与热处理', sub: 'MATERIAL' },
+  { id: 'duty',     idx: '05', title: '工况与寿命', sub: 'DUTY / LIFE' },
+  { id: 'advanced', idx: '06', title: '齿形高级参数', sub: 'TOOTH PROFILE', collapsed: true }
+];
+
+const FIELDS = [
+  // ---------- 基本 ----------
+  { key: 'n1', group: 'basic', label: '主动轮转速', sym: 'n1', unit: 'r/min', min: 10, max: 6000, step: 10,
+    tip: '输入轴转速。公式：v = π·d1·n1/60000。' },
+  { key: 'i', group: 'basic', label: '传动比', sym: 'i', unit: '—', min: 1, max: 8, step: 0.01,
+    tip: 'i = n1/n2 = z2/z1。修改后自动圆整 z2；也可直接改 z2 反算 i。' },
+  { key: 'P', group: 'basic', label: '传递功率', sym: 'P', unit: 'kW', min: 0.1, max: 500, step: 0.1,
+    tip: '与扭矩联动：T = 9550·P/n1（N·m）。' },
+  { key: 'T', group: 'basic', label: '工作扭矩', sym: 'T', unit: 'N·m', min: 0.1, max: 50000, step: 1,
+    tip: 'T = 9550·P/n1。修改扭矩将反算功率。' },
+  { key: 'a', group: 'basic', label: '中心距', sym: 'a', unit: 'mm', min: 30, max: 6000, step: 1, type: 'autoA',
+    tip: '初算推荐 a ≈ max(30p, (d1+d2)/2 + 2p)；点击「推荐」自动填入。' },
+  { key: 'service', group: 'basic', label: '设备类型', sym: '—', unit: 'KA', type: 'select', options: 'service',
+    tip: '按设备类型联动工况系数 KA（工程推荐值，需按实际工况核定）。' },
+  { key: 'KA', group: 'basic', label: '工况系数', sym: 'KA', unit: '—', min: 1.0, max: 2.5, step: 0.05,
+    tip: 'F_work = KA·Ft；同时参与磨损系数 Kw。均匀 1.0 / 中等冲击 1.4 / 重冲击 1.65。' },
+
+  // ---------- 链条 ----------
+  { key: 'pModel', group: 'chain', label: '常用节距系列', sym: 'p', unit: 'mm', type: 'select', options: 'pitch',
+    tip: 'GB/T 10855-2016 常用节距系列（具体型号与标准表待核对）。选择后同步节距 p。' },
+  { key: 'p', group: 'chain', label: '链条节距', sym: 'p', unit: 'mm', min: 6, max: 70, step: 0.001,
+    tip: '标准配件选型核心参数。分度圆 d = p/sin(180°/z)。' },
+  { key: 'b', group: 'chain', label: '链宽', sym: 'b', unit: 'mm', min: 6, max: 300, step: 0.5,
+    tip: '链板总宽（含销轴长度方向的有效承压宽度）。寿命模型中与 b 正相关。' },
+  { key: 'nPlates', group: 'chain', label: '链板排数', sym: 'n', unit: '排', min: 1, max: 4, step: 1,
+    tip: '多排链可提高承载能力；初算按单排 Q 值，多排请按样本换算 Q。' },
+  { key: 'd2', group: 'chain', label: '销轴直径', sym: 'd2', unit: 'mm', min: 2, max: 40, step: 0.1,
+    tip: '销轴直径，影响比压与弯曲；公差见 GB/T 10855-2016 销轴表（CONFIG 占位）。' },
+  { key: 'q', group: 'chain', label: '单位长度质量', sym: 'q', unit: 'kg/m', min: 0.1, max: 60, step: 0.1,
+    tip: '用于离心拉力 Fc = q·v²；按样本取值。' },
+  { key: 'Q', group: 'chain', label: '额定抗拉强度', sym: 'Q', unit: 'kN', min: 1, max: 2000, step: 1,
+    tip: '按型号+材料查样本值。默认 40 kN 为示例值（非标准值），禁止直接用于生产。', state: 'todo' },
+
+  // ---------- 链轮 ----------
+  { key: 'z1', group: 'sprocket', label: '主动轮齿数', sym: 'z1', unit: '齿', min: 6, max: 80, step: 1,
+    tip: '根切与寿命的关键参数。直齿廓默认几何最小约 17 齿；寿命推荐 z ≥ z_min+2。' },
+  { key: 'z2', group: 'sprocket', label: '从动轮齿数', sym: 'z2', unit: '齿', min: 6, max: 160, step: 1,
+    tip: '修改后自动反算传动比 i = z2/z1。' },
+  { key: 'mode', group: 'sprocket', label: '齿形模式', sym: '—', unit: '', type: 'select', options: 'mode',
+    tip: '标准直齿廓：GB/T 10855-2016 覆盖；渐开线：不在该标准覆盖范围，仅设计参考。' },
+  { key: 'width', group: 'sprocket', label: '链轮齿宽', sym: 'B', unit: 'mm', min: 6, max: 200, step: 1,
+    tip: '3D 模型拉伸厚度，同时用于结构合理性判断。' },
+  { key: 'hubType', group: 'sprocket', label: '轮毂形式', sym: '—', unit: '', type: 'select', options: 'hub',
+    tip: '仅影响 3D 预览与 STEP（简化环形凸台），不影响强度初算。' },
+  { key: 'bore', group: 'sprocket', label: '轴孔直径', sym: 'd0', unit: 'mm', min: 5, max: 300, step: 0.5,
+    tip: '3D 简化用轴孔；键槽按 GB/T 1096 占位（未填写具体公差）。' },
+  { key: 'hubDia', group: 'sprocket', label: '轮毂外径', sym: 'dH', unit: 'mm', min: 10, max: 400, step: 1,
+    tip: '3D 轮毂外径。应大于轴孔直径、小于齿根圆直径。' },
+  { key: 'hubW', group: 'sprocket', label: '轮毂宽度', sym: 'LH', unit: 'mm', min: 2, max: 200, step: 1,
+    tip: '3D 轮毂轴向宽度（凸台）。' },
+
+  // ---------- 材料 ----------
+  { key: 'sprocketMat', group: 'material', label: '链轮材料', sym: '—', unit: '', type: 'select', options: 'sprocketMat',
+    tip: '切换后联动热处理、硬度、许用应力与磨损系数 km（参考值）。' },
+  { key: 'sprocketHeat', group: 'material', label: '热处理状态', sym: '—', unit: '', type: 'select', options: 'sprocketHeat',
+    tip: '随材料联动可选热处理；硬度与许用值同步更新。' },
+  { key: 'plateMat', group: 'material', label: '链板材料', sym: '—', unit: '', type: 'select', options: 'plateMat',
+    tip: '链板常用 40Mn / 50Mn / 65Mn（冲压 + 等温淬火或调质）。' },
+  { key: 'pinMat', group: 'material', label: '销轴材料', sym: '—', unit: '', type: 'select', options: 'pinMat',
+    tip: '销轴常用 40Cr / 20CrMnTi / GCr15，表面硬化 HRC58~62，层深 1.2~2.5 mm。' },
+
+  // ---------- 工况 ----------
+  { key: 'hoursPerDay', group: 'duty', label: '每日工作小时', sym: 'h/d', unit: 'h', min: 1, max: 24, step: 0.5,
+    tip: '用于把寿命折算为年数。' },
+  { key: 'daysPerYear', group: 'duty', label: '年工作天数', sym: 'd/y', unit: 'd', min: 1, max: 366, step: 1,
+    tip: '用于把寿命折算为年数。' },
+  { key: 'targetLife', group: 'duty', label: '目标寿命', sym: 'T_req', unit: 'h', min: 100, max: 100000, step: 100,
+    tip: '寿命判据；低于目标 80% 标红，80%~100% 标黄。' },
+  { key: 'epsLim', group: 'duty', label: '许用磨损伸长率', sym: 'ε_lim', unit: '%', min: 0.5, max: 5, step: 0.1,
+    tip: '默认 3%；精密传动建议 1.5%。作为磨损寿命的失效判据。' },
+  { key: 'lube', group: 'duty', label: '润滑状态', sym: 'k_l', unit: '', type: 'select', options: 'lube',
+    tip: '充分 1.0 / 滴油 0.7 / 不良 0.4；同时决定许用链速。' },
+  { key: 'env', group: 'duty', label: '工作环境', sym: '—', unit: '', type: 'select', options: 'env',
+    tip: '粉尘 ×1.35、高温 ×1.20 的磨损修正（工程推荐）。' },
+  { key: 'Sreq', group: 'duty', label: '许用安全系数', sym: '[S]', unit: '—', min: 7, max: 12, step: 0.5,
+    tip: 'F_work ≤ Q/[S]。重载冲击取大值，默认 10。' },
+
+  // ---------- 高级 ----------
+  { key: 'alphaC', group: 'advanced', label: '直齿廓工作面夹角', sym: 'αc', unit: '°', min: 40, max: 80, step: 1, dataMode: 'straight',
+    tip: '标准直齿廓常见 60° 工作面夹角。仅影响直齿廓模式。' },
+  { key: 'kaCoef', group: 'advanced', label: '齿顶高系数', sym: 'ka', unit: '×p', min: 0.15, max: 0.55, step: 0.01, dataMode: 'straight',
+    tip: 'h_a = ka·p。默认 0.30 为工程值，待按 GB/T 10855 齿形表核对。' },
+  { key: 'kfCoef', group: 'advanced', label: '齿根高系数', sym: 'kf', unit: '×p', min: 0.15, max: 0.45, step: 0.01, dataMode: 'straight',
+    tip: 'h_f = kf·p。默认 0.33，与「p=12.7 时 z_min≈17」的工程经验锚定。' },
+  { key: 'rhoF', group: 'advanced', label: '齿根圆角系数（预留）', sym: 'ρf', unit: '×p', min: 0.05, max: 0.45, step: 0.01, dataMode: 'straight',
+    tip: '预留工艺参数：本版 B-Rep 采用直齿侧 + 齿根圆弧的简化齿廓，不生成过渡圆角，也不参与根切/寿命计算；供后续按刀具样本细化。' },
+  { key: 'alphaInv', group: 'advanced', label: '渐开线压力角', sym: 'α', unit: '°', min: 14.5, max: 25, step: 0.5, dataMode: 'involute',
+    tip: 'z_min = ⌊2(ha*−x)/sin²α⌋；α=20°、x=0 → 17 齿。' },
+  { key: 'x', group: 'advanced', label: '变位系数', sym: 'x', unit: '—', min: -0.5, max: 1.2, step: 0.01, dataMode: 'involute',
+    tip: '正变位可降低最小齿数。开启自动求解时由 x_min = ha* − z·sin²α/2 计算。' },
+  { key: 'autoX', group: 'advanced', label: '自动求解唯一变位', sym: '—', unit: '', type: 'check', dataMode: 'involute',
+    tip: '按当前 z1 求解恰好不根切的最小正变位。' },
+  { key: 'autoZmin', group: 'advanced', label: '自动求解 z_min', sym: '—', unit: '', type: 'check',
+    tip: '关闭后按手输 z_min 只做通过/不通过判定。' },
+  { key: 'zminManual', group: 'advanced', label: '手输最小齿数', sym: 'z_min', unit: '齿', min: 6, max: 60, step: 1,
+    tip: '仅在关闭自动求解时生效。' },
+  { key: 'profileSeg', group: 'advanced', label: '齿廓离散段数', sym: 'N', unit: '段', min: 4, max: 40, step: 1,
+    tip: '影响 2D 绘制与 3D B-Rep 齿廓的圆弧离散密度。' },
+  { key: 'Cw', group: 'advanced', label: '寿命标定常数', sym: 'Cw', unit: 'h·W/mm²', min: 1e4, max: 1e9, step: 1e4,
+    tip: '寿命公式量纲闭合常数。默认 1e6 为参考工况标定值，须按实测寿命反标定。', state: 'calib' }
+];
+
+/* ---------------- App ---------------- */
+const App = {
+  params: U.clone(CONFIG.defaults),
+  results: null,
+  view: '2d',
+  dirty: false,
+  invalid: new Set(),
+  currentId: null,
+  currentName: '示例方案 · 轻载 p12.7',
+
+  init() {
+    this.renderPanel();
+    this.bind();
+    this.updateModeVisibility(document.getElementById('paramsPanel'));
+    this.updateDisabledStates(document.getElementById('paramsPanel'));
+    this.refresh();
+    this.updateDirty(false);
+    // 延迟让布局稳定后绘制
+    requestAnimationFrame(() => this.draw2D(this.results));
+  },
+
+  /* -------- 参数面板渲染 -------- */
+  renderPanel() {
+    const host = document.getElementById('paramsPanel');
+    host.innerHTML = GROUPS.map(g => {
+      const fields = FIELDS.filter(f => f.group === g.id);
+      return `
+      <section class="group ${g.collapsed ? 'collapsed' : ''}" data-group="${g.id}">
+        <div class="group-head" data-toggle>
+          <span class="group-idx">${g.idx}</span>
+          <span class="group-title">${g.title}</span>
+          <span class="group-sub">${g.sub}</span>
+          <svg class="chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 6l4 4 4-4"/></svg>
+        </div>
+        <div class="group-body">
+          ${fields.map(f => this.fieldHTML(f)).join('')}
+          ${g.id === 'material' ? '<div class="mat-info" id="matInfo"></div>' : ''}
+        </div>
+      </section>`;
+    }).join('');
+    this.updateMaterialOptions();
+  },
+
+  fieldHTML(f) {
+    const p = this.params;
+    const val = p[f.key] !== undefined ? p[f.key] : '';
+    const wide = (f.type === 'select') ? 'style="grid-template-columns:minmax(0,1fr) 178px 34px"' : '';
+    const modeAttr = f.dataMode ? `data-mode="${f.dataMode}"` : '';
+    const tip = f.tip ? `<span class="tip" data-tip="${U.esc(f.tip)}">?</span>` : '';
+    let control = '';
+    if (f.type === 'select') {
+      control = `<select data-key="${f.key}" data-type="select" ${modeAttr}>${this.optionsHTML(f)}</select>`;
+    } else if (f.type === 'check') {
+      control = '';
+    } else if (f.type === 'autoA') {
+      control = `<div class="row-split"><input type="number" data-key="${f.key}" data-type="number" min="${f.min}" max="${f.max}" step="${f.step}" value="${val}"><button class="mini-btn" data-auto-a>推荐</button></div>`;
+    } else {
+      control = `<input type="number" data-key="${f.key}" data-type="number" min="${f.min}" max="${f.max}" step="${f.step}" value="${val}" ${modeAttr}>`;
+    }
+    const checkbox = f.type === 'check'
+      ? `<div class="checkline" ${modeAttr}><input type="checkbox" data-key="${f.key}" data-type="check" ${val ? 'checked' : ''}><span>${f.label}</span><span class="sub">${f.sym || ''}</span>${tip}</div>`
+      : '';
+    if (f.type === 'check') {
+      return `<div class="field" style="grid-template-columns:1fr;padding:1px 2px" ${modeAttr}>${checkbox}</div>`;
+    }
+    return `<div class="field" ${wide} ${modeAttr}>
+      <label class="field-label"><span class="lbl">${f.label}</span><span class="sym">${f.sym || ''}</span>${tip}</label>
+      ${control}
+      <span class="unit">${f.unit || ''}</span>
+      ${f.state ? `<div class="field-note"><span class="tag">${f.state === 'todo' ? '待填' : '需标定'}</span> ${f.state === 'todo' ? '数值待按标准/样本填入' : '默认值需按试验反标定'}</div>` : ''}
+    </div>`;
+  },
+
+  optionsHTML(f) {
+    const p = this.params;
+    const sel = (v) => String(p[f.key]) === String(v) ? 'selected' : '';
+    if (f.options === 'service') {
+      const hit = CONFIG.serviceFactors.some(o => o.KA === p.KA);
+      const custom = hit ? '' : `<option value="custom" selected>自定义 KA = ${p.KA}</option>`;
+      return custom + CONFIG.serviceFactors.map(o => `<option value="${o.key}" ${p.KA === o.KA ? 'selected' : ''}>${U.esc(o.label)} · KA ${o.KA.toFixed(2)}</option>`).join('');
+    }
+    if (f.options === 'pitch') {
+      return CONFIG.pitchSeries.map(v => `<option value="${v}" ${Number(p.p) === v ? 'selected' : ''}>p = ${v} mm</option>`).join('');
+    }
+    if (f.options === 'mode') {
+      return `<option value="straight" ${sel('straight')}>标准直齿廓（GB/T 10855 覆盖）</option>
+              <option value="involute" ${sel('involute')}>渐开线（非标准覆盖）</option>`;
+    }
+    if (f.options === 'hub') {
+      return [['none', '无轮毂（板式）'], ['single', '单侧轮毂'], ['double', '双侧轮毂']]
+        .map(([v, l]) => `<option value="${v}" ${sel(v)}>${l}</option>`).join('');
+    }
+    if (f.options === 'sprocketMat') {
+      return Object.entries(CONFIG.sprocketMaterials)
+        .map(([k, v]) => `<option value="${k}" ${sel(k)}>${U.esc(v.label)}</option>`).join('');
+    }
+    if (f.options === 'sprocketHeat') {
+      return Object.keys(CONFIG.sprocketMaterials[p.sprocketMat].heats)
+        .map(k => `<option value="${k}" ${sel(k)}>${k}</option>`).join('');
+    }
+    if (f.options === 'plateMat') {
+      return Object.entries(CONFIG.chainMaterials.plate)
+        .map(([k, v]) => `<option value="${k}" ${sel(k)}>${U.esc(v.label)}</option>`).join('');
+    }
+    if (f.options === 'pinMat') {
+      return Object.entries(CONFIG.chainMaterials.pin)
+        .map(([k, v]) => `<option value="${k}" ${sel(k)}>${U.esc(v.label)}</option>`).join('');
+    }
+    if (f.options === 'lube') {
+      return Object.entries(CONFIG.lube).map(([k, v]) =>
+        `<option value="${k}" ${sel(k)}>${k}（k_l=${v.kl}）</option>`).join('');
+    }
+    if (f.options === 'env') {
+      return Object.entries(CONFIG.env).map(([k, v]) =>
+        `<option value="${k}" ${sel(k)}>${k}</option>`).join('');
+    }
+    return '';
+  },
+
+  /* -------- 事件绑定 -------- */
+  bind() {
+    const host = document.getElementById('paramsPanel');
+
+    host.addEventListener('click', (e) => {
+      const head = e.target.closest('[data-toggle]');
+      if (head) { head.parentElement.classList.toggle('collapsed'); return; }
+      const auto = e.target.closest('[data-auto-a]');
+      if (auto) {
+        this.params.a = this.results ? this.results.aux.aRec : Math.round(40 * this.params.p);
+        const inp = host.querySelector('[data-key="a"]');
+        if (inp) inp.value = this.params.a;
+        this.touch();
+      }
+    });
+
+    host.addEventListener('input', (e) => {
+      const el = e.target;
+      const key = el.dataset.key;
+      if (!key || el.dataset.type === 'select') return;
+      if (el.dataset.type === 'check') {
+        this.params[key] = el.checked;
+      } else {
+        const v = parseFloat(el.value);
+        const f = FIELDS.find(x => x.key === key);
+        if (!f || !Number.isFinite(v) || v < f.min || v > f.max) {
+          el.classList.add('invalid');
+          this.invalid.add(key);
+          this.showInvalid(true);
+          return;
+        }
+        el.classList.remove('invalid');
+        this.invalid.delete(key);
+        this.showInvalid(this.invalid.size > 0);
+        this.params[key] = v;
+        this.syncLinked(key, v, host);
+      }
+      this.touch();
+    });
+
+    host.addEventListener('change', (e) => {
+      const el = e.target;
+      const key = el.dataset.key;
+      if (!key) return;
+      if (el.dataset.type === 'select') {
+        this.params[key] = el.value;
+        this.onSelect(key, el.value, host);
+        this.touch();
+      }
+      if (el.dataset.type === 'check') {
+        this.params[key] = el.checked;
+        this.updateDisabledStates(host);
+        this.touch();
+      }
+    });
+
+    // tooltip
+    let tipEl = null;
+    host.addEventListener('mouseover', (e) => {
+      const t = e.target.closest('.tip');
+      if (!t) return;
+      if (!tipEl) {
+        tipEl = document.createElement('div');
+        tipEl.style.cssText = 'position:fixed;z-index:200;max-width:280px;padding:8px 10px;border-radius:7px;background:#0d1a22;border:1px solid #2b4456;color:#c9d8e6;font-size:11px;line-height:1.55;box-shadow:0 12px 30px -12px #000;pointer-events:none';
+        document.body.appendChild(tipEl);
+      }
+      tipEl.textContent = t.dataset.tip || '';
+      tipEl.style.display = 'block';
+      const r = t.getBoundingClientRect();
+      const w = 280;
+      let left = Math.min(window.innerWidth - w - 12, r.left - 20);
+      tipEl.style.left = Math.max(8, left) + 'px';
+      tipEl.style.top = Math.min(window.innerHeight - 120, r.bottom + 8) + 'px';
+    });
+    host.addEventListener('mouseout', (e) => {
+      if (e.target.closest('.tip') && tipEl) tipEl.style.display = 'none';
+    });
+
+    // 视图切换
+    document.getElementById('viewTabs').addEventListener('click', (e) => {
+      const b = e.target.closest('button[data-view]');
+      if (!b) return;
+      this.setView(b.dataset.view);
+    });
+
+    // 顶部操作
+    document.getElementById('btnSave').addEventListener('click', () => Store.saveCurrent());
+    document.getElementById('btnSaveAs').addEventListener('click', () => Store.saveAs());
+    document.getElementById('btnSchemes').addEventListener('click', () => Store.openLibrary());
+    document.getElementById('btnImport').addEventListener('click', () => Store.importFile());
+    document.getElementById('btnExportJson').addEventListener('click', () => Store.exportCurrent());
+    document.getElementById('btnExportAll').addEventListener('click', () => Store.exportAll());
+    document.getElementById('btnReset').addEventListener('click', () => this.reset());
+    document.getElementById('btnPrint').addEventListener('click', () => window.print());
+    document.getElementById('btnSelftest').addEventListener('click', () => this.openSelftest());
+    document.getElementById('btnProv').addEventListener('click', () => this.openProv());
+    document.getElementById('btnStep').addEventListener('click', () => CAD.exportSTEPFlow());
+    document.getElementById('btnBuild').addEventListener('click', () => CAD.buildAndPreview(true));
+    document.getElementById('btnFit').addEventListener('click', () => CAD.fit());
+    document.getElementById('btnKernelRetry').addEventListener('click', () => CAD.loadKernel(true).then(() => CAD.buildAndPreview(true)));
+
+    document.getElementById('moreMenu').addEventListener('click', (e) => {
+      if (e.target.closest('button')) document.getElementById('moreMenu').classList.remove('on');
+    });
+    document.getElementById('btnMore').addEventListener('click', (e) => {
+      e.stopPropagation();
+      document.getElementById('moreMenu').classList.toggle('on');
+    });
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.menu-wrap')) document.getElementById('moreMenu').classList.remove('on');
+    });
+    document.getElementById('schemeName').addEventListener('input', () => this.updateDirty(true));
+
+    // 模态关闭
+    document.querySelectorAll('.modal').forEach(m => {
+      m.addEventListener('click', (e) => {
+        if (e.target === m || e.target.closest('[data-close]')) m.classList.remove('on');
+      });
+    });
+    window.addEventListener('resize', () => { if (this.view === '2d') this.draw2D(this.results); });
+
+    window.addEventListener('beforeunload', (e) => {
+      if (this.dirty) { e.preventDefault(); e.returnValue = ''; }
+    });
+  },
+
+  onSelect(key, val, host) {
+    if (key === 'service') {
+      const s = CONFIG.serviceFactors.find(x => x.key === val);
+      if (s) {
+        this.params.KA = s.KA;
+        const ka = host.querySelector('[data-key="KA"]');
+        if (ka) ka.value = s.KA;
+      }
+    }
+    if (key === 'pModel') {
+      this.params.p = parseFloat(val);
+      const pi = host.querySelector('[data-key="p"]');
+      if (pi) pi.value = this.params.p;
+    }
+    if (key === 'sprocketMat') {
+      const heats = Object.keys(CONFIG.sprocketMaterials[val].heats);
+      if (!heats.includes(this.params.sprocketHeat)) this.params.sprocketHeat = heats[0];
+      this.updateMaterialOptions();
+      host.querySelector('[data-key="sprocketHeat"]').value = this.params.sprocketHeat;
+    }
+    if (key === 'mode') {
+      this.updateModeVisibility(host);
+      if (val === 'involute') this.toast('渐开线模式不在 GB/T 10855-2016 覆盖范围内，结果仅供设计参考。', 'warn');
+    }
+    if (key === 'hubType') { /* 3D only */ }
+    this.updateMatInfo();
+  },
+
+  syncLinked(key, v, host) {
+    // 传动比 ↔ 从动齿数
+    if (key === 'i') {
+      this.params.z2 = Math.max(6, Math.round(this.params.z1 * v));
+      const z2 = host.querySelector('[data-key="z2"]');
+      if (z2) z2.value = this.params.z2;
+    }
+    if (key === 'z2') {
+      this.params.i = U.round(v / this.params.z1, 4);
+      const i = host.querySelector('[data-key="i"]');
+      if (i) i.value = this.params.i;
+    }
+    if (key === 'z1') {
+      this.params.z2 = Math.max(6, Math.round(v * this.params.i));
+      const z2 = host.querySelector('[data-key="z2"]');
+      if (z2) z2.value = this.params.z2;
+    }
+    // 功率 ↔ 扭矩
+    if (key === 'P' && this.params.n1 > 0) {
+      this.params.T = U.round(9550 * v / this.params.n1, 2);
+      const t = host.querySelector('[data-key="T"]');
+      if (t) t.value = this.params.T;
+    }
+    if (key === 'n1' && this.params.n1 > 0) {
+      this.params.T = U.round(9550 * this.params.P / v, 2);
+      const t = host.querySelector('[data-key="T"]');
+      if (t) t.value = this.params.T;
+    }
+    if (key === 'T' && this.params.n1 > 0) {
+      this.params.P = U.round(v * this.params.n1 / 9550, 4);
+      const p = host.querySelector('[data-key="P"]');
+      if (p) p.value = this.params.P;
+    }
+  },
+
+  updateMaterialOptions() {
+    const heatSel = document.querySelector('[data-key="sprocketHeat"]');
+    if (heatSel) {
+      const heats = Object.keys(CONFIG.sprocketMaterials[this.params.sprocketMat].heats);
+      heatSel.innerHTML = heats.map(h => `<option value="${h}" ${h === this.params.sprocketHeat ? 'selected' : ''}>${h}</option>`).join('');
+    }
+    this.updateMatInfo();
+  },
+
+  updateMatInfo() {
+    const el = document.getElementById('matInfo');
+    if (!el) return;
+    const m = ChainCalc.sprocketMat(this.params);
+    const plate = CONFIG.chainMaterials.plate[this.params.plateMat];
+    const pin = CONFIG.chainMaterials.pin[this.params.pinMat];
+    el.innerHTML = `
+      <span class="chip">链轮 <b>${U.esc(m.heat)}</b> · ${U.esc(m.hrc)}</span>
+      <span class="chip">σH <b>${m.sigmaH}</b> MPa</span>
+      <span class="chip">σF <b>${m.sigmaF}</b> MPa</span>
+      <span class="chip">km <b>${m.km.toFixed(2)}</b></span>
+      <span class="chip">链板 ${U.esc(plate.hrc)} · km ${plate.km}</span>
+      <span class="chip">销轴 ${U.esc(pin.hrc)} · 层深 ${U.esc(pin.depth)}</span>
+      <div class="src-note">许用应力与硬化为参考值（机械设计手册量级 + 供应商样本），须按 GB/T 3480 / 样本复核；km 为相对耐磨系数，需台架标定。</div>`;
+  },
+
+  updateModeVisibility(host) {
+    host.querySelectorAll('[data-mode]').forEach(el => {
+      const mode = el.dataset.mode;
+      el.classList.toggle('hidden', mode !== this.params.mode);
+    });
+  },
+
+  updateDisabledStates(host) {
+    const x = host.querySelector('[data-key="x"]');
+    if (x) x.disabled = !!this.params.autoX;
+    const zm = host.querySelector('[data-key="zminManual"]');
+    if (zm) zm.disabled = !!this.params.autoZmin;
+  },
+
+  /* -------- 计算与渲染 -------- */
+  touch() {
+    if (window.CAD && CAD.ready) CAD.invalidate();
+    this.updateMatInfo();
+    this.refresh();
+    this.updateDirty(true);
+  },
+
+  refresh() {
+    const r = ChainCalc.solve(this.params);
+    this.results = r;
+    this.renderKPIs(r);
+    this.renderChecks(r);
+    this.renderRows(r);
+    this.updateFoot(r);
+    if (this.view === '2d') this.draw2D(r);
+    else if (window.CAD && CAD.ready) CAD.fit();
+  },
+
+  setPill(el, status, text) {
+    el.className = 'pill ' + (status === 'ok' ? 'ok' : status === 'warn' ? 'warn' : status === 'bad' ? 'bad' : 'neutral');
+    el.textContent = text;
+  },
+
+  renderKPIs(r) {
+    const set = (id, cls, valHtml, subHtml, pill, pillStatus, pillText) => {
+      const card = document.getElementById(id);
+      card.classList.remove('ok', 'warn', 'bad', 'info');
+      card.classList.add(cls);
+      document.getElementById('val' + id.slice(3)).innerHTML = valHtml;
+      document.getElementById('sub' + id.slice(3)).innerHTML = subHtml;
+      if (pill) this.setPill(document.getElementById(pill), pillStatus, pillText);
+    };
+
+    const f = r.force, u = r.undercut, w = r.wear, aux = r.aux;
+    const forceStatus = f.S >= this.params.Sreq ? (f.S < this.params.Sreq * 1.15 ? 'warn' : 'ok') : 'bad';
+    set('kpiForce', forceStatus, `${U.fmt(f.Fw, 0)}<small>N</small>`,
+      `Ft ${U.fmt(f.Ft, 0)} N · KA ${this.params.KA}`, 'pillForce', forceStatus,
+      forceStatus === 'ok' ? '合格' : forceStatus === 'warn' ? '临界' : '不足');
+
+    set('kpiD1', 'info', `${U.fmt(r.geometry.d1, 2)}<small>mm</small>`,
+      `z1 ${this.params.z1} · da ${U.fmt(r.geometry.da1, 1)}`, null);
+
+    const ucStatus = (u.z1Ok && u.z2Ok) ? (u.marginal ? 'warn' : 'ok') : 'bad';
+    set('kpiUndercut', ucStatus, `${ucStatus === 'ok' ? '通过' : ucStatus === 'warn' ? '临界' : '不通过'}`,
+      `z_min ${u.zMin} · 当前 z1 ${this.params.z1} · ${u.mode === 'involute' ? '渐开线' : '直齿廓'}`, 'pillUndercut', ucStatus,
+      ucStatus === 'ok' ? '通过' : ucStatus === 'warn' ? '临界' : '不通过');
+
+    const lifeRatio = w.Th / Math.max(this.params.targetLife, 1);
+    const lifeStatus = lifeRatio >= 1 ? 'ok' : lifeRatio >= 0.8 ? 'warn' : 'bad';
+    set('kpiLife', lifeStatus, `${U.fmt(w.Th, 0)}<small>h</small>`,
+      `目标 ${U.fmt(this.params.targetLife, 0)} h · ${U.fmt(w.years, 1)} 年`, 'pillLife', lifeStatus,
+      lifeStatus === 'ok' ? '达标' : lifeStatus === 'warn' ? '偏低' : '不达标');
+
+    const spStatus = f.v <= aux.vlim ? (f.v > aux.vlim * 0.8 ? 'warn' : 'ok') : 'bad';
+    set('kpiSpeed', spStatus, `${U.fmt(f.v, 2)}<small>m/s</small>`,
+      `许用 ${aux.vlim} m/s（${this.params.lube}）`, 'pillSpeed', spStatus,
+      spStatus === 'ok' ? '合格' : spStatus === 'warn' ? '接近上限' : '超限');
+
+    set('kpiRatio', 'info', `${U.fmt(this.params.i, 2)}<small>: 1</small>`,
+      `z2 ${this.params.z2} · n2 ${U.fmt(this.params.n1 / Math.max(this.params.i, 1e-6), 0)} r/min`, 'pillRatio', 'neutral', 'i');
+
+    const stepStatus = CAD.stepReady ? 'ok' : CAD.ready ? 'warn' : 'neutral';
+    set('kpiStep', stepStatus,
+      CAD.stepReady ? `已生成<small>B-Rep</small>` : CAD.ready ? `内核就绪<small>待生成</small>` : `未加载<small>内核</small>`,
+      CAD.stepReady ? `STEP 可导出 · ${CAD.lastMeta || ''}` : 'OpenCascade WASM（约 66 MB）',
+      'pillStep', stepStatus, CAD.stepReady ? '可导出' : CAD.ready ? '就绪' : '未加载');
+  },
+
+  renderChecks(r) {
+    const host = document.getElementById('checksList');
+    const cls = { ok: 'ok', warn: 'warn', bad: 'bad' };
+    const label = { ok: '通过', warn: '警告', bad: '不通过' };
+    host.innerHTML = r.checks.map(c => `
+      <div class="check-item ${cls[c.status]}">
+        <span class="bar"></span>
+        <div>
+          <div class="check-name">${U.esc(c.name)}<span class="pill ${c.status}" style="font-size:9px">${label[c.status]}</span></div>
+          <div class="check-why">${U.esc(c.reason)}</div>
+          ${c.status !== 'ok' ? `<div class="check-advice">建议：${U.esc(c.advice)}</div>` : ''}
+        </div>
+        <div class="mono" style="font-size:10.5px;color:var(--txt-2);text-align:right;white-space:nowrap">${U.esc(c.value)}</div>
+      </div>`).join('');
+    document.getElementById('checkCount').textContent = `${r.checks.filter(c => c.status === 'ok').length}/${r.checks.length} 通过`;
+  },
+
+  renderRows(r) {
+    document.getElementById('detailBody').innerHTML = r.rows.map(row => `
+      <tr class="${row.hl ? 'hl' : ''}">
+        <td>${U.esc(row.item)}</td>
+        <td class="sym">${U.esc(row.sym)}</td>
+        <td class="formula">${U.esc(row.formula)}</td>
+        <td class="sub">${U.esc(row.sub)}</td>
+        <td class="num">${U.esc(row.value)}</td>
+        <td class="unit">${U.esc(row.unit)}</td>
+      </tr>`).join('');
+    document.getElementById('detailCount').textContent = `${r.rows.length} 行`;
+  },
+
+  updateFoot(r) {
+    document.getElementById('footMode').textContent = '模式：' + r.modeLabel;
+    document.getElementById('footDims').textContent =
+      `d₁ ${U.fmt(r.geometry.d1, 2)} / dₐ ${U.fmt(r.geometry.da1, 2)} / d_f ${U.fmt(r.geometry.df1, 2)} mm`;
+    document.getElementById('viewHint').textContent =
+      `主动轮端面齿廓 · z=${this.params.z1} · ${r.modeLabel}`;
+    document.getElementById('viewBadge').innerHTML = `<span class="pill ${r.undercut.z1Ok ? 'ok' : 'bad'}">${r.undercut.z1Ok ? '根切通过' : '根切不通过'}</span>`;
+    // 渐开线警示
+    const warn = document.getElementById('pageWarn');
+    if (this.params.mode === 'involute') {
+      warn.parentElement.className = 'banner bad';
+      warn.innerHTML = '<b>渐开线模式不在 GB/T 10855-2016 覆盖范围内</b>，齿形与根切判定按 JB/T 11803 思路作设计参考；量产前须以标准原文/供应商齿形图复核。';
+    } else {
+      warn.parentElement.className = 'banner warn';
+      warn.innerHTML = '标准数值占位提示：齿顶/齿根圆系数、额定抗拉强度 Q、跨柱距公差等以 <b>CONFIG</b> 维护，标注「待填」的项须由工程师按 GB/T 10855-2016 原文与供应商样本复核后再用于生产。';
+    }
+    if (typeof Store !== 'undefined') Store.refreshStepKpi();
+    this.renderPrintHead(r);
+  },
+
+  renderPrintHead(r) {
+    let el = document.getElementById('printHead');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'printHead';
+      el.className = 'print-only';
+      el.style.cssText = 'margin-bottom:10px';
+      document.querySelector('.results').prepend(el);
+    }
+    const p = this.params;
+    el.innerHTML = `
+      <div style="font-size:15px;font-weight:700;margin-bottom:4px">齿形链传动设计计算书 · ${U.esc(document.getElementById('schemeName').value)}</div>
+      <div style="font-size:10px;color:#555;margin-bottom:6px">${new Date().toLocaleString('zh-CN')} · 主标准 GB/T 10855-2016（参考 ASME B29.2M）</div>
+      <table style="width:100%;border-collapse:collapse;font-size:10px;margin-bottom:6px">
+        <tr>
+          <td style="border:1px solid #ccc;padding:3px 6px">节距 p = ${p.p} mm</td>
+          <td style="border:1px solid #ccc;padding:3px 6px">z1/z2 = ${p.z1}/${p.z2}</td>
+          <td style="border:1px solid #ccc;padding:3px 6px">n1 = ${p.n1} r/min</td>
+          <td style="border:1px solid #ccc;padding:3px 6px">P = ${p.P} kW</td>
+          <td style="border:1px solid #ccc;padding:3px 6px">KA = ${p.KA}</td>
+          <td style="border:1px solid #ccc;padding:3px 6px">Q = ${p.Q} kN</td>
+        </tr>
+      </table>
+      <div style="font-size:9.5px;color:#666">${CONFIG.meta.disclaimer}</div>`;
+  },
+
+  /* -------- 2D 齿廓绘制 -------- */
+  draw2D(r) {
+    if (!r) return;
+    const cv = document.getElementById('cv2d');
+    if (!cv || cv.offsetParent === null) return;
+    const box = cv.parentElement.getBoundingClientRect();
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const W = Math.max(320, box.width), H = Math.max(240, box.height);
+    cv.width = W * dpr; cv.height = H * dpr;
+    cv.style.width = W + 'px'; cv.style.height = H + 'px';
+    const ctx = cv.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+
+    const p = this.params, g = r.geometry;
+    const pts = ChainCalc.profile(p, p.z1);
+    const da = g.da1;
+    const pad = 34;
+    const sc = Math.min(W - pad * 2, H - pad * 2) / da;
+    const cx = W / 2, cy = H / 2;
+
+    // 背景网格
+    ctx.save();
+    ctx.strokeStyle = 'rgba(120,160,190,.055)';
+    ctx.lineWidth = 1;
+    for (let x = 0; x < W; x += 26) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+    for (let y = 0; y < H; y += 26) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+    ctx.restore();
+
+    const path = new Path2D();
+    pts.forEach(([x, y], i) => {
+      const X = cx + x * sc, Y = cy - y * sc;
+      i ? path.lineTo(X, Y) : path.moveTo(X, Y);
+    });
+    path.closePath();
+
+    // 轮体
+    const grd = ctx.createLinearGradient(cx - da * sc / 2, cy - da * sc / 2, cx + da * sc / 2, cy + da * sc / 2);
+    grd.addColorStop(0, 'rgba(45,212,191,.13)');
+    grd.addColorStop(0.55, 'rgba(24,48,58,.55)');
+    grd.addColorStop(1, 'rgba(12,22,30,.75)');
+    ctx.save();
+    ctx.fillStyle = grd;
+    ctx.fill(path);
+    ctx.strokeStyle = 'rgba(94,234,212,.85)';
+    ctx.lineWidth = 1.4;
+    ctx.stroke(path);
+    ctx.restore();
+
+    // 圆辅助线
+    const circle = (rad, style, dash, width = 1) => {
+      ctx.save();
+      ctx.setLineDash(dash || []);
+      ctx.strokeStyle = style; ctx.lineWidth = width;
+      ctx.beginPath(); ctx.arc(cx, cy, rad * sc, 0, Math.PI * 2); ctx.stroke();
+      ctx.restore();
+    };
+    circle(g.df1 / 2, 'rgba(150,180,200,.28)', [3, 4]);
+    circle(g.d1 / 2, 'rgba(90,169,250,.85)', [7, 5], 1.2);
+    circle(g.da1 / 2, 'rgba(150,180,200,.22)', [2, 4]);
+
+    // 轴孔 + 键槽 + 轮毂
+    const rBore = Math.min(this.params.bore, g.df1 * 0.8) / 2;
+    ctx.save();
+    ctx.fillStyle = 'rgba(6,10,14,.92)';
+    ctx.beginPath(); ctx.arc(cx, cy, rBore * sc, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(160,190,210,.5)'; ctx.lineWidth = 1; ctx.stroke();
+    // 键槽（简化 6×3.5）
+    const kw = Math.min(6, rBore * 0.9), kh = Math.min(3.5, rBore * 0.5);
+    ctx.fillStyle = 'rgba(6,10,14,.92)';
+    ctx.fillRect(cx - kw * sc / 2, cy - (rBore + kh) * sc, kw * sc, kh * sc);
+    ctx.strokeRect(cx - kw * sc / 2, cy - (rBore + kh) * sc, kw * sc, kh * sc);
+    // 轮毂
+    if (this.params.hubType !== 'none' && this.params.hubDia > this.params.bore) {
+      circle(this.params.hubDia / 2, 'rgba(148,180,200,.30)', [5, 4]);
+    }
+    ctx.restore();
+
+    // 中心线
+    ctx.save();
+    ctx.strokeStyle = 'rgba(150,180,200,.35)'; ctx.lineWidth = 1; ctx.setLineDash([10, 4, 2, 4]);
+    ctx.beginPath(); ctx.moveTo(cx - da * sc / 2 - 14, cy); ctx.lineTo(cx + da * sc / 2 + 14, cy);
+    ctx.moveTo(cx, cy - da * sc / 2 - 14); ctx.lineTo(cx, cy + da * sc / 2 + 14); ctx.stroke();
+    ctx.restore();
+
+    // 尺寸标注
+    ctx.save();
+    ctx.font = '10px "JetBrains Mono", monospace';
+    ctx.fillStyle = 'rgba(163,179,198,.9)';
+    ctx.textAlign = 'left';
+    const lx = cx + g.da1 / 2 * sc + 8, ly = cy - 6;
+    const dims = [
+      ['dₐ', g.da1], ['d', g.d1], ['d_f', g.df1]
+    ];
+    dims.forEach(([sym, val], i) => {
+      ctx.fillStyle = i === 1 ? 'rgba(120,180,250,.95)' : 'rgba(163,179,198,.85)';
+      ctx.fillText(`${sym} ${U.fmt(val, 2)}`, Math.min(lx, W - 88), 18 + i * 14);
+    });
+    ctx.fillStyle = 'rgba(120,190,180,.85)';
+    ctx.textAlign = 'center';
+    ctx.fillText(`z = ${p.z1}   ${p.mode === 'involute' ? '渐开线' : 'αc ' + p.alphaC + '°'}`, cx, H - 10);
+    ctx.restore();
+
+    // 齿廓放大窗
+    const bx = W - 132, by = H - 128, bw = 118, bh = 104;
+    ctx.save();
+    ctx.beginPath();
+    const rr = 7;
+    ctx.roundRect ? ctx.roundRect(bx, by, bw, bh, rr) : ctx.rect(bx, by, bw, bh);
+    ctx.fillStyle = 'rgba(8,14,20,.86)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(45,212,191,.22)';
+    ctx.stroke();
+    ctx.clip();
+    const zsc = bw / (2.6 * p.p);
+    ctx.translate(bx + bw / 2, by + bh * 0.62 + g.d1 / 2 * zsc);
+    ctx.scale(zsc, zsc);
+    const p2 = new Path2D();
+    pts.forEach(([x, y], i) => (i ? p2.lineTo(x, -y) : p2.moveTo(x, -y)));
+    p2.closePath();
+    ctx.fillStyle = 'rgba(45,212,191,.14)';
+    ctx.fill(p2);
+    ctx.strokeStyle = 'rgba(94,234,212,.9)';
+    ctx.lineWidth = 1.2 / zsc;
+    ctx.stroke(p2);
+    ctx.restore();
+    ctx.save();
+    ctx.font = '9px "JetBrains Mono", monospace';
+    ctx.fillStyle = 'rgba(140,160,180,.75)';
+    ctx.fillText('齿廓放大', bx + 8, by + 13);
+    ctx.restore();
+  },
+
+  /* -------- 视图切换 -------- */
+  setView(v) {
+    this.view = v;
+    document.querySelectorAll('#viewTabs button').forEach(b => b.classList.toggle('on', b.dataset.view === v));
+    document.getElementById('cv2d').style.display = v === '2d' ? 'block' : 'none';
+    document.getElementById('view3d').classList.toggle('hidden', v !== '3d');
+    document.getElementById('view3dTools').classList.toggle('hidden', v !== '3d');
+    document.getElementById('viewHint').classList.toggle('hidden', v !== '2d');
+    if (v === '2d') {
+      this.draw2D(this.results);
+      document.getElementById('viewBadge').innerHTML = `<span class="pill ${this.results.undercut.z1Ok ? 'ok' : 'bad'}">2D 齿廓</span>`;
+    } else {
+      document.getElementById('viewBadge').innerHTML = `<span class="pill neutral">3D</span>`;
+      CAD.enter3D();
+    }
+  },
+
+  /* -------- 状态提示 -------- */
+  updateDirty(on) {
+    this.dirty = !!on;
+    document.getElementById('dirtyDot').classList.toggle('on', this.dirty);
+    document.title = (this.dirty ? '● ' : '') + '齿形链传动设计工具 · Silent Chain Designer';
+  },
+
+  showInvalid(on) {
+    let bar = document.getElementById('invalidBar');
+    if (on && !bar) {
+      bar = document.createElement('div');
+      bar.id = 'invalidBar';
+      bar.className = 'banner bad';
+      bar.style.cssText = 'margin-bottom:2px';
+      bar.innerHTML = '<span class="ico">!</span><span>存在非法输入（红框），该值<b>不参与计算</b>，结果仍按上一次有效值显示。</span>';
+      document.querySelector('.results').prepend(bar);
+    } else if (!on && bar) {
+      bar.remove();
+    }
+  },
+
+  toast(msg, type = '') {
+    const wrap = document.getElementById('toastWrap');
+    const el = document.createElement('div');
+    el.className = 'toast ' + type;
+    el.textContent = msg;
+    wrap.appendChild(el);
+    setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .3s'; }, 3200);
+    setTimeout(() => el.remove(), 3600);
+  },
+
+  reset() {
+    this.params = U.clone(CONFIG.defaults);
+    this.renderPanel();
+    this.refresh();
+    this.updateDirty(true);
+    this.currentId = null;
+    document.getElementById('schemeName').value = '示例方案 · 轻载 p12.7';
+    this.toast('已重置为默认参数');
+  },
+
+  openProv() {
+    const t = document.getElementById('provTable');
+    t.innerHTML = `<thead><tr><th style="width:26%">条目</th><th>取值 / 公式</th><th style="width:15%">单位</th><th>来源</th><th style="width:10%">状态</th></tr></thead><tbody>` +
+      CONFIG.provenance.map(p => `
+        <tr>
+          <td>${U.esc(p.label)}<div class="muted mono" style="font-size:9.5px">${U.esc(p.key)}</div></td>
+          <td class="v" style="white-space:normal">${U.esc(p.value)}</td>
+          <td class="muted">${U.esc(p.unit)}</td>
+          <td class="muted" style="font-size:10.5px">${U.esc(p.src)}</td>
+          <td><span class="st ${p.state}">${({ std: '标准', approx: '近似', todo: '待填', calib: '需标定' })[p.state]}</span></td>
+        </tr>`).join('') + '</tbody>';
+    document.getElementById('mProv').classList.add('on');
+  },
+
+  openSelftest() {
+    const st = ChainCalc.selftest();
+    const body = document.getElementById('selfBody');
+    body.innerHTML = `
+      <div class="st-sum ${st.pass ? 'ok' : 'bad'}">
+        ${st.pass ? '全部通过' : '存在失败项'} · 算例 p=12.7, z1=19, z2=38, n1=1000, P=5 kW, KA=1.3, Q=40 kN（示例值）
+      </div>
+      <div class="st-row head"><span>检查项</span><span>期望</span><span>实际</span><span>偏差</span></div>
+      ${st.items.map(i => `<div class="st-row">
+        <span>${i.pass ? '<span class="st-ok">✔</span>' : '<span class="st-bad">✘</span>'} ${U.esc(i.name)}</span>
+        <span class="mono">${U.esc(i.expect)}</span>
+        <span class="mono">${U.esc(i.actual)}</span>
+        <span class="mono ${i.pass ? 'st-ok' : 'st-bad'}">${U.esc(i.dev)}</span>
+      </div>`).join('')}
+      <div class="src-note" style="margin-top:10px">
+        参考值：d1=${U.fmt(st.reference.d1, 3)} mm，d2=${U.fmt(st.reference.d2, 3)} mm，v=${U.fmt(st.reference.v, 3)} m/s，
+        Ft=${U.fmt(st.reference.Ft, 1)} N，F_work=${U.fmt(st.reference.Fw, 1)} N，T_h=${U.fmt(st.reference.life, 0)} h（Cw 默认值），z_min=${st.reference.zmin}。
+        <br>${U.esc(st.reference.note)}
+      </div>`;
+    document.getElementById('mSelf').classList.add('on');
+    console.log('[selftest]', st);
+  }
+};
+
+
+/* =========================================================================
+   5. CAD —— OpenCascade.js B-Rep 建模 / STEP / three.js 预览
+   ========================================================================= */
+
+const CAD = {
+  oc: null,
+  three: null,
+  ready: false,
+  loading: false,
+  stepReady: false,
+  building: false,
+  lastMeta: '',
+  shapes: [],
+  meshData: [],
+  scene: null, camera: null, renderer: null, group: null,
+  yaw: 0.9, pitch: 0.72, radius: 320, target: null,
+  dragging: false, dragMode: '', lastX: 0, lastY: 0,
+  raf: null,
+
+  /* ---------------- 外部资源 ---------------- */
+  async loadScript(urls) {
+    for (const url of urls) {
+      try {
+        await new Promise((res, rej) => {
+          const s = document.createElement('script');
+          s.src = url;
+          s.onload = res;
+          s.onerror = () => rej(new Error('load fail ' + url));
+          document.head.appendChild(s);
+        });
+        return url;
+      } catch (e) { /* try next */ }
+    }
+    throw new Error('脚本加载失败（CDN 不可达）');
+  },
+
+  async ensureThree() {
+    if (window.THREE) { this.three = window.THREE; return; }
+    await this.loadScript([
+      'https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js',
+      'https://unpkg.com/three@0.149.0/build/three.min.js'
+    ]);
+    this.three = window.THREE;
+  },
+
+  setOverlay(show, title, desc, pct, retry) {
+    const ov = document.getElementById('kernelOverlay');
+    ov.classList.toggle('hidden', !show);
+    if (!show) return;
+    document.getElementById('kTitle').textContent = title || 'OpenCascade 内核加载中';
+    document.getElementById('kDesc').textContent = desc || '';
+    document.getElementById('kBar').style.width = (pct != null ? pct : 0) + '%';
+    document.getElementById('kPct').textContent = pct != null ? Math.round(pct) + '%' : '';
+    document.getElementById('btnKernelRetry').style.display = retry ? 'inline-flex' : 'none';
+  },
+
+  async fetchWasm(urls, onProgress) {
+    let lastErr = null;
+    for (const url of urls) {
+      try {
+        const res = await fetch(url, { mode: 'cors' });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const total = Number(res.headers.get('content-length')) || 0;
+        if (!res.body || !res.body.getReader) {
+          const buf = await res.arrayBuffer();
+          return new Uint8Array(buf);
+        }
+        const reader = res.body.getReader();
+        const chunks = [];
+        let loaded = 0;
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          chunks.push(value);
+          loaded += value.length;
+          if (onProgress) onProgress(total ? loaded / total * 100 : null, loaded, total);
+        }
+        const out = new Uint8Array(loaded);
+        let off = 0;
+        chunks.forEach(c => { out.set(c, off); off += c.length; });
+        return out;
+      } catch (e) { lastErr = e; }
+    }
+    throw lastErr || new Error('WASM 下载失败');
+  },
+
+  /**
+   * 懒加载 OpenCascade（约 66 MB wasm）。首次较慢，显示进度；
+   * 失败给出可读原因，不静默失败。
+   */
+  async loadKernel(force) {
+    if (this.ready) return this.oc;
+    if (this.loading) return this._loadPromise;
+    this.loading = true;
+    this.setOverlay(true, 'OpenCascade 内核加载中', '正在加载 WebAssembly 内核（约 66 MB），首次较慢，请保持网络连接。', 0, false);
+    const JS_URLS = [
+      'https://unpkg.com/opencascade.js@1.1.1/dist/opencascade.wasm.js',
+      'https://cdn.jsdelivr.net/npm/opencascade.js@1.1.1/dist/opencascade.wasm.js'
+    ];
+    const WASM_URLS = [
+      'https://unpkg.com/opencascade.js@1.1.1/dist/opencascade.wasm.wasm',
+      'https://cdn.jsdelivr.net/npm/opencascade.js@1.1.1/dist/opencascade.wasm.wasm'
+    ];
+
+    this._loadPromise = (async () => {
+      let mod = null, usedJs = '';
+      for (const url of JS_URLS) {
+        try { mod = await import(/* webpackIgnore: true */ url); usedJs = url; break; } catch (e) { /* next */ }
+      }
+      if (!mod) throw new Error('无法加载 opencascade.wasm.js（CDN 不可达或站点禁止跨域模块）');
+      const factory = mod.default || mod.opencascade || mod;
+
+      const wasm = await this.fetchWasm(WASM_URLS, (pct, loaded, total) => {
+        this.setOverlay(true, 'OpenCascade 内核加载中',
+          `正在下载 WebAssembly：${(loaded / 1048576).toFixed(1)} / ${total ? (total / 1048576).toFixed(1) : '?'} MB`,
+          pct, false);
+      });
+      this.setOverlay(true, '内核初始化中', '正在编译 WebAssembly 并注册 B-Rep 绑定…', 100, false);
+      const oc = await factory({ wasmBinary: wasm });
+      this.oc = oc;
+      this.ready = true;
+      this.loading = false;
+      this.setOverlay(false);
+      App.toast('OpenCascade 内核已就绪。', 'ok');
+      App.renderKPIs(App.results);
+      return oc;
+    })().catch(err => {
+      this.loading = false;
+      this.setOverlay(true, '内核加载失败', String(err && err.message || err) +
+        '。可点击「重试」；若通过 file:// 双击打开，请改用本地 http 服务（python -m http.server）后访问。', 0, true);
+      throw err;
+    });
+    return this._loadPromise;
+  },
+
+  /* ---------------- OCCT 基础封装 ---------------- */
+  P(x, y, z) { return new this.oc.gp_Pnt_3(x, y, z || 0); },
+  V(x, y, z) { return new this.oc.gp_Vec_4(x, y, z); },
+
+  _face(pts, z) {
+    const oc = this.oc;
+    const poly = new oc.BRepBuilderAPI_MakePolygon_1();
+    for (const [x, y] of pts) poly.Add_1(this.P(x, y, z || 0));
+    poly.Close();
+    const mf = new oc.BRepBuilderAPI_MakeFace_15(poly.Wire(), true);
+    return mf.Face();
+  },
+
+  /** 带内孔的面（一次成型，避免布尔运算，显著提速且 STEP 更干净） */
+  _faceWithHoles(outerPts, holes, z) {
+    const oc = this.oc;
+    const mk = (pts) => {
+      const poly = new oc.BRepBuilderAPI_MakePolygon_1();
+      for (const [x, y] of pts) poly.Add_1(this.P(x, y, z || 0));
+      poly.Close();
+      return poly.Wire();
+    };
+    const mf = new oc.BRepBuilderAPI_MakeFace_15(mk(outerPts), true);
+    (holes || []).forEach(h => mf.Add(mk(h)));
+    return mf.Face();
+  },
+
+  _prism(pts, h, z0) {
+    const face = this._face(pts, z0 || 0);
+    const pr = new this.oc.BRepPrimAPI_MakePrism_1(face, this.V(0, 0, h), false, true);
+    return pr.Shape();
+  },
+
+  _prismHoles(outerPts, holes, h, z0) {
+    const face = this._faceWithHoles(outerPts, holes, z0 || 0);
+    const pr = new this.oc.BRepPrimAPI_MakePrism_1(face, this.V(0, 0, h), false, true);
+    return pr.Shape();
+  },
+
+  /** 用直线/圆弧构造精确齿廓 wire（B-Rep 边，非折线） */
+  _sprocketWire(params, z) {
+    const oc = this.oc;
+    const ax = new oc.gp_Ax2_3(this.P(0, 0, 0), new oc.gp_Dir_4(0, 0, 1));
+    const edges = ChainCalc.profileEdges(params, z);
+    const w = new oc.BRepBuilderAPI_MakeWire_1();
+    for (const e of edges) {
+      let edge;
+      if (e.type === 'line') {
+        edge = new oc.BRepBuilderAPI_MakeEdge_3(this.P(e.a[0], e.a[1], 0), this.P(e.b[0], e.b[1], 0)).Edge();
+      } else {
+        const circ = new oc.gp_Circ_2(ax, e.r);
+        edge = new oc.BRepBuilderAPI_MakeEdge_10(circ, this.P(e.a[0], e.a[1], 0), this.P(e.b[0], e.b[1], 0)).Edge();
+      }
+      w.Add_1(edge);
+    }
+    return w.Wire();
+  },
+
+  _prismWire(wire, h, z0) {
+    const mf = new this.oc.BRepBuilderAPI_MakeFace_15(wire, true);
+    const pr = new this.oc.BRepPrimAPI_MakePrism_1(mf.Face(), this.V(0, 0, h), false, true);
+    return pr.Shape();
+  },
+
+  _polyWire(pts, z) {
+    const poly = new this.oc.BRepBuilderAPI_MakePolygon_1();
+    for (const [x, y] of pts) poly.Add_1(this.P(x, y, z || 0));
+    poly.Close();
+    return poly.Wire();
+  },
+
+  _prismWireHoles(outerWire, holes, h) {
+    const mf = new this.oc.BRepBuilderAPI_MakeFace_15(outerWire, true);
+    (holes || []).forEach(hp => mf.Add(this._polyWire(hp, 0)));
+    const pr = new this.oc.BRepPrimAPI_MakePrism_1(mf.Face(), this.V(0, 0, h), false, true);
+    return pr.Shape();
+  },
+
+  _cut(a, b) {
+    const op = new this.oc.BRepAlgoAPI_Cut_3(a, b);
+    return op.Shape();
+  },
+
+  _circle(cx, cy, r, n) {
+    const pts = [];
+    const N = n || 48;
+    for (let i = 0; i < N; i++) {
+      const t = 2 * Math.PI * i / N;
+      pts.push([cx + r * Math.cos(t), cy + r * Math.sin(t)]);
+    }
+    return pts;
+  },
+
+  _stadium(ax, ay, bx, by, r, seg) {
+    const N = seg || 12;
+    const th = Math.atan2(by - ay, bx - ax);
+    const pts = [];
+    for (let i = 0; i <= N; i++) {
+      const a = th - Math.PI / 2 + Math.PI * i / N;
+      pts.push([bx + r * Math.cos(a), by + r * Math.sin(a)]);
+    }
+    // 第二半圆去掉终点，避免与起点重合导致闭合边退化
+    for (let i = 0; i < N; i++) {
+      const a = th + Math.PI / 2 + Math.PI * i / N;
+      pts.push([ax + r * Math.cos(a), ay + r * Math.sin(a)]);
+    }
+    return pts;
+  },
+
+  _boreLoop(r, kw, kd) {
+    // 轴孔 + 键槽合并为单一内环（闭合，无自交）
+    const half = Math.min(kw / 2, r * 0.85);
+    const y0 = Math.sqrt(Math.max(0.01, r * r - half * half));
+    const a = Math.atan2(half, y0);          // 键槽半角
+    const start = Math.PI / 2 + a;
+    const pts = [[-half, y0]];
+    const N = 56;
+    for (let i = 1; i <= N; i++) {
+      const th = start + (2 * Math.PI - 2 * a) * i / N;
+      pts.push([r * Math.cos(th), r * Math.sin(th)]);
+    }
+    // 末端到达 (half, y0)，补键槽顶边
+    pts.push([half, y0 + kd], [-half, y0 + kd]);
+    return pts;
+  },
+
+  /**
+   * 生成链轮 + 链条示意实体（真 B-Rep，非三角网格）
+   * 齿廓由 ChainCalc.profile 提供，与 2D 预览同源。
+   */
+  buildSolids(params, res) {
+    const oc = this.oc;
+    const g = res.geometry;
+    const warns = [];
+    const shapes = [];
+
+    // ---- 链轮（精确齿廓边 + 轴孔/键槽内环，一次拉伸成型）----
+    const boreR = Math.max(2, params.bore / 2);
+    const kw = Math.min(6, boreR * 1.1), kd = Math.min(3.5, boreR * 0.55);
+    let sprocket;
+    try {
+      const outerWire = this._sprocketWire(params, params.z1);
+      sprocket = this._prismWireHoles(outerWire, [this._boreLoop(boreR, kw, kd)], params.width);
+    } catch (e) {
+      warns.push('精确齿廓构建失败，已退化为离散齿廓：' + e);
+      sprocket = this._prismHoles(ChainCalc.profile(params, params.z1),
+        [this._boreLoop(boreR, kw, kd)], params.width, 0);
+    }
+
+    // 轮毂（带内孔的环形凸台，与轮盘贴合，不做布尔融合）
+    const hubs = [];
+    if (params.hubType !== 'none' && params.hubDia > params.bore + 2) {
+      const hubR = params.hubDia / 2;
+      const hw = Math.max(2, params.hubW / (params.hubType === 'double' ? 2 : 1));
+      const makeHub = (z0) => {
+        try {
+          return this._prismHoles(this._circle(0, 0, hubR, 40), [this._circle(0, 0, boreR, 40)], hw, z0);
+        } catch (e) { warns.push('轮毂生成失败：' + e); return null; }
+      };
+      if (params.hubType === 'single') {
+        const h = makeHub(-hw); if (h) hubs.push(h);
+      } else {
+        const h1 = makeHub(-hw), h2 = makeHub(params.width); if (h1) hubs.push(h1); if (h2) hubs.push(h2);
+      }
+    }
+
+    // ---- 链条示意（轴向爆炸视图）----
+    const linkCount = 5;
+    const p = params.p;
+    const yLine = g.r1;
+    const x0 = -(linkCount * p) / 2;
+    const zBase = params.width + 6 + 4;
+    const plateT = Math.max(1.2, 0.13 * p);
+    const plateR = 0.40 * p;
+    const holeR = Math.max(1.2, params.d2 / 2 * 1.02);
+    const pinR = Math.max(1.2, params.d2 / 2);
+    const pinLen = Math.max(6, params.b);
+
+    const chain = [];
+    const pinPts = [];
+    for (let i = 0; i <= linkCount; i++) pinPts.push([x0 + i * p, yLine]);
+
+    for (let i = 0; i < linkCount; i++) {
+      const [ax, ay] = pinPts[i];
+      const [bx, by] = pinPts[i + 1];
+      const outer = (i % 2 === 1);
+      const rr = outer ? plateR * 1.12 : plateR;
+      const outline = this._stadium(ax, ay, bx, by, rr, 6);
+      const holes = [this._circle(ax, ay, holeR, 16), this._circle(bx, by, holeR, 16)];
+      const zs = outer ? [zBase - plateT, zBase + pinLen] : [zBase, zBase + pinLen - plateT];
+      for (const z of zs) {
+        try {
+          chain.push(this._prismHoles(outline, holes, plateT, z));
+        } catch (e) { warns.push('链板生成失败：' + e); }
+      }
+    }
+    // 销轴
+    for (const [x, y] of pinPts) {
+      try {
+        chain.push(this._prism(this._circle(x, y, pinR, 16), pinLen + 2 * plateT, zBase - plateT));
+      } catch (e) { warns.push('销轴生成失败：' + e); }
+    }
+
+    shapes.push(sprocket, ...hubs, ...chain);
+    return {
+      sprocket, hubs, chain, shapes, warns,
+      sprocketCount: 1 + hubs.length,
+      chainCount: chain.length,
+      meta: `1 链轮 + ${hubs.length} 轮毂 + ${chain.length} 链节零件`
+    };
+  },
+
+  /** 从 B-Rep 提取三角面（预览用） */
+  tessellate(shape, deflection) {
+    const oc = this.oc;
+    const E = oc.TopAbs_ShapeEnum;
+    const pos = [];
+    try {
+      new oc.BRepMesh_IncrementalMesh_2(shape, deflection || 0.25, false, 0.45, true);
+    } catch (e) { /* 已网格化则忽略 */ }
+    const ex = new oc.TopExp_Explorer_2(shape, E.TopAbs_FACE, E.TopAbs_SHAPE);
+    let guard = 0;
+    while (ex.More() && guard++ < 20000) {
+      try {
+        const face = oc.TopoDS.Face_1(ex.Current());
+        const loc = new oc.TopLoc_Location_1();
+        const h = oc.BRep_Tool.Triangulation(face, loc);
+        if (h && h.get) {
+          const tri = h.get();
+          const nb = tri.NbNodes();
+          const nt = tri.NbTriangles();
+          const nodes = new Array(nb + 1);
+          const isId = loc.IsIdentity ? loc.IsIdentity() : true;
+          const trsf = isId ? null : loc.Transformation();
+          for (let i = 1; i <= nb; i++) {
+            let pt = tri.Node(i);
+            if (trsf) pt = pt.Transformed(trsf);
+            nodes[i] = [pt.X(), pt.Y(), pt.Z()];
+          }
+          for (let t = 1; t <= nt; t++) {
+            const tt = tri.Triangle(t);
+            const a = nodes[tt.Value(1)], b = nodes[tt.Value(2)], c = nodes[tt.Value(3)];
+            if (!a || !b || !c) continue;
+            pos.push(a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2]);
+          }
+        }
+      } catch (e) { /* 跳过该面 */ }
+      ex.Next();
+    }
+    return pos;
+  },
+
+  /* ---------------- three.js 场景 ---------------- */
+  initViewer() {
+    if (this.renderer) return;
+    const THREE = this.three;
+    const canvas = document.getElementById('cv3d');
+    const holder = document.getElementById('view3d');
+    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    this.renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    this.scene = new THREE.Scene();
+    this.camera = new THREE.PerspectiveCamera(38, 1, 0.1, 5000);
+    this.camera.up.set(0, 0, 1);
+
+    this.scene.add(new THREE.HemisphereLight(0xcfe8ff, 0x0a1018, 0.95));
+    const d1 = new THREE.DirectionalLight(0xffffff, 1.15); d1.position.set(1, 1.4, 1.6); this.scene.add(d1);
+    const d2 = new THREE.DirectionalLight(0x6fd9ff, 0.55); d2.position.set(-1.4, -1.1, 0.6); this.scene.add(d2);
+
+    const grid = new THREE.GridHelper(600, 24, 0x1c3a44, 0x12242e);
+    grid.rotation.x = Math.PI / 2;
+    grid.position.z = -0.2;
+    this.scene.add(grid);
+
+    this.group = new THREE.Group();
+    this.scene.add(this.group);
+    this.target = new THREE.Vector3(0, 0, 0);
+
+    this.resizeViewer();
+    new ResizeObserver(() => this.resizeViewer()).observe(holder);
+
+    const cv = canvas;
+    cv.style.touchAction = 'none';
+    cv.addEventListener('pointerdown', (e) => {
+      this.dragging = true;
+      this.dragMode = (e.button === 2 || e.shiftKey) ? 'pan' : 'rotate';
+      this.lastX = e.clientX; this.lastY = e.clientY;
+      cv.setPointerCapture(e.pointerId);
+    });
+    cv.addEventListener('pointermove', (e) => {
+      if (!this.dragging) return;
+      const dx = e.clientX - this.lastX, dy = e.clientY - this.lastY;
+      this.lastX = e.clientX; this.lastY = e.clientY;
+      if (this.dragMode === 'rotate') {
+        this.yaw -= dx * 0.008;
+        this.pitch = U.clamp(this.pitch - dy * 0.008, -1.35, 1.45);
+      } else {
+        const THREE2 = this.three;
+        const right = new THREE2.Vector3().crossVectors(this.camera.up, this.camera.getWorldDirection(new THREE2.Vector3())).normalize();
+        const up = this.camera.up.clone();
+        this.target.addScaledVector(right, -dx * this.radius * 0.0016);
+        this.target.addScaledVector(up, dy * this.radius * 0.0016);
+      }
+      this.updateCamera();
+    });
+    cv.addEventListener('pointerup', () => { this.dragging = false; });
+    cv.addEventListener('pointercancel', () => { this.dragging = false; });
+    cv.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      this.radius = U.clamp(this.radius * (1 + Math.sign(e.deltaY) * 0.09), 30, 3000);
+      this.updateCamera();
+    }, { passive: false });
+    cv.addEventListener('contextmenu', e => e.preventDefault());
+
+    this.updateCamera();
+  },
+
+  resizeViewer() {
+    if (!this.renderer) return;
+    const holder = document.getElementById('view3d');
+    const w = holder.clientWidth || 640, h = holder.clientHeight || 360;
+    this.renderer.setSize(w, h, false);
+    this.camera.aspect = w / h;
+    this.camera.updateProjectionMatrix();
+    this.render();
+  },
+
+  updateCamera() {
+    if (!this.camera) return;
+    const cp = Math.cos(this.pitch), sp = Math.sin(this.pitch);
+    this.camera.position.set(
+      this.target.x + this.radius * cp * Math.cos(this.yaw),
+      this.target.y + this.radius * cp * Math.sin(this.yaw),
+      this.target.z + this.radius * sp
+    );
+    this.camera.lookAt(this.target);
+    this.render();
+  },
+
+  render() {
+    if (!this.renderer) return;
+    this.renderer.render(this.scene, this.camera);
+  },
+
+  clearGroup() {
+    if (!this.group) return;
+    while (this.group.children.length) {
+      const c = this.group.children.pop();
+      if (c.geometry) c.geometry.dispose();
+      if (c.material) c.material.dispose();
+      this.group.remove(c);
+    }
+  },
+
+  addMesh(posArray, color) {
+    const THREE = this.three;
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(posArray, 3));
+    geo.computeVertexNormals();
+    const mat = new THREE.MeshStandardMaterial({
+      color, metalness: 0.45, roughness: 0.42, side: THREE.DoubleSide,
+      flatShading: true
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+    this.group.add(mesh);
+    return mesh;
+  },
+
+  fit() {
+    if (!this.group || !this.group.children.length) return;
+    const THREE = this.three;
+    const box = new THREE.Box3().setFromObject(this.group);
+    const center = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+    this.target.copy(center);
+    this.radius = Math.max(size.x, size.y, size.z) * 1.7 + 30;
+    this.updateCamera();
+  },
+
+  /* ---------------- 构建与预览 ---------------- */
+  async enter3D() {
+    try {
+      await this.ensureThree();
+      this.initViewer();
+      this.resizeViewer();
+      if (!this.stepReady) {
+        if (!this.ready) {
+          this.setOverlay(true, '加载 3D 内核', '预览与 STEP 导出使用 OpenCascade（WebAssembly，约 66 MB）。计算与 2D 齿廓无需加载。', 0, false);
+          const btn = document.createElement('button');
+          btn.className = 'btn primary';
+          btn.textContent = '加载并生成模型';
+          btn.onclick = () => this.buildAndPreview(true);
+          const ov = document.getElementById('kernelOverlay');
+          const retry = document.getElementById('btnKernelRetry');
+          retry.style.display = 'none';
+          const old = document.getElementById('btnKernelStart');
+          if (old) old.remove();
+          btn.id = 'btnKernelStart';
+          ov.appendChild(btn);
+        } else {
+          this.buildAndPreview(true);
+        }
+      }
+    } catch (e) {
+      this.setOverlay(true, 'three.js 加载失败', '无法加载渲染库：' + String(e.message || e) + '。2D 齿廓与计算结果不受影响。', 0, true);
+    }
+  },
+
+  async buildAndPreview(userInitiated) {
+    if (this.building) return;
+    try {
+      this.building = true;
+      if (!this.ready) await this.loadKernel();
+      const startBtn = document.getElementById('btnKernelStart');
+      if (startBtn) startBtn.remove();
+      this.setOverlay(true, '生成 B-Rep 模型', '正在构建齿廓、轮毂与链节实体…', 100, false);
+      await new Promise(r => setTimeout(r, 30));
+
+      // 释放上一次生成的实体
+      this.shapes.forEach(s => { try { s.delete(); } catch (e) { } });
+      this.shapes = [];
+      this.meshData = [];
+
+      const t0 = performance.now();
+      const out = this.buildSolids(App.params, App.results);
+      this.shapes = out.shapes;
+      const ms = performance.now() - t0;
+
+      const posS = this.tessellate(out.sprocket, 0.22);
+      const posC = [];
+      out.chain.forEach((s) => { posC.push(...this.tessellate(s, 0.35)); });
+      out.hubs.forEach((s) => { posC.push(...this.tessellate(s, 0.5)); });
+
+      this.meshData = [
+        { name: 'sprocket', pos: posS },
+        { name: 'chain', pos: posC }
+      ];
+
+      // 仅当处于 3D 视图时才初始化渲染器；纯 STEP 导出不需要 three.js
+      const wantViewer = !!this.three || App.view === '3d';
+      if (wantViewer) {
+        try {
+          await this.ensureThree();
+          this.initViewer();
+          this.clearGroup();
+          this.addMesh(posS, 0x63d6c1);
+          this.addMesh(posC, 0xd8a35a);
+          this.fit();
+        } catch (e) {
+          App.toast('3D 渲染初始化失败（可继续导出 STEP）：' + (e.message || e), 'warn');
+        }
+      }
+
+      // 包围盒校验
+      let bbMsg = '';
+      if (posS.length) {
+        let maxR = 0, zmin = 1e9, zmax = -1e9;
+        for (let i = 0; i < posS.length; i += 3) {
+          const r = Math.hypot(posS[i], posS[i + 1]);
+          if (r > maxR) maxR = r;
+          zmin = Math.min(zmin, posS[i + 2]);
+          zmax = Math.max(zmax, posS[i + 2]);
+        }
+        const dev = Math.abs(maxR * 2 - App.results.geometry.da1) / App.results.geometry.da1;
+        bbMsg = `外径 ${U.fmt(maxR * 2, 2)} mm / 齿宽 ${U.fmt(zmax - zmin, 2)} mm · 偏差 ${(dev * 100).toFixed(3)}%`;
+        if (dev > 0.01) out.warns.push('模型外径与计算 da 偏差 ' + (dev * 100).toFixed(2) + '%（>1%），请检查齿廓系数。');
+      }
+
+      this.stepReady = true;
+      this.lastMeta = `${out.meta} · ${ms.toFixed(0)} ms`;
+      this.setOverlay(false);
+      App.renderKPIs(App.results);
+      App.toast('B-Rep 模型已生成，可导出 STEP。', 'ok');
+      if (out.warns.length) App.toast(out.warns[0], 'warn');
+      document.getElementById('viewHint').classList.add('hidden');
+      document.getElementById('viewBadge').innerHTML = '<span class="pill ok">B-Rep 已生成</span>';
+      document.getElementById('footDims').textContent = bbMsg || '';
+    } catch (e) {
+      console.error(e);
+      this.setOverlay(true, '建模失败', String(e && e.message || e) + '。可重试或改用 2D 齿廓查看。', 0, true);
+      App.toast('建模失败：' + (e && e.message || e), 'err');
+    } finally {
+      this.building = false;
+    }
+  },
+
+  /* ---------------- 导出 ---------------- */
+  invalidate() {
+    // 参数变化后当前 B-Rep 与计算结果不再对应，标记为待重新生成。
+    if (this.stepReady) this.stepReady = false;
+  },
+
+  ensureBuilt() {
+    if (this.stepReady && this.shapes.length) return Promise.resolve();
+    return this.buildAndPreview(false);
+  },
+
+  async exportSTEPFlow() {
+    const btn = document.getElementById('btnStep');
+    const old = btn.textContent;
+    try {
+      btn.disabled = true;
+      btn.textContent = this.ready ? '生成中…' : '加载内核…';
+      await this.ensureBuilt();
+      if (!this.shapes.length) throw new Error('没有可导出的实体');
+      const n = this.shapes.length;
+      btn.textContent = '写入 STEP…';
+      this.setOverlay(true, '正在写入 STEP', '实体较多时约 2~10 秒，期间页面会短暂无响应，请勿关闭。', 100, false);
+      await new Promise(r => setTimeout(r, 60));
+      const oc = this.oc;
+      // 用相对路径（cwd 为 Emscripten 根目录）：本版内核 Write 绝对路径时偶发不生成文件。
+      const path = 'chain.step';
+      const modeEnum = oc.STEPControl_StepModelType.STEPControl_AsIs;
+
+      const writeAssembly = () => {
+        const w = new oc.STEPControl_Writer_1();
+        // 合并为一个复合实体后一次 Transfer：比逐实体 Transfer 快数倍。
+        const comp = new oc.TopoDS_Compound();
+        const builder = new oc.BRep_Builder();
+        builder.MakeCompound(comp);
+        for (const s of this.shapes) builder.Add(comp, s);
+        w.Transfer(comp, modeEnum, true);
+        w.Write(path);
+        let size = 0;
+        try { size = oc.FS.stat(path).size; } catch (e) { size = 0; }
+        if (!size) throw new Error('STEP 写出未生成文件（内核写出异常）');
+        return oc.FS.readFile(path);
+      };
+
+      let data = null;
+      try {
+        data = writeAssembly();
+      } catch (e) {
+        console.warn('STEP 首次写出失败，重试一次', e);
+        data = writeAssembly();
+      }
+      if (!data || data.length < 200) throw new Error('STEP 文件为空');
+      const blob = new Blob([data], { type: 'application/step' });
+      const name = this.fileName('step');
+      this.download(blob, name);
+      this.stepReady = true;
+      this.setOverlay(false);
+      App.renderKPIs(App.results);
+      App.toast(`STEP 已导出：${name}（${(data.length / 1024).toFixed(0)} KB，${n} 个实体）`, 'ok');
+    } catch (e) {
+      console.error(e);
+      this.setOverlay(true, 'STEP 导出失败', String(e && e.message || e) + '。请重试；内核未就绪时会先加载约 66 MB WebAssembly。', 0, true);
+      App.toast('STEP 导出失败：' + (e && e.message || e), 'err');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = old;
+    }
+  },
+
+  exportSTL() {
+    // 由预览三角面生成二进制 STL（STEP 仍为 B-Rep 实体）
+    if (!this.meshData.length) return App.toast('请先生成 3D 模型', 'warn');
+    const tris = [];
+    this.meshData.forEach(m => {
+      const p = m.pos;
+      for (let i = 0; i < p.length; i += 9) {
+        tris.push([p[i], p[i + 1], p[i + 2], p[i + 3], p[i + 4], p[i + 5], p[i + 6], p[i + 7], p[i + 8]]);
+      }
+    });
+    const buf = new ArrayBuffer(84 + tris.length * 50);
+    const dv = new DataView(buf);
+    const enc = new TextEncoder().encode('Silent chain preview mesh (not STEP)');
+    new Uint8Array(buf, 80, enc.length).set(enc);
+    dv.setUint32(80, tris.length, true);
+    let off = 84;
+    const nrm = (a, b, c) => {
+      const ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2];
+      const vx = c[0] - a[0], vy = c[1] - a[1], vz = c[2] - a[2];
+      let nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+      const l = Math.hypot(nx, ny, nz) || 1;
+      return [nx / l, ny / l, nz / l];
+    };
+    tris.forEach(t => {
+      const a = [t[0], t[1], t[2]], b = [t[3], t[4], t[5]], c = [t[6], t[7], t[8]];
+      const n = nrm(a, b, c);
+      [n[0], n[1], n[2],
+        a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2]].forEach(v => { dv.setFloat32(off, v, true); off += 4; });
+      dv.setUint16(off, 0, true); off += 2;
+    });
+    this.download(new Blob([buf], { type: 'model/stl' }), this.fileName('stl'));
+    App.toast(`STL 已导出（${tris.length} 三角面，仅预览用）`, 'ok');
+  },
+
+  fileName(ext) {
+    const p = App.params;
+    const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '').replace(/-/g, '');
+    return `silentchain_p${p.p}_z${p.z1}_${p.mode}_${ts}.${ext}`;
+  },
+
+  download(blob, name) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  }
+};
+
+
+/* =========================================================================
+   6. Store —— localStorage 方案管理 / 导入导出 / 计算书
+   ========================================================================= */
+
+const Store = {
+  KEY: 'silentchain.schemes',
+  data: { schemaVersion: 1, items: [] },
+
+  init() {
+    this.load();
+    if (!this.data.items.length) this.seed();
+    this.addStlButton();
+    this.bindPrompt();
+  },
+
+  load() {
+    try {
+      const raw = localStorage.getItem(this.KEY);
+      if (!raw) { this.data = { schemaVersion: 1, items: [] }; return; }
+      const d = JSON.parse(raw);
+      if (d && Array.isArray(d.items)) this.data = d;
+    } catch (e) {
+      console.warn('localStorage 读取失败', e);
+      this.data = { schemaVersion: 1, items: [] };
+    }
+  },
+
+  persist() {
+    try {
+      localStorage.setItem(this.KEY, JSON.stringify(this.data));
+      return true;
+    } catch (e) {
+      App.toast('本地存储失败：' + (e.message || e), 'err');
+      return false;
+    }
+  },
+
+  summary(params) {
+    try {
+      const r = ChainCalc.solve(params);
+      return {
+        p: params.p, z1: params.z1, z2: params.z2, mode: params.mode,
+        P: params.P, Fwork: Math.round(r.force.Fw), life: Math.round(r.wear.Th),
+        undercut: r.undercut.z1Ok, lifeOk: r.wear.Th >= params.targetLife
+      };
+    } catch (e) { return {}; }
+  },
+
+  newId() {
+    return 'sc_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  },
+
+  seed() {
+    const mk = (id, name, over) => {
+      const params = Object.assign(U.clone(CONFIG.defaults), over);
+      params.T = U.round(9550 * params.P / params.n1, 2);
+      return { id, name, createdAt: U.nowISO(), updatedAt: U.nowISO(), params, summary: this.summary(params) };
+    };
+    this.data = {
+      schemaVersion: 1,
+      items: [
+        mk('ex-light', '示例方案 · 轻载 p12.7', {}),
+        mk('ex-medium', '示例方案 · 中载 p19.05', {
+          p: 19.05, z1: 21, z2: 42, n1: 720, P: 15, b: 30, Q: 90, width: 32,
+          a: 762, lube: '滴油润滑', targetLife: 12000, bore: 30, hubDia: 80, hubW: 24,
+          sprocketMat: '40Cr', sprocketHeat: '调质+表面淬火', plateMat: '50Mn', pinMat: '20CrMnTi'
+        }),
+        mk('ex-heavy', '示例方案 · 重载 p25.4', {
+          p: 25.4, z1: 23, z2: 46, n1: 500, P: 37, KA: 1.6, service: 'heavy',
+          b: 45, Q: 160, width: 48, a: 1016, lube: '滴油润滑', env: '粉尘',
+          targetLife: 20000, bore: 45, hubDia: 120, hubW: 30,
+          sprocketMat: '20CrMnTi', sprocketHeat: '渗碳淬火', plateMat: '65Mn', pinMat: 'GCr15'
+        })
+      ]
+    };
+    this.persist();
+  },
+
+  addStlButton() {
+    const tools = document.getElementById('view3dTools');
+    if (!tools) return;
+    const b = document.createElement('button');
+    b.className = 'btn sm';
+    b.id = 'btnStl';
+    b.textContent = '导出 STL';
+    b.title = '预览网格（非 STEP 实体）';
+    b.addEventListener('click', () => CAD.exportSTL());
+    tools.appendChild(b);
+  },
+
+  /* -------- 当前方案 -------- */
+  currentName() {
+    return (document.getElementById('schemeName').value || '').trim() || '未命名方案';
+  },
+
+  saveCurrent() {
+    const name = this.currentName();
+    let item = this.data.items.find(x => x.id === App.currentId);
+    if (!item) item = this.data.items.find(x => x.name === name);
+    if (item) {
+      item.params = U.clone(App.params);
+      item.updatedAt = U.nowISO();
+      item.summary = this.summary(App.params);
+      item.name = name;
+      App.currentId = item.id;
+    } else {
+      item = {
+        id: this.newId(), name, createdAt: U.nowISO(), updatedAt: U.nowISO(),
+        params: U.clone(App.params), summary: this.summary(App.params)
+      };
+      this.data.items.unshift(item);
+      App.currentId = item.id;
+    }
+    if (this.persist()) {
+      App.updateDirty(false);
+      App.toast('方案已保存：' + name, 'ok');
+      this.refreshStepKpi();
+    }
+  },
+
+  async saveAs() {
+    const def = this.currentName() + ' 副本';
+    const name = await askText({ title: '另存为', value: def, hint: '将创建新方案，不覆盖当前方案。' });
+    if (!name) return;
+    let target = this.data.items.find(x => x.name === name);
+    if (target) {
+      const ok = await askConfirm({ title: '同名方案已存在', text: `已存在「${name}」，是否覆盖？取消则另存为副本。`, okLabel: '覆盖' });
+      if (!ok) {
+        const copy = { ...U.clone(target), id: this.newId(), name: name + ' (2)', createdAt: U.nowISO(), updatedAt: U.nowISO() };
+        target = copy;
+      }
+    }
+    if (!target) {
+      target = { id: this.newId(), name, createdAt: U.nowISO(), updatedAt: U.nowISO(), params: U.clone(App.params), summary: this.summary(App.params) };
+      this.data.items.unshift(target);
+    } else {
+      target.params = U.clone(App.params);
+      target.updatedAt = U.nowISO();
+      target.summary = this.summary(App.params);
+    }
+    App.currentId = target.id;
+    document.getElementById('schemeName').value = target.name;
+    this.persist();
+    App.updateDirty(false);
+    App.toast('已另存为：' + target.name, 'ok');
+  },
+
+  openLibrary() {
+    this.renderLibrary();
+    document.getElementById('mSchemes').classList.add('on');
+  },
+
+  renderLibrary() {
+    const host = document.getElementById('schemeList');
+    if (!this.data.items.length) {
+      host.innerHTML = '<div class="muted" style="font-size:11.5px;padding:10px">暂无方案，点击「保存」或「保存当前为新方案」。</div>';
+      return;
+    }
+    host.innerHTML = this.data.items.map(it => {
+      const s = it.summary || {};
+      const active = it.id === App.currentId;
+      return `<div class="scheme-row ${active ? 'active' : ''}" data-id="${it.id}">
+        <div>
+          <div class="nm">${U.esc(it.name)} ${active ? '<span class="pill ok" style="font-size:8.5px">当前</span>' : ''}</div>
+          <div class="meta">p ${s.p ?? '—'} · z ${s.z1 ?? '—'}/${s.z2 ?? '—'} · ${s.P ?? '—'} kW · F ${s.Fwork ?? '—'} N · 寿命 ${s.life ?? '—'} h</div>
+        </div>
+        <div class="acts">
+          <button class="btn sm" data-act="load">载入</button>
+          <button class="btn sm" data-act="rename">重命名</button>
+          <button class="btn sm" data-act="export">导出</button>
+          <button class="btn sm" data-act="del" style="color:var(--bad)">删除</button>
+        </div>
+      </div>`;
+    }).join('');
+
+    host.onclick = async (e) => {
+      const btn = e.target.closest('button[data-act]');
+      const row = e.target.closest('.scheme-row');
+      if (!row) return;
+      const id = row.dataset.id;
+      const item = this.data.items.find(x => x.id === id);
+      if (!item) return;
+      if (!btn) { this.apply(item); return; }
+      const act = btn.dataset.act;
+      if (act === 'load') this.apply(item);
+      if (act === 'export') this.downloadScheme(item);
+      if (act === 'del') {
+        const ok = await askConfirm({ title: '删除方案', text: `确定删除「${item.name}」？该操作不可撤销。`, okLabel: '删除' });
+        if (!ok) return;
+        this.data.items = this.data.items.filter(x => x.id !== id);
+        if (App.currentId === id) App.currentId = null;
+        this.persist();
+        this.renderLibrary();
+        App.toast('已删除方案', 'ok');
+      }
+      if (act === 'rename') {
+        const name = await askText({ title: '重命名方案', value: item.name });
+        if (!name) return;
+        item.name = name; item.updatedAt = U.nowISO();
+        if (App.currentId === item.id) document.getElementById('schemeName').value = name;
+        this.persist();
+        this.renderLibrary();
+      }
+    };
+  },
+
+  apply(item) {
+    App.params = Object.assign(U.clone(CONFIG.defaults), U.clone(item.params));
+    App.currentId = item.id;
+    if (window.CAD && CAD.ready) CAD.invalidate();
+    document.getElementById('schemeName').value = item.name;
+    App.renderPanel();
+    App.updateModeVisibility(document.getElementById('paramsPanel'));
+    App.updateDisabledStates(document.getElementById('paramsPanel'));
+    App.updateMatInfo();
+    App.refresh();
+    App.updateDirty(false);
+    document.getElementById('mSchemes').classList.remove('on');
+    App.toast('已载入：' + item.name, 'ok');
+  },
+
+  /* -------- 导出 / 导入 -------- */
+  download(obj, filename) {
+    const blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' });
+    CAD.download(blob, filename);
+  },
+
+  downloadScheme(item) {
+    this.download({
+      schemaVersion: 1, type: 'silentchain-scheme', exportedAt: U.nowISO(),
+      scheme: item
+    }, `silentchain_${item.name.replace(/[\\/:*?"<>|]/g, '_')}.json`);
+  },
+
+  exportCurrent() {
+    const item = {
+      id: App.currentId || this.newId(), name: this.currentName(),
+      createdAt: U.nowISO(), updatedAt: U.nowISO(),
+      params: U.clone(App.params), summary: this.summary(App.params)
+    };
+    this.downloadScheme(item);
+    App.toast('当前方案 JSON 已导出', 'ok');
+  },
+
+  exportAll() {
+    this.download({
+      schemaVersion: 1, type: 'silentchain-all', exportedAt: U.nowISO(),
+      items: this.data.items
+    }, `silentchain_all_${new Date().toISOString().slice(0, 10)}.json`);
+    App.toast(`已导出 ${this.data.items.length} 个方案`, 'ok');
+  },
+
+  importFile() {
+    const input = document.getElementById('fileInput');
+    input.value = '';
+    input.onchange = () => {
+      const f = input.files && input.files[0];
+      if (!f) return;
+      const reader = new FileReader();
+      reader.onload = () => this.importPayload(String(reader.result));
+      reader.readAsText(f);
+    };
+    input.click();
+  },
+
+  validParams(p) {
+    if (!p || typeof p !== 'object') return false;
+    const need = ['p', 'z1', 'z2', 'n1', 'P'];
+    for (const k of need) if (!Number.isFinite(Number(p[k]))) return false;
+    if (Number(p.z1) < 3 || Number(p.z2) < 3) return false;
+    if (Number(p.p) <= 0 || Number(p.n1) <= 0) return false;
+    return true;
+  },
+
+  async importPayload(text) {
+    let raw;
+    try { raw = JSON.parse(text); } catch (e) {
+      return App.toast('JSON 解析失败：' + e.message, 'err');
+    }
+    let list = [];
+    if (raw && raw.scheme && raw.scheme.params) list = [raw.scheme];
+    else if (raw && Array.isArray(raw.items)) list = raw.items;
+    else if (Array.isArray(raw)) list = raw;
+    else if (raw && raw.params) list = [raw];
+    if (!list.length) return App.toast('未找到有效方案（需要 params 字段）', 'err');
+
+    let added = 0, replaced = 0, skipped = 0;
+    for (const it of list) {
+      if (!this.validParams(it.params)) { skipped++; continue; }
+      const name = (it.name || '导入方案').toString().slice(0, 60);
+      const existing = this.data.items.find(x => x.name === name);
+      if (existing) {
+        const ok = await askConfirm({
+          title: '同名方案',
+          text: `已存在「${name}」。覆盖原方案？选择取消将另存为副本。`,
+          okLabel: '覆盖'
+        });
+        if (ok) {
+          existing.params = Object.assign(U.clone(CONFIG.defaults), it.params);
+          existing.summary = this.summary(existing.params);
+          existing.updatedAt = U.nowISO();
+          replaced++;
+        } else {
+          this.data.items.unshift({
+            id: this.newId(), name: name + ' (导入)',
+            createdAt: U.nowISO(), updatedAt: U.nowISO(),
+            params: Object.assign(U.clone(CONFIG.defaults), it.params),
+            summary: this.summary(it.params)
+          });
+          added++;
+        }
+      } else {
+        this.data.items.unshift({
+          id: this.newId(), name,
+          createdAt: it.createdAt || U.nowISO(), updatedAt: U.nowISO(),
+          params: Object.assign(U.clone(CONFIG.defaults), it.params),
+          summary: this.summary(it.params)
+        });
+        added++;
+      }
+    }
+    this.persist();
+    this.openLibrary();
+    App.toast(`导入完成：新增 ${added}，覆盖 ${replaced}${skipped ? '，跳过 ' + skipped + '（字段非法）' : ''}`,
+      skipped ? 'warn' : 'ok');
+  },
+
+  refreshStepKpi() {
+    if (App.results) App.renderKPIs(App.results);
+  },
+
+  /* -------- 通用输入 / 确认 -------- */
+  bindPrompt() {
+    document.getElementById('btnSchemeSaveAs').addEventListener('click', () => this.saveAs());
+    document.getElementById('btnSchemeImport').addEventListener('click', () => this.importFile());
+    document.getElementById('btnSelfRerun').addEventListener('click', () => App.openSelftest());
+  }
+};
+
+/* ---------------- 对话框 Promise 封装 ---------------- */
+function askText({ title, value, hint }) {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('mPrompt');
+    document.getElementById('promptTitle').textContent = title || '输入';
+    document.getElementById('promptHint').textContent = hint || '';
+    const input = document.getElementById('promptInput');
+    input.value = value || '';
+    modal.classList.add('on');
+    setTimeout(() => { input.focus(); input.select(); }, 30);
+    const done = (v) => { modal.classList.remove('on'); resolve(v); };
+    const ok = () => done(input.value.trim() || null);
+    document.getElementById('promptOk').onclick = ok;
+    input.onkeydown = (e) => { if (e.key === 'Enter') ok(); };
+    modal.onclick = (e) => {
+      if (e.target === modal || e.target.closest('[data-close]')) done(null);
+    };
+  });
+}
+
+function askConfirm({ title, text, okLabel }) {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('mConfirm');
+    document.getElementById('confirmTitle').textContent = title || '确认';
+    document.getElementById('confirmText').textContent = text || '';
+    document.getElementById('confirmOk').textContent = okLabel || '确定';
+    modal.classList.add('on');
+    const done = (v) => { modal.classList.remove('on'); resolve(v); };
+    document.getElementById('confirmOk').onclick = () => done(true);
+    modal.onclick = (e) => {
+      if (e.target === modal || e.target.closest('[data-close]')) done(false);
+    };
+  });
+}
+
+/* ---------------- 启动 ---------------- */
+(function boot() {
+  Store.init();
+  App.init();
+  window.App = App;
+  window.CAD = CAD;
+  window.Store = Store;
+  window.ChainCalc = ChainCalc;
+  window.CONFIG = CONFIG;
+  console.log('%c齿形链传动设计工具 v1.0.0', 'color:#2dd4bf;font-weight:700',
+    '\n标准：GB/T 10855-2016（参考 ASME B29.2M）',
+    '\n自检：App.openSelftest()',
+    '\n溯源：App.openProv()');
+})();
+
+</script>
+</body>
+</html>
